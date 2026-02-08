@@ -1,16 +1,90 @@
-# React + Vite
+PG Stay System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A full-stack web application for managing and recommending PG (Paying Guest) accommodations.
 
-Currently, two official plugins are available:
+This project aims to help students and working professionals easily find, compare, and manage PG stays, while allowing owners and admins to manage listings efficiently.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+🚀 Features (Planned)
+👤 User (Student / Tenant)
 
-## React Compiler
+View PG stay listings
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Search and filter PG stays
 
-## Expanding the ESLint configuration
+View details (rent, amenities, location)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Send enquiry / request booking
+
+🏠 PG Owner
+
+Register and manage PG accommodations
+
+Add rooms, rent, and amenities
+
+View tenant requests
+
+🛡️ Admin
+
+Verify PG accommodations
+
+Manage users and owners
+
+Monitor platform activity
+
+🛠️ Tech Stack
+Frontend
+
+React (Vite)
+
+JavaScript
+
+CSS
+
+Backend (Upcoming)
+
+Node.js
+
+Express.js
+
+MongoDB
+
+📁 Project Structure
+
+PG-Stay-System
+└── frontend
+  ├── src
+  │ ├── components
+  │ ├── pages
+  │ ├── services
+  │ └── styles
+  └── package.json
+
+▶️ How to Run (Frontend)
+
+Open terminal
+
+Go to frontend folder
+
+Run these commands:
+
+npm install
+npm run dev
+
+👥 Team Collaboration
+
+This project follows a branch-based workflow.
+Each feature is developed in a separate branch and merged into the main branch via pull requests.
+
+📌 Status
+
+🚧 Project under active development
+
+📄 License
+
+This project is for academic and learning purposes.
+
+✅ AFTER PASTING, RUN THIS (in terminal)
+
+git add README.md
+git commit -m "Add project README"
+git push
