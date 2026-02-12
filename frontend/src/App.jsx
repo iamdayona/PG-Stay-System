@@ -7,7 +7,8 @@ import OwnerProfile from "./pages/OwnerProfile";
 import PGSManagement from "./pages/PGSManagement";
 import OwnerApplications from "./pages/OwnerApplications";
 import AdminVerifyMonitor from "./pages/AdminVerifyMonitor";
-import AdminDashboard from "./pages/AdminDashboard.jsx";
+import AdminDashboard from "./pages/AdminDashboard";
+import FindPGs from "./pages/FindPGs";
 
 function App() {
   return (
@@ -20,6 +21,9 @@ function App() {
       {/* Admin Routes */}
       <Route path="/admin/dashboard" element={<AdminDashboard />} />
       <Route path="/admin/verifymonitor" element={<AdminVerifyMonitor />} />
+
+       {/* Tenant Routes */}
+      <Route path="/tenant/findpgs" element={<FindPGs />} />
 
       {/* Owner Routes */}
       <Route path="/owner/dashboard" element={<OwnerDashboard />} />
