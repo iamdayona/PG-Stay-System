@@ -1,7 +1,7 @@
 import React from "react";
 import { Bell, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 
-function OwnerNotifications() {
+export default function OwnerNotifications() {
   const notifications = [
     {
       type: "application",
@@ -75,4 +75,4 @@ function OwnerNotifications() {
   );
 }
 
-export default OwnerNotifications;
+
