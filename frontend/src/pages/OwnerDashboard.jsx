@@ -1,8 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { User, Building2, FileText, Bell } from "lucide-react";
-
-// adjust paths if your folder structure differs
-import RoleNavigation from "../components/RoleNavigation";
+import RoleNavigation from "../context/RoleNavigation";
 import { Card } from "../components/ui/card";
 
 const OwnerDashboard = () => {

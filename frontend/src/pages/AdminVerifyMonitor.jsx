@@ -1,7 +1,7 @@
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { CheckCircle2, XCircle, Eye, Trash2 } from "lucide-react";
-import RoleNavigation from "../components/RoleNavigation";
+import RoleNavigation from "../context/RoleNavigation";
 
 export default function AdminVerifyMonitor() {
   const pgListings = [

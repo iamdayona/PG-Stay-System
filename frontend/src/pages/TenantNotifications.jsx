@@ -2,7 +2,7 @@ import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
 import { Bell, CheckCircle2, AlertCircle, Star } from "lucide-react";
-import RoleNavigation from "../components/RoleNavigation";
+import RoleNavigation from "../context/RoleNavigation";
 
 export default function TenantNotifications() {
   const notifications = [

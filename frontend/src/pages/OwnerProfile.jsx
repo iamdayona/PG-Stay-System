@@ -1,7 +1,7 @@
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { User, Upload, CheckCircle2 } from "lucide-react";
-import RoleNavigation from "../components/RoleNavigation";
+import RoleNavigation from "../context/RoleNavigation";
 
 export default function OwnerProfile() {
   return (

@@ -1,8 +1,7 @@
 import { CheckCircle2, XCircle, Eye } from "lucide-react";
-
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
-import RoleNavigation from "../components/RoleNavigation";
+import RoleNavigation from "../context/RoleNavigation";
 
 export default function OwnerApplications() {
   const applications = [

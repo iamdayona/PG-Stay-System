@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import { Card } from "../components/ui/card";
 import { CheckCircle2, AlertCircle, Users, Building2 } from "lucide-react";
-import RoleNavigation from "../components/RoleNavigation";
+import RoleNavigation from "../context/RoleNavigation";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
