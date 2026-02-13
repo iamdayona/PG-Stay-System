@@ -7,6 +7,10 @@ import OwnerDashboard from "./pages/OwnerDashboard";
 import OwnerProfile from "./pages/OwnerProfile";
 import PGSManagement from "./pages/PGSManagement";
 import OwnerApplications from "./pages/OwnerApplications";
+import TenantFindPGs from "./pages/TenantFindPGs";
+import TenantApplications from "./pages/TenantApplications";
+import TenantNotifications from "./pages/TenantNotifications";
+
 import OwnerNotifications from "./pages/OwnerNotifications";
 import AdminVerifyMonitor from "./pages/AdminVerifyMonitor";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -16,6 +20,10 @@ function App() {
     <Routes>
       <Route path="/" element={<Home />} />
 
+      {/* Tenant Routes */}
+      <Route path="/tenant/findpgs" element={<TenantFindPGs />} />
+      <Route path="/tenant/applications" element={<TenantApplications />} />
+      <Route path="/tenant/notifications" element={<TenantNotifications />} />
       {/* Login */}
       <Route path="/login" element={<Login />} />
       <Route path="/userprofile" element={<UserProfile />} />
