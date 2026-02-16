@@ -11,25 +11,25 @@ export default function AdminDashboard() {
       icon: CheckCircle2,
       title: "Verification & Management",
       description: "Review and verify user identities and PG listings",
-      path: "/admin/verify",
+      path: "/admin/verifymonitor",
     },
     {
       icon: AlertCircle,
       title: "Monitor Trust Scores",
       description: "Track and manage user trust scores",
-      path: "/admin/verify",
+      path: "/admin/verifymonitor",
     },
     {
       icon: Users,
       title: "Handle Complaints",
       description: "Review and resolve user complaints",
-      path: "/admin/verify",
+      path: "/admin/verifymonitor",
     },
     {
       icon: Building2,
       title: "System Monitoring",
       description: "Monitor overall system health and activity",
-      path: "/admin/verify",
+      path: "/admin/verifymonitor",
     },
   ];
 

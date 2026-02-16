@@ -23,11 +23,9 @@ import TenantDashboard from "./pages/TenantDashboard";
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
       
       {/* Login */}
-      <Route path="/login" element={<Login />} />
-
+      <Route path="/" element={<Login />} />
 
       {/* Admin Routes */}
       <Route path="/admin/dashboard" element={<AdminDashboard />} />

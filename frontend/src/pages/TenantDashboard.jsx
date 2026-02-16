@@ -17,25 +17,25 @@ function TenantDashboard() {
       icon: User,
       title: "Profile & Verification",
       description: "Manage your profile and identity verification",
-      path: "/profile",
+      path: "/tenant/profile",
     },
     {
       icon: Search,
       title: "Search PG",
       description: "Find and apply for PG accommodations",
-      path: "/search",
+      path: "/tenant/findpgs",
     },
     {
       icon: FileText,
       title: "My Applications",
       description: "Track your application status",
-      path: "/applications",
+      path: "/tenant/applications",
     },
     {
       icon: Bell,
       title: "Notifications",
       description: "View updates and feedback",
-      path: "/notifications",
+      path: "/tenant/notifications",
     },
   ];
 

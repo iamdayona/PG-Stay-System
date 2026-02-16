@@ -17,7 +17,7 @@ const OwnerDashboard = () => {
       icon: Building2,
       title: "Manage PG Stays",
       description: "Add and manage your PG properties",
-      path: "/owner/pg-management",
+      path: "/owner/pgsmanagement",
     },
     {
       icon: FileText,
