@@ -17,19 +17,19 @@ export default function AdminDashboard() {
       icon: AlertCircle,
       title: "Monitor Trust Scores",
       description: "Track and manage user trust scores",
-      path: "/admin/verifymonitor",
+      path: "/admin/monitortrustscore",
     },
     {
       icon: Users,
       title: "Handle Complaints",
       description: "Review and resolve user complaints",
-      path: "/admin/verifymonitor",
+      path: "/admin/handlecomplaints",
     },
     {
       icon: Building2,
       title: "System Monitoring",
       description: "Monitor overall system health and activity",
-      path: "/admin/verifymonitor",
+      path: "/admin/systemmonitoring",
     },
   ];
 
