@@ -87,4 +87,4 @@ const PGManagement = () => {
   );
 };
 
-export default PGManagement;
+export default OwnerPGManagement;

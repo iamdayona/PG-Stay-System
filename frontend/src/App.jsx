@@ -12,7 +12,7 @@ import AdminMonitorTrustScores from "./pages/AdminMonitorTrustScores";
 import OwnerDashboard from "./pages/OwnerDashboard";
 import OwnerNotifications from "./pages/OwnerNotifications";
 import OwnerProfile from "./pages/OwnerProfile";
-import PGSManagement from "./pages/PGSManagement";
+import OwnerPGSManagement from "./pages/OwnerPGSManagement";
 import OwnerApplications from "./pages/OwnerApplications";
 
 import TenantProfile from "./pages/TenantProfile";
