@@ -7,7 +7,7 @@ import { Label } from "../components/ui/label";
 import { Switch } from "../components/ui/switch";
 import RoleNavigation from "../context/RoleNavigation";
 
-const PGManagement = () => {
+const OwnerPGManagement = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <RoleNavigation role="owner" />
@@ -87,4 +87,4 @@ const PGManagement = () => {
   );
 };
 
-export default PGManagement;
+export default OwnerPGManagement;
