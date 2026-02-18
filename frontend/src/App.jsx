@@ -47,7 +47,7 @@ function App() {
       {/* Owner Routes */}
       <Route path="/owner/dashboard" element={<OwnerDashboard />} />
       <Route path="/owner/profile" element={<OwnerProfile />} />
-      <Route path="/owner/pgsmanagement" element={<PGSManagement />} />
+      <Route path="/owner/pgsmanagement" element={<OwnerPGSManagement />} />
       <Route path="/owner/applications" element={<OwnerApplications />} />
       <Route path="/owner/notifications" element={<OwnerNotifications />} />
     </Routes>
