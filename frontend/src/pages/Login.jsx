@@ -4,7 +4,7 @@ import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { useRole } from "../context/RoleContext";
+import { useRole } from "../context/useRole";
 
 export default function Login() {
   const navigate = useNavigate();
