@@ -8,7 +8,7 @@ export default function Help() {
 
       {/* Header */}
       <div className="w-full bg-white border-b border-gray-300 px-6 py-3 flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-center flex-1">
+        <h1 className="text-3xl text-blue-600 text-center flex-1">
           Help & Support
         </h1>
 

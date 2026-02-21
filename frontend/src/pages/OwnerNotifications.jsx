@@ -47,8 +47,8 @@ export default function OwnerNotifications() {
   return (
     <div className="min-h-screen bg-gray-50">
       <RoleNavigation role="owner" />
-     <div style={{ minHeight: "100vh", background: "#f9fafb", padding: 24 }}>
-      <h2 style={{ fontSize: 24, marginBottom: 24 }}>
+    <div className="max-w-6xl mx-auto px-6 py-8">
+        <h2 className="text-2xl mb-8 text-gray-800">
         Owner Notifications
       </h2>
 

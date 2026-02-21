@@ -38,7 +38,7 @@ export default function Login() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <header className="bg-white border-b border-gray-300 px-8 py-4 text-center">
-        <h1 className="text-2xl text-blue-600">
+        <h1 className="text-3xl text-blue-600">
           PG Accommodation Management System
         </h1>
       </header>
