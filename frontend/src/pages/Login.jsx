@@ -13,9 +13,30 @@ export default function Login() {
 
   const [isLogin, setIsLogin] = useState(true);
   const [selectedRole, setSelectedRole] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  // 🔐 Predefined Admin Accounts
+  const adminAccounts = [
+    { email: "ageeshcyriacbaiju33@gmail.com", password: "Ageesh@123" },
+    { email: "anaghasunny2@gmail.com", password: "Anagha@123" },
+    { email: "aromalharikumar05@gmail.com", password: "Aromal@123" },
+    { email: "dayonasuby@gmail.com", password: "Dayona@123" },
+  ];
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    // 🔴 Check if Admin credentials match
+    const isAdmin = adminAccounts.find(
+      (admin) => admin.email === email && admin.password === password
+    );
+
+    if (isAdmin) {
+      setRole("admin");
+      navigate("/admin/dashboard");
+      return;
+    }
 
     if (!selectedRole) {
       alert("Please select a role");
@@ -24,13 +45,10 @@ export default function Login() {
 
     setRole(selectedRole);
 
-    // Route to respective dashboard based on role
     if (selectedRole === "tenant") {
       navigate("/tenant/dashboard");
     } else if (selectedRole === "owner") {
       navigate("/owner/dashboard");
-    } else if (selectedRole === "admin") {
-      navigate("/admin/dashboard");
     }
   };
 
@@ -58,6 +76,8 @@ export default function Login() {
                 placeholder="Enter your email"
                 className="mt-2 border-gray-300"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
 
@@ -68,6 +88,8 @@ export default function Login() {
                 placeholder="Enter your password"
                 className="mt-2 border-gray-300"
                 required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
 
@@ -83,7 +105,7 @@ export default function Login() {
               </div>
             )}
 
-            {/* Role Selection */}
+            {/* Role Selection (Admin Removed) */}
             <div className="border-t border-gray-300 pt-4">
               <Label className="text-gray-700 mb-3 block">
                 Select Your Role *
@@ -149,75 +171,32 @@ export default function Login() {
                     </div>
                   </div>
                 </div>
-
-                {/* Admin */}
-                <div
-                  onClick={() => setSelectedRole("admin")}
-                  className={`p-4 border-2 rounded cursor-pointer transition-all ${
-                    selectedRole === "admin"
-                      ? "border-blue-600 bg-blue-50"
-                      : "border-gray-300 hover:border-blue-400"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-4 h-4 rounded-full border-2 ${
-                        selectedRole === "admin"
-                          ? "border-blue-600 bg-blue-600"
-                          : "border-gray-400"
-                      }`}
-                    >
-                      {selectedRole === "admin" && (
-                        <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-gray-800">Admin</p>
-                      <p className="text-xs text-gray-600">
-                        Manage and verify system operations
-                      </p>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
 
             <Button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 py-6"
+              className="w-full bg-blue-600 hover:bg-blue-700 py-5"
             >
-              {isLogin ? "Login" : "Register"}
+              Login
             </Button>
           </form>
-
-          <div className="text-center mt-6">
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-blue-600 hover:underline text-sm"
-            >
-              {isLogin
-                ? "Don't have an account? Register here"
-                : "Already have an account? Login here"}
-            </button>
-          </div>
         </Card>
       </main>
 
       {/* Footer */}
       <footer className="bg-white border-t border-gray-300 px-8 py-6">
         <div className="flex gap-8 justify-center">
-       <Link to="/about" className="text-gray-600 hover:text-blue-600">
-         About
-       </Link>
-
-       <Link to="/contact" className="text-gray-600 hover:text-blue-600">
-        Contact
-       </Link>
-
-      <Link to="/help" className="text-gray-600 hover:text-blue-600">
-        Help
-      </Link>
-      </div>
+          <Link to="/about" className="text-gray-600 hover:text-blue-600">
+            About
+          </Link>
+          <Link to="/contact" className="text-gray-600 hover:text-blue-600">
+            Contact
+          </Link>
+          <Link to="/help" className="text-gray-600 hover:text-blue-600">
+            Help
+          </Link>
+        </div>
       </footer>
     </div>
   );

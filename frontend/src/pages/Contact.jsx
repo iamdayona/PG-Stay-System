@@ -71,7 +71,7 @@ export default function Contact() {
 
             <div className="bg-white p-5 rounded-lg shadow">
               <p className="font-semibold">Owner Support</p>
-              <p className="text-gray-600">anaghasunny02@gmail.com</p>
+              <p className="text-gray-600">anaghasunny2@gmail.com</p>
             </div>
 
             <div className="bg-white p-5 rounded-lg shadow">
