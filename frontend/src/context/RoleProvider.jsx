@@ -1,6 +1,5 @@
-import { createContext, useState } from "react";
-
-export const RoleContext = createContext(null);
+import { useState } from "react";
+import { RoleContext } from "./RoleContext";
 
 export const RoleProvider = ({ children }) => {
   const [role, setRole] = useState(null);
