@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import Card from "../components/Card";
+import RoleNavigation from "../context/RoleNavigation";
 import {
   User,
   Search,
@@ -40,7 +41,10 @@ function TenantDashboard() {
   ];
 
   return (
+    
     <div className="min-h-screen bg-gray-50">
+      <RoleNavigation role="tenant" />
+      
       <div className="max-w-6xl mx-auto px-6 py-8">
         <h2 className="text-2xl mb-2">Tenant Dashboard</h2>
         <p className="text-gray-600 mb-8">

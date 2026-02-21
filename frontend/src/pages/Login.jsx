@@ -5,6 +5,7 @@ import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useRole } from "../context/useRole";
+import { Link } from "react-router-dom";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -36,7 +37,7 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <header className="bg-white border-b border-gray-300 px-8 py-4">
+      <header className="bg-white border-b border-gray-300 px-8 py-4 text-center">
         <h1 className="text-2xl text-blue-600">
           PG Accommodation Management System
         </h1>
@@ -205,16 +206,18 @@ export default function Login() {
       {/* Footer */}
       <footer className="bg-white border-t border-gray-300 px-8 py-6">
         <div className="flex gap-8 justify-center">
-          <a href="#" className="text-gray-600 hover:text-blue-600">
-            About
-          </a>
-          <a href="#" className="text-gray-600 hover:text-blue-600">
-            Contact
-          </a>
-          <a href="#" className="text-gray-600 hover:text-blue-600">
-            Help
-          </a>
-        </div>
+       <Link to="/about" className="text-gray-600 hover:text-blue-600">
+         About
+       </Link>
+
+       <Link to="/contact" className="text-gray-600 hover:text-blue-600">
+        Contact
+       </Link>
+
+      <Link to="/help" className="text-gray-600 hover:text-blue-600">
+        Help
+      </Link>
+      </div>
       </footer>
     </div>
   );
