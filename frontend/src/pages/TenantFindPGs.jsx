@@ -1,5 +1,6 @@
 import React from "react";
 import { MapPin, IndianRupee } from "lucide-react";
+import RoleNavigation from "../context/RoleNavigation";
 
 export default function FindPGs() {
   const pgListings = [
@@ -12,8 +13,12 @@ export default function FindPGs() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <h2 className="text-2xl font-semibold mb-6 text-gray-800">Search PG Accommodations</h2>
+    <div className="min-h-screen bg-gray-50">
+      <RoleNavigation role="tenant" />
+      
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        <h2 className="text-2xl mb-8 text-gray-800">
+        Search PG Accommodations</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* Filter Panel */}
@@ -97,6 +102,7 @@ export default function FindPGs() {
           ))}
         </div>
       </div>
+    </div>
     </div>
   );
 }

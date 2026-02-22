@@ -1,10 +1,13 @@
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { User, Upload, CheckCircle2 } from "lucide-react";
+import RoleNavigation from "../context/RoleNavigation";
 
 function TenantProfile() {
   return (
     <div className="min-h-screen bg-gray-50">
+      <RoleNavigation role="tenant" />
+      
       <div className="max-w-6xl mx-auto px-6 py-8">
         <h2 className="text-2xl mb-8 text-gray-800">Tenant Profile & Verification</h2>
 

@@ -1,5 +1,6 @@
 import React from "react";
 import { Bell, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import RoleNavigation from "../context/RoleNavigation";
 
 export default function OwnerNotifications() {
   const notifications = [
@@ -44,8 +45,10 @@ export default function OwnerNotifications() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f9fafb", padding: 24 }}>
-      <h2 style={{ fontSize: 24, marginBottom: 24 }}>
+    <div className="min-h-screen bg-gray-50">
+      <RoleNavigation role="owner" />
+    <div className="max-w-6xl mx-auto px-6 py-8">
+        <h2 className="text-2xl mb-8 text-gray-800">
         Owner Notifications
       </h2>
 
@@ -71,6 +74,7 @@ export default function OwnerNotifications() {
           </div>
         ))}
       </div>
+    </div>
     </div>
   );
 }
