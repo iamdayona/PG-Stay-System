@@ -48,7 +48,7 @@ export default function AdminVerifyMonitor() {
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         <h2 className="text-2xl mb-8 text-gray-800">
-          Admin Verification & Monitoring
+          Admin Verification & Management
         </h2>
 
         {/* Stats Cards */}
