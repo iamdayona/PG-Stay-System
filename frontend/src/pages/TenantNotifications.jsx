@@ -6,25 +6,25 @@ import RoleNavigation from "../context/RoleNavigation";
 
 export default function TenantNotifications() {
   const notifications = [
-    { 
-      type: "success", 
-      message: "Your application to Green Valley PG has been approved!", 
-      time: "2 hours ago" 
+    {
+      type: "success",
+      message: "Your application to Green Valley PG has been approved!",
+      time: "2 hours ago"
     },
-    { 
-      type: "info", 
-      message: "Reminder: Monthly rent payment due on Feb 5, 2026", 
-      time: "1 day ago" 
+    {
+      type: "info",
+      message: "Reminder: Monthly rent payment due on Feb 5, 2026",
+      time: "1 day ago"
     },
-    { 
-      type: "update", 
-      message: "Sunshine Residency is reviewing your application", 
-      time: "2 days ago" 
+    {
+      type: "update",
+      message: "Sunshine Residency is reviewing your application",
+      time: "2 days ago"
     },
-    { 
-      type: "alert", 
-      message: "Please complete identity verification to proceed", 
-      time: "3 days ago" 
+    {
+      type: "alert",
+      message: "Please complete identity verification to proceed",
+      time: "3 days ago"
     },
   ];
 
@@ -42,21 +42,21 @@ export default function TenantNotifications() {
   return (
     <div className="min-h-screen bg-gray-50">
       <RoleNavigation role="tenant" />
-      
+
       <div className="max-w-5xl mx-auto px-6 py-8">
         <h2 className="text-2xl mb-8 text-gray-800">
           Tenant Notifications & Feedback
         </h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          
+
           {/* Notifications */}
           <Card className="p-6 bg-white border border-gray-300">
             <h3 className="text-lg mb-4 text-gray-800 flex items-center gap-2">
               <Bell className="w-5 h-5" />
               Notifications
             </h3>
-            
+
             <div className="space-y-4">
               {notifications.map((notif, index) => (
                 <div
@@ -83,7 +83,7 @@ export default function TenantNotifications() {
               <h3 className="text-lg mb-4 text-gray-800">
                 Submit Feedback
               </h3>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="text-sm text-gray-700 mb-2 block">
@@ -93,11 +93,10 @@ export default function TenantNotifications() {
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button key={star}>
                         <Star
-                          className={`w-8 h-8 ${
-                            star <= 4
+                          className={`w-8 h-8 ${star <= 4
                               ? "fill-yellow-400 text-yellow-400"
                               : "text-gray-300"
-                          }`}
+                            }`}
                         />
                       </button>
                     ))}
@@ -140,7 +139,7 @@ export default function TenantNotifications() {
               <h3 className="text-lg mb-4 text-gray-800">
                 Your Recent Feedback
               </h3>
-              
+
               <div className="p-3 bg-gray-50 border border-gray-300 rounded">
                 <div className="flex justify-between items-start mb-2">
                   <span className="text-sm text-gray-800">

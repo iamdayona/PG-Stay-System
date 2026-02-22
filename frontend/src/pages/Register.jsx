@@ -59,15 +59,15 @@ export default function Register() {
                                 <div
                                     onClick={() => setSelectedRole("tenant")}
                                     className={`p-4 border-2 rounded cursor-pointer transition-all ${selectedRole === "tenant"
-                                            ? "border-blue-600 bg-blue-50"
-                                            : "border-gray-300 hover:border-blue-400"
+                                        ? "border-blue-600 bg-blue-50"
+                                        : "border-gray-300 hover:border-blue-400"
                                         }`}
                                 >
                                     <div className="flex items-center gap-3">
                                         <div
                                             className={`w-4 h-4 rounded-full border-2 ${selectedRole === "tenant"
-                                                    ? "border-blue-600 bg-blue-600"
-                                                    : "border-gray-400"
+                                                ? "border-blue-600 bg-blue-600"
+                                                : "border-gray-400"
                                                 }`}
                                         >
                                             {selectedRole === "tenant" && (
@@ -87,15 +87,15 @@ export default function Register() {
                                 <div
                                     onClick={() => setSelectedRole("owner")}
                                     className={`p-4 border-2 rounded cursor-pointer transition-all ${selectedRole === "owner"
-                                            ? "border-blue-600 bg-blue-50"
-                                            : "border-gray-300 hover:border-blue-400"
+                                        ? "border-blue-600 bg-blue-50"
+                                        : "border-gray-300 hover:border-blue-400"
                                         }`}
                                 >
                                     <div className="flex items-center gap-3">
                                         <div
                                             className={`w-4 h-4 rounded-full border-2 ${selectedRole === "owner"
-                                                    ? "border-blue-600 bg-blue-600"
-                                                    : "border-gray-400"
+                                                ? "border-blue-600 bg-blue-600"
+                                                : "border-gray-400"
                                                 }`}
                                         >
                                             {selectedRole === "owner" && (
@@ -114,26 +114,47 @@ export default function Register() {
                         </div>
 
                         <Button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 py-5"
-            >
+                            type="submit"
+                            className="w-full bg-blue-600 hover:bg-blue-700 py-5"
+                        >
                             Register
                         </Button>
                     </form>
                 </Card>
             </main>
             {/* Footer */}
-            <footer className="bg-white border-t border-gray-300 px-8 py-6">
-                <div className="flex gap-8 justify-center">
-                    <Link to="/about" className="text-gray-600 hover:text-blue-600">
-                        About
-                    </Link>
-                    <Link to="/contact" className="text-gray-600 hover:text-blue-600">
-                        Contact
-                    </Link>
-                    <Link to="/help" className="text-gray-600 hover:text-blue-600">
-                        Help
-                    </Link>
+            <footer className="bg-white border-t border-gray-300 py-6">
+                <div className="max-w-6xl mx-auto px-6 text-center text-gray-600 space-y-3">
+
+                    {/* First Line */}
+                    <div>
+                        © {new Date().getFullYear()} PG Stay Recommendation and Management System
+                    </div>
+
+                    {/* Second Line */}
+                    <div className="flex justify-center space-x-8">
+                        <button
+                            onClick={() => navigate("/about")}
+                            className="hover:text-blue-600 transition"
+                        >
+                            About
+                        </button>
+
+                        <button
+                            onClick={() => navigate("/contact")}
+                            className="hover:text-blue-600 transition"
+                        >
+                            Contact
+                        </button>
+
+                        <button
+                            onClick={() => navigate("/help")}
+                            className="hover:text-blue-600 transition"
+                        >
+                            Help
+                        </button>
+                    </div>
+
                 </div>
             </footer>
         </div>

@@ -7,10 +7,10 @@ export default function OwnerProfile() {
   return (
     <div className="min-h-screen bg-gray-50">
       <RoleNavigation role="owner" />
-      
+
       <div className="max-w-6xl mx-auto px-6 py-8">
         <h2 className="text-2xl mb-8 text-gray-800">PG Owner Profile & Verification</h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Left Side - Profile Overview */}
           <Card className="p-6 bg-white border border-gray-300">
@@ -26,7 +26,7 @@ export default function OwnerProfile() {
           {/* Main Area - Profile Details */}
           <Card className="md:col-span-2 p-6 bg-white border border-gray-300">
             <h3 className="text-lg mb-4 text-gray-800">Owner Details</h3>
-            
+
             <div className="space-y-4 mb-8">
               <div className="grid grid-cols-3 gap-4">
                 <span className="text-gray-600">Name:</span>
@@ -48,13 +48,13 @@ export default function OwnerProfile() {
 
             <div className="border-t border-gray-300 pt-6">
               <h3 className="text-lg mb-4 text-gray-800">Identity Verification</h3>
-              
+
               <div className="space-y-4">
                 <Button variant="outline" className="w-full justify-start border-gray-300">
                   <Upload className="w-4 h-4 mr-2" />
                   Upload Document (Property Documents / PAN Card / Aadhaar)
                 </Button>
-                
+
                 <div className="flex items-center justify-between p-4 bg-gray-50 border border-gray-300 rounded">
                   <span className="text-gray-700">Verification Status:</span>
                   <div className="flex items-center gap-2">
@@ -62,7 +62,7 @@ export default function OwnerProfile() {
                     <span className="text-green-600">Verified</span>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center justify-between p-4 bg-gray-50 border border-gray-300 rounded">
                   <span className="text-gray-700">Owner Trust Score:</span>
                   <span className="text-2xl text-blue-600">92/100</span>

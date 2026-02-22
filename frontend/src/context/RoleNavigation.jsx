@@ -8,11 +8,11 @@ const RoleNavigation = ({ role }) => {
         Logged in as <span className="font-medium capitalize">{role}</span>
       </p>
       <button
-      onClick={() => navigate(-1)}
-      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
-    >
-      Go Back
-    </button>
+        onClick={() => navigate(-1)}
+        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
+      >
+        Go Back
+      </button>
     </div>
   );
 };
