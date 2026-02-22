@@ -5,10 +5,7 @@ import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useRole } from "../context/useRole";
-<<<<<<< HEAD
-=======
 import { Link } from "react-router-dom";
->>>>>>> main
 
 export default function Login() {
   const navigate = useNavigate();
