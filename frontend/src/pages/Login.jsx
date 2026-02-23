@@ -100,11 +100,38 @@ export default function Login() {
         </Card>
       </main>
 
-      <footer className="bg-white border-t border-gray-300 px-8 py-6">
-        <div className="flex gap-8 justify-center">
-          <Link to="/about"   className="text-gray-600 hover:text-blue-600">About</Link>
-          <Link to="/contact" className="text-gray-600 hover:text-blue-600">Contact</Link>
-          <Link to="/help"    className="text-gray-600 hover:text-blue-600">Help</Link>
+      <footer className="bg-white border-t border-gray-300 py-6">
+        <div className="max-w-6xl mx-auto px-6 text-center text-gray-600 space-y-3">
+
+          {/* First Line */}
+          <div>
+            © {new Date().getFullYear()} PG Stay Recommendation and Management System
+          </div>
+
+          {/* Second Line */}
+          <div className="flex justify-center space-x-8">
+            <button
+              onClick={() => navigate("/about")}
+              className="hover:text-blue-600 transition"
+            >
+              About
+            </button>
+
+            <button
+              onClick={() => navigate("/contact")}
+              className="hover:text-blue-600 transition"
+            >
+              Contact
+            </button>
+
+            <button
+              onClick={() => navigate("/help")}
+              className="hover:text-blue-600 transition"
+            >
+              Help
+            </button>
+          </div>
+
         </div>
       </footer>
     </div>
