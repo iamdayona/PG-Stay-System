@@ -5,137 +5,158 @@ import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Link } from "react-router-dom";
+import { apiRegister, saveAuth } from "../utils/api";
+import { useRole } from "../context/useRole";
 
 export default function Register() {
-    const navigate = useNavigate();
-    const [selectedRole, setSelectedRole] = useState("");
+  const navigate = useNavigate();
+  const { setRole } = useRole();
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
+  const [selectedRole, setSelectedRole] = useState("");
+  const [name, setName]       = useState("");
+  const [email, setEmail]     = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState("");
 
-        if (!selectedRole) {
-            alert("Please select a role");
-            return;
-        }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
 
-        alert("Registered successfully (Demo)");
-        navigate("/login");
-    };
+    if (!selectedRole) {
+      setError("Please select a role.");
+      return;
+    }
 
-    return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-            {/* Header */}
-            <header className="bg-white border-b border-gray-300 px-8 py-4 text-center">
-                <h1 className="text-3xl text-blue-600">
-                    PG Accommodation Management System
-                </h1>
-            </header>
-            <main className="flex-1 flex items-center justify-center px-4 py-8">
-                <Card className="max-w-md w-full p-8 bg-white border border-gray-300">
-                    <h2 className="text-2xl mb-6 text-center">Register</h2>
+    setLoading(true);
+    try {
+      const data = await apiRegister({ name, email, password, role: selectedRole });
+      saveAuth(data.token, data.user);
+      setRole(data.user.role);
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div>
-                            <Label>Email</Label>
-                            <Input type="email"
-                                placeholder="Enter your email"
-                                className="mt-2 border-gray-300"
-                                required />
-                        </div>
+      if (data.user.role === "tenant") navigate("/tenant/dashboard");
+      else if (data.user.role === "owner") navigate("/owner/dashboard");
+    } catch (err) {
+      setError(err.message || "Registration failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-                        <div>
-                            <Label>Password</Label>
-                            <Input type="password"
-                                placeholder="Enter your password"
-                                className="mt-2 border-gray-300"
-                                required />
-                        </div>
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <header className="bg-white border-b border-gray-300 px-8 py-4 text-center">
+        <h1 className="text-3xl text-blue-600">
+          PG Accommodation Management System
+        </h1>
+      </header>
 
-                        <div>
-                            <Label>Select Role *</Label>
+      <main className="flex-1 flex items-center justify-center px-4 py-8">
+        <Card className="max-w-md w-full p-8 bg-white border border-gray-300">
+          <h2 className="text-2xl mb-6 text-center">Register</h2>
 
-                            <div className="space-y-3">
-                                {/* Tenant */}
-                                <div
-                                    onClick={() => setSelectedRole("tenant")}
-                                    className={`p-4 border-2 rounded cursor-pointer transition-all ${selectedRole === "tenant"
-                                            ? "border-blue-600 bg-blue-50"
-                                            : "border-gray-300 hover:border-blue-400"
-                                        }`}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div
-                                            className={`w-4 h-4 rounded-full border-2 ${selectedRole === "tenant"
-                                                    ? "border-blue-600 bg-blue-600"
-                                                    : "border-gray-400"
-                                                }`}
-                                        >
-                                            {selectedRole === "tenant" && (
-                                                <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-800">Tenant</p>
-                                            <p className="text-xs text-gray-600">
-                                                Search and apply for PG accommodations
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-300 rounded text-red-700 text-sm">
+              {error}
+            </div>
+          )}
 
-                                {/* Owner */}
-                                <div
-                                    onClick={() => setSelectedRole("owner")}
-                                    className={`p-4 border-2 rounded cursor-pointer transition-all ${selectedRole === "owner"
-                                            ? "border-blue-600 bg-blue-50"
-                                            : "border-gray-300 hover:border-blue-400"
-                                        }`}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div
-                                            className={`w-4 h-4 rounded-full border-2 ${selectedRole === "owner"
-                                                    ? "border-blue-600 bg-blue-600"
-                                                    : "border-gray-400"
-                                                }`}
-                                        >
-                                            {selectedRole === "owner" && (
-                                                <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <p className="text-gray-800">PG Owner</p>
-                                            <p className="text-xs text-gray-600">
-                                                List and manage PG properties
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <Label>Full Name</Label>
+              <Input
+                type="text"
+                placeholder="Enter your full name"
+                className="mt-2 border-gray-300"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
 
-                        <Button
+            <div>
+              <Label>Email</Label>
+              <Input
+                type="email"
+                placeholder="Enter your email"
+                className="mt-2 border-gray-300"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <Label>Password</Label>
+              <Input
+                type="password"
+                placeholder="Enter your password"
+                className="mt-2 border-gray-300"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <Label>Select Role *</Label>
+              <div className="space-y-3 mt-2">
+                {[
+                  { value: "tenant", label: "Tenant", desc: "Search and apply for PG accommodations" },
+                  { value: "owner",  label: "PG Owner", desc: "List and manage PG properties" },
+                ].map((r) => (
+                  <div
+                    key={r.value}
+                    onClick={() => setSelectedRole(r.value)}
+                    className={`p-4 border-2 rounded cursor-pointer transition-all ${
+                      selectedRole === r.value
+                        ? "border-blue-600 bg-blue-50"
+                        : "border-gray-300 hover:border-blue-400"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        selectedRole === r.value ? "border-blue-600 bg-blue-600" : "border-gray-400"
+                      }`}>
+                        {selectedRole === r.value && (
+                          <div className="w-2 h-2 bg-white rounded-full" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-gray-800">{r.label}</p>
+                        <p className="text-xs text-gray-600">{r.desc}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Button
               type="submit"
               className="w-full bg-blue-600 hover:bg-blue-700 py-5"
+              disabled={loading}
             >
-                            Register
-                        </Button>
-                    </form>
-                </Card>
-            </main>
-            {/* Footer */}
-            <footer className="bg-white border-t border-gray-300 px-8 py-6">
-                <div className="flex gap-8 justify-center">
-                    <Link to="/about" className="text-gray-600 hover:text-blue-600">
-                        About
-                    </Link>
-                    <Link to="/contact" className="text-gray-600 hover:text-blue-600">
-                        Contact
-                    </Link>
-                    <Link to="/help" className="text-gray-600 hover:text-blue-600">
-                        Help
-                    </Link>
-                </div>
-            </footer>
+              {loading ? "Registering..." : "Register"}
+            </Button>
+          </form>
+
+          <p className="text-center text-sm text-gray-600 mt-4">
+            Already have an account?{" "}
+            <Link to="/login" className="text-blue-600 hover:underline">
+              Login here
+            </Link>
+          </p>
+        </Card>
+      </main>
+
+      <footer className="bg-white border-t border-gray-300 px-8 py-6">
+        <div className="flex gap-8 justify-center">
+          <Link to="/about"   className="text-gray-600 hover:text-blue-600">About</Link>
+          <Link to="/contact" className="text-gray-600 hover:text-blue-600">Contact</Link>
+          <Link to="/help"    className="text-gray-600 hover:text-blue-600">Help</Link>
         </div>
-    );
+      </footer>
+    </div>
+  );
 }
