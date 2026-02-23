@@ -29,9 +29,9 @@ export default function About() {
             Introduction
           </h2>
           <p className="text-gray-600 leading-relaxed">
-            The PG Accommodation System is a web-based application designed to 
-            simplify the process of finding and managing Paying Guest (PG) stays. 
-            It connects tenants and PG owners on a single platform, making booking, 
+            The PG Accommodation System is a web-based application designed to
+            simplify the process of finding and managing Paying Guest (PG) stays.
+            It connects tenants and PG owners on a single platform, making booking,
             payment, and communication easy and transparent.
           </p>
         </section>
@@ -55,7 +55,7 @@ export default function About() {
             Key Features
           </h2>
           <div className="grid md:grid-cols-2 gap-6">
-            
+
             <div className="bg-white p-5 rounded-lg shadow">
               <h3 className="font-semibold text-lg mb-2">User Management</h3>
               <p className="text-gray-600 text-sm">
@@ -93,8 +93,8 @@ export default function About() {
             Conclusion
           </h2>
           <p className="text-gray-600 leading-relaxed">
-            This system enhances the traditional PG accommodation process by 
-            digitalizing bookings, payments, and communication. It ensures 
+            This system enhances the traditional PG accommodation process by
+            digitalizing bookings, payments, and communication. It ensures
             efficiency, security, and convenience for both tenants and PG owners.
           </p>
         </section>
