@@ -104,13 +104,12 @@ export default function AdminVerifyMonitor() {
 
                     <td className="py-3 px-4">
                       <span
-                        className={`px-3 py-1 rounded text-sm ${
-                          pg.status === "Verified"
+                        className={`px-3 py-1 rounded text-sm ${pg.status === "Verified"
                             ? "bg-green-100 text-green-700"
                             : pg.status === "Pending"
-                            ? "bg-yellow-100 text-yellow-700"
-                            : "bg-red-100 text-red-700"
-                        }`}
+                              ? "bg-yellow-100 text-yellow-700"
+                              : "bg-red-100 text-red-700"
+                          }`}
                       >
                         {pg.status}
                       </span>
@@ -118,13 +117,12 @@ export default function AdminVerifyMonitor() {
 
                     <td className="py-3 px-4">
                       <span
-                        className={`${
-                          pg.trustScore >= 85
+                        className={`${pg.trustScore >= 85
                             ? "text-green-600"
                             : pg.trustScore >= 75
-                            ? "text-yellow-600"
-                            : "text-red-600"
-                        }`}
+                              ? "text-yellow-600"
+                              : "text-red-600"
+                          }`}
                       >
                         {pg.trustScore}/100
                       </span>

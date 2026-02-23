@@ -107,11 +107,10 @@ export default function TenantApplications() {
                           className="flex flex-col items-center flex-1"
                         >
                           <div
-                            className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              isActive
+                            className={`w-10 h-10 rounded-full flex items-center justify-center ${isActive
                                 ? "bg-blue-600"
                                 : "bg-gray-300"
-                            }`}
+                              }`}
                           >
                             {isActive ? (
                               <CheckCircle2 className="w-5 h-5 text-white" />
@@ -121,11 +120,10 @@ export default function TenantApplications() {
                           </div>
 
                           <span
-                            className={`text-sm mt-2 ${
-                              isActive
+                            className={`text-sm mt-2 ${isActive
                                 ? "text-blue-600"
                                 : "text-gray-500"
-                            }`}
+                              }`}
                           >
                             {status}
                           </span>

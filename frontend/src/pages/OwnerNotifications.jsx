@@ -47,34 +47,34 @@ export default function OwnerNotifications() {
   return (
     <div className="min-h-screen bg-gray-50">
       <RoleNavigation role="owner" />
-    <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-6xl mx-auto px-6 py-8">
         <h2 className="text-2xl mb-8 text-gray-800">
-        Owner Notifications
-      </h2>
+          Owner Notifications
+        </h2>
 
-      <div style={{ background: "#fff", padding: 20, borderRadius: 6 }}>
-        {notifications.map((notif, index) => (
-          <div
-            key={index}
-            style={{
-              display: "flex",
-              gap: 12,
-              padding: 12,
-              marginBottom: 12,
-              border: "1px solid #ddd",
-              borderRadius: 6,
-              background: "#f9f9f9",
-            }}
-          >
-            {getNotificationIcon(notif.type)}
-            <div>
-              <p style={{ marginBottom: 4 }}>{notif.message}</p>
-              <small style={{ color: "#666" }}>{notif.time}</small>
+        <div style={{ background: "#fff", padding: 20, borderRadius: 6 }}>
+          {notifications.map((notif, index) => (
+            <div
+              key={index}
+              style={{
+                display: "flex",
+                gap: 12,
+                padding: 12,
+                marginBottom: 12,
+                border: "1px solid #ddd",
+                borderRadius: 6,
+                background: "#f9f9f9",
+              }}
+            >
+              {getNotificationIcon(notif.type)}
+              <div>
+                <p style={{ marginBottom: 4 }}>{notif.message}</p>
+                <small style={{ color: "#666" }}>{notif.time}</small>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
     </div>
   );
 }

@@ -47,7 +47,7 @@ function App() {
       <Route path="/admin/systemmonitoring" element={<AdminSystemMonitoring />} />
       <Route path="/admin/monitortrustscore" element={<AdminMonitorTrustScores />} />
 
-       {/* Tenant Routes */}
+      {/* Tenant Routes */}
       <Route path="/tenant/profile" element={<TenantProfile />} />
       <Route path="/tenant/dashboard" element={<TenantDashboard />} />
       <Route path="/tenant/findpgs" element={<TenantFindPGs />} />

@@ -75,13 +75,12 @@ export default function OwnerApplications() {
                         Trust Score
                       </p>
                       <span
-                        className={`text-2xl ${
-                          app.trustScore >= 85
+                        className={`text-2xl ${app.trustScore >= 85
                             ? "text-green-600"
                             : app.trustScore >= 75
-                            ? "text-yellow-600"
-                            : "text-red-600"
-                        }`}
+                              ? "text-yellow-600"
+                              : "text-red-600"
+                          }`}
                       >
                         {app.trustScore}/100
                       </span>
@@ -95,13 +94,12 @@ export default function OwnerApplications() {
                         Current Status:
                       </span>
                       <span
-                        className={`px-3 py-1 rounded text-sm ${
-                          app.status === "Approved"
+                        className={`px-3 py-1 rounded text-sm ${app.status === "Approved"
                             ? "bg-green-100 text-green-700"
                             : app.status === "Rejected"
-                            ? "bg-red-100 text-red-700"
-                            : "bg-yellow-100 text-yellow-700"
-                        }`}
+                              ? "bg-red-100 text-red-700"
+                              : "bg-yellow-100 text-yellow-700"
+                          }`}
                       >
                         {app.status}
                       </span>
@@ -122,7 +120,7 @@ export default function OwnerApplications() {
 
                         <Button className="bg-red-600 hover:bg-red-700 w-40">
                           <XCircle className="w-4 h-4 mr-2" />
-                           Reject
+                          Reject
                         </Button>
                       </div>
                     )}
