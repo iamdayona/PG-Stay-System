@@ -1,40 +1,67 @@
 import { useEffect, useState } from "react";
-import { Card } from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { Textarea } from "../components/ui/textarea";
 import { Bell, CheckCircle2, AlertCircle, Star } from "lucide-react";
 import RoleNavigation from "../context/RoleNavigation";
 import {
-  apiGetNotifications,
-  apiMarkAllRead,
-  apiSubmitFeedback,
-  apiGetMyFeedback,
-  apiGetOwnerPGs,
-  apiGetMyApplications,
+  apiGetNotifications, apiMarkAllRead, apiSubmitFeedback,
+  apiGetMyFeedback, apiGetMyApplications,
 } from "../utils/api";
+import { CLAY_BASE, CLAY_TENANT, injectClay } from "../styles/claystyles";
+
+const PAGE_CSS = `
+
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+  @media(max-width:760px){ .two-col{grid-template-columns:1fr;} }
+
+  .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .mark-read-btn { font-size:.75rem; font-weight:700; color:#42a5f5; background:none; border:none; cursor:pointer; padding:4px 10px; border-radius:8px; transition:background .15s; }
+  .mark-read-btn:hover { background:rgba(66,165,245,.1); }
+  .unread-count { display:inline-flex; align-items:center; background:rgba(255,235,238,.9); color:#c62828; border:1.5px solid rgba(239,154,154,.5); border-radius:50px; padding:2px 9px; font-size:.7rem; font-weight:700; margin-left:6px; }
+
+  .notif-item { display:flex; gap:12px; padding:13px 14px; border-radius:16px; margin-bottom:10px; border:1.5px solid rgba(255,255,255,.8); transition:transform .15s; }
+  .notif-item:hover { transform:translateX(3px); }
+  .notif-read   { background:rgba(255,255,255,.45); }
+  .notif-unread { background:rgba(227,242,253,.7); border-color:rgba(144,202,249,.5); }
+  .notif-icon   { width:36px; height:36px; border-radius:11px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.7); box-shadow:0 2px 8px rgba(0,0,0,.08); }
+  .notif-message{ font-size:.84rem; color:#2d2d4e; line-height:1.5; margin-bottom:3px; }
+  .notif-time   { font-size:.7rem; color:#9a9ab0; }
+
+  .stars-row  { display:flex; gap:6px; }
+  .star-btn   { background:none; border:none; cursor:pointer; padding:2px; transition:transform .15s; }
+  .star-btn:hover { transform:scale(1.2); }
+  .star-filled{ color:#fdd835; fill:#fdd835; }
+  .star-empty { color:#ddd; fill:none; }
+  .star-label { font-size:.8rem; color:#7a7a9a; margin-top:5px; font-weight:500; }
+
+  .feedback-item { padding:14px 16px; background:rgba(255,255,255,.55); border:1.5px solid rgba(255,255,255,.8); border-radius:16px; margin-bottom:10px; transition:transform .15s; }
+  .feedback-item:hover { transform:translateX(3px); }
+  .feedback-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; }
+  .feedback-pg      { font-size:.88rem; font-weight:700; color:#2d2d4e; }
+  .feedback-stars   { display:flex; gap:2px; }
+  .feedback-comment { font-size:.8rem; color:#7a7a9a; line-height:1.5; }
+  .feedback-date    { font-size:.7rem; color:#bbb; margin-top:4px; }
+
+`;
+
+const css = injectClay(CLAY_BASE, CLAY_TENANT, PAGE_CSS);
 
 export default function TenantNotifications() {
   const [notifications, setNotifications] = useState([]);
   const [myFeedback, setMyFeedback]       = useState([]);
   const [appliedPGs, setAppliedPGs]       = useState([]);
   const [loading, setLoading]             = useState(true);
-
-  const [rating, setRating]     = useState(0);
-  const [pgStayId, setPgStayId] = useState("");
-  const [comment, setComment]   = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [feedbackMsg, setFeedbackMsg] = useState("");
+  const [rating, setRating]               = useState(0);
+  const [pgStayId, setPgStayId]           = useState("");
+  const [comment, setComment]             = useState("");
+  const [submitting, setSubmitting]       = useState(false);
+  const [feedbackMsg, setFeedbackMsg]     = useState("");
 
   const fetchAll = async () => {
     try {
       const [notifRes, feedbackRes, appsRes] = await Promise.all([
-        apiGetNotifications(),
-        apiGetMyFeedback(),
-        apiGetMyApplications(),
+        apiGetNotifications(), apiGetMyFeedback(), apiGetMyApplications(),
       ]);
       setNotifications(notifRes.data);
       setMyFeedback(feedbackRes.data);
-      // Only approved apps can get feedback
       const approved = appsRes.data.filter((a) => a.status === "Approved");
       setAppliedPGs(approved);
       if (approved.length > 0) setPgStayId(approved[0].pgStay?._id || "");
@@ -52,161 +79,152 @@ export default function TenantNotifications() {
   };
 
   const handleFeedback = async () => {
-    if (!rating || !pgStayId) {
-      setFeedbackMsg("Please select a PG and rating.");
-      return;
-    }
-    setSubmitting(true);
-    setFeedbackMsg("");
+    if (!rating || !pgStayId) { setFeedbackMsg("Please select a PG and a rating."); return; }
+    setSubmitting(true); setFeedbackMsg("");
     try {
       await apiSubmitFeedback({ pgStayId, rating, comment });
       setFeedbackMsg("Feedback submitted successfully!");
-      setRating(0);
-      setComment("");
+      setRating(0); setComment("");
       await fetchAll();
-    } catch (err) {
-      setFeedbackMsg(err.message);
-    } finally {
-      setSubmitting(false);
-    }
+    } catch (err) { setFeedbackMsg(err.message); }
+    finally { setSubmitting(false); }
   };
 
   const getIcon = (type) => {
-    if (type === "success") return <CheckCircle2 className="w-5 h-5 text-green-600" />;
-    if (type === "alert")   return <AlertCircle  className="w-5 h-5 text-red-600" />;
-    return <Bell className="w-5 h-5 text-blue-600" />;
+    if (type === "success") return <CheckCircle2 size={16} color="#43a047" />;
+    if (type === "alert")   return <AlertCircle  size={16} color="#e53935" />;
+    return <Bell size={16} color="#1e88e5" />;
   };
 
   const unread = notifications.filter((n) => !n.isRead).length;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <RoleNavigation role="tenant" />
+    <>
+      <style>{css}</style>
+      <div className="clay-page">
+        <RoleNavigation role="tenant" />
 
-      <div className="max-w-5xl mx-auto px-6 py-8">
-        <h2 className="text-2xl mb-8 text-gray-800">Tenant Notifications & Feedback</h2>
+        <main className="clay-main">
+          <div className="clay-container">
+            <h2 className="clay-page-title">🔔 Notifications & Feedback</h2>
+            <p className="clay-page-sub">Stay updated and share your PG experience.</p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Notifications */}
-          <Card className="p-6 bg-white border border-gray-300">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg text-gray-800 flex items-center gap-2">
-                <Bell className="w-5 h-5" /> Notifications
-                {unread > 0 && <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">{unread}</span>}
-              </h3>
-              {unread > 0 && (
-                <button onClick={handleMarkAll} className="text-xs text-blue-600 hover:underline">
-                  Mark all read
-                </button>
-              )}
-            </div>
-
-            {loading ? <p className="text-sm text-gray-500">Loading...</p> : notifications.length === 0 ? (
-              <p className="text-sm text-gray-500">No notifications yet.</p>
-            ) : (
-              <div className="space-y-3">
-                {notifications.map((notif) => (
-                  <div key={notif._id} className={`p-3 border rounded flex gap-3 ${notif.isRead ? "bg-gray-50 border-gray-200" : "bg-blue-50 border-blue-200"}`}>
-                    {getIcon(notif.type)}
-                    <div className="flex-1">
-                      <p className="text-gray-800 text-sm mb-1">{notif.message}</p>
-                      <span className="text-xs text-gray-500">{new Date(notif.createdAt).toLocaleString()}</span>
+            <div className="two-col">
+              {/* Left — Notifications */}
+              <div>
+            <div className="clay-card clay-card-p" style={{ "--bar-bg":"linear-gradient(90deg,#ef5350,#e040fb,#42a5f5)" }}>
+              <style>{`.clay-card::before{background:linear-gradient(90deg,#ef5350,#e040fb,#42a5f5);}`}</style>
+                  <div className="section-header">
+                    <div className="clay-section-title">
+                      <Bell size={16} /> Notifications
+                      {unread > 0 && <span className="unread-count">{unread}</span>}
                     </div>
+                    {unread > 0 && (
+                      <button className="mark-read-btn" onClick={handleMarkAll}>✓ Mark all read</button>
+                    )}
                   </div>
-                ))}
-              </div>
-            )}
-          </Card>
 
-          {/* Feedback */}
-          <div>
-            <Card className="p-6 bg-white border border-gray-300">
-              <h3 className="text-lg mb-4 text-gray-800">Submit Feedback</h3>
-
-              {feedbackMsg && (
-                <div className={`mb-4 p-3 rounded text-sm ${feedbackMsg.includes("success") ? "bg-green-50 text-green-700 border border-green-300" : "bg-red-50 text-red-700 border border-red-300"}`}>
-                  {feedbackMsg}
-                </div>
-              )}
-
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm text-gray-700 mb-2 block">Rate your PG experience</label>
-                  <div className="flex gap-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button key={star} onClick={() => setRating(star)}>
-                        <Star className={`w-8 h-8 ${star <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />
-                      </button>
-                    ))}
-                  </div>
-                  {rating > 0 && <p className="text-sm text-gray-600 mt-1">{rating} out of 5 stars</p>}
-                </div>
-
-                <div>
-                  <label className="text-sm text-gray-700 mb-2 block">PG Name</label>
-                  {appliedPGs.length === 0 ? (
-                    <p className="text-sm text-gray-500">No approved bookings to review yet.</p>
+                  {loading ? (
+                    <div className="clay-empty"><span className="clay-empty-emoji">⏳</span>Loading…</div>
+                  ) : notifications.length === 0 ? (
+                    <div className="clay-empty"><span className="clay-empty-emoji">🔕</span>No notifications yet.</div>
                   ) : (
-                    <select
-                      value={pgStayId}
-                      onChange={(e) => setPgStayId(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded bg-white text-gray-800"
-                    >
-                      {appliedPGs.map((a) => (
-                        <option key={a._id} value={a.pgStay?._id}>{a.pgStay?.name}</option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-
-                <div>
-                  <label className="text-sm text-gray-700 mb-2 block">Your Feedback</label>
-                  <Textarea
-                    rows={4}
-                    placeholder="Share your experience..."
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    className="border-gray-300"
-                  />
-                </div>
-
-                <Button
-                  className="w-full bg-blue-600 hover:bg-blue-700"
-                  onClick={handleFeedback}
-                  disabled={submitting || appliedPGs.length === 0}
-                >
-                  {submitting ? "Submitting..." : "Submit Feedback"}
-                </Button>
-              </div>
-            </Card>
-
-            {/* Recent Feedback */}
-            {myFeedback.length > 0 && (
-              <Card className="p-6 bg-white border border-gray-300 mt-6">
-                <h3 className="text-lg mb-4 text-gray-800">Your Recent Feedback</h3>
-                <div className="space-y-3">
-                  {myFeedback.map((fb) => (
-                    <div key={fb._id} className="p-3 bg-gray-50 border border-gray-300 rounded">
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="text-sm text-gray-800">{fb.pgStay?.name}</span>
-                        <div className="flex gap-1">
-                          {[1, 2, 3, 4, 5].map((s) => (
-                            <Star key={s} className={`w-4 h-4 ${s <= fb.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />
-                          ))}
+                    notifications.map((n) => (
+                      <div key={n._id} className={`notif-item ${n.isRead ? "notif-read" : "notif-unread"}`}>
+                        <div className="notif-icon">{getIcon(n.type)}</div>
+                        <div>
+                          <div className="notif-message">{n.message}</div>
+                          <div className="notif-time">{new Date(n.createdAt).toLocaleString()}</div>
                         </div>
                       </div>
-                      <p className="text-xs text-gray-600">{fb.comment}</p>
-                      <span className="text-xs text-gray-500 block mt-1">
-                        {new Date(fb.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
-              </Card>
-            )}
+              </div>
+
+              {/* Right — Feedback */}
+              <div>
+            <div className="clay-card clay-card-p" style={{ "--bar-bg":"linear-gradient(90deg,#ef5350,#e040fb,#42a5f5)" }}>
+              <style>{`.clay-card::before{background:linear-gradient(90deg,#ef5350,#e040fb,#42a5f5);}`}</style>
+                  <div className="clay-section-title">⭐ Submit Feedback</div>
+
+                  {feedbackMsg && (
+                    <div className={`clay-alert ${feedbackMsg.includes("success") ? "alert-success" : "alert-error"}`}>
+                      {feedbackMsg.includes("success") ? "✅" : "⚠️"} {feedbackMsg}
+                    </div>
+                  )}
+
+                  <div className="form-group">
+                    <label className="clay-label">Rate your experience</label>
+                    <div className="stars-row">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <button key={s} className="star-btn" onClick={() => setRating(s)}>
+                          <Star
+                            size={30}
+                            className={s <= rating ? "star-filled" : "star-empty"}
+                            style={s <= rating ? { fill: "#fdd835", color: "#fdd835" } : { color: "#ddd" }}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    {rating > 0 && <div className="star-label">You rated {rating} out of 5 ⭐</div>}
+                  </div>
+
+                  <div className="form-group">
+                    <label className="clay-label">Select PG</label>
+                    {appliedPGs.length === 0 ? (
+                      <div className="clay-empty" style={{ padding: "12px 0" }}>No approved bookings yet.</div>
+                    ) : (
+                      <select className="clay-select" value={pgStayId} onChange={(e) => setPgStayId(e.target.value)}>
+                        {appliedPGs.map((a) => (
+                          <option key={a._id} value={a.pgStay?._id}>{a.pgStay?.name}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label className="clay-label">Your Feedback</label>
+                    <textarea
+                      className="clay-textarea"
+                      rows={4}
+                      placeholder="Share your experience with this PG…"
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                    />
+                  </div>
+
+                  <button className="clay-btn clay-btn-blue" onClick={handleFeedback} disabled={submitting || appliedPGs.length === 0}>
+                    {submitting ? "⏳ Submitting…" : "Submit Feedback →"}
+                  </button>
+                </div>
+
+                {/* Past Feedback */}
+                {myFeedback.length > 0 && (
+                  <div className="clay-card" style={{ animationDelay: ".2s" }}>
+                    <div className="clay-section-title">📝 Your Past Feedback</div>
+                    {myFeedback.map((fb) => (
+                      <div key={fb._id} className="feedback-item">
+                        <div className="feedback-header">
+                          <span className="feedback-pg">{fb.pgStay?.name}</span>
+                          <div className="feedback-stars">
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <Star key={s} size={14}
+                                style={s <= fb.rating ? { fill: "#fdd835", color: "#fdd835" } : { color: "#ddd" }} />
+                            ))}
+                          </div>
+                        </div>
+                        <div className="feedback-comment">{fb.comment}</div>
+                        <div className="feedback-date">{new Date(fb.createdAt).toLocaleDateString()}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
+        </main>
       </div>
-    </div>
+    </>
   );
 }

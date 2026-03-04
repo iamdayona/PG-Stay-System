@@ -1,67 +1,78 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { ToastContainer } from "./components/Toast";
 
-import Home from "./pages/Home"
+// Public pages
+import Home        from "./pages/Home";
+import Login       from "./pages/Login";
+import Register    from "./pages/Register";
+import About       from "./pages/About";
+import Contact     from "./pages/Contact";
+import Help        from "./pages/Help";
 
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-
-import About from "./pages/About";
-import Contact from "./pages/Contact";
-import Help from "./pages/Help";
-
-import AdminVerifyMonitor from "./pages/AdminVerifyMonitor";
-import AdminDashboard from "./pages/AdminDashboard";
-import AdminHandleComplaints from "./pages/AdminHandleComplaints";
-import AdminSystemMonitoring from "./pages/AdminSystemMonitoring";
+// Admin pages
+import AdminDashboard          from "./pages/AdminDashboard";
+import AdminVerifyMonitor      from "./pages/AdminVerifyMonitor";
 import AdminMonitorTrustScores from "./pages/AdminMonitorTrustScores";
+import AdminHandleComplaints   from "./pages/AdminHandleComplaints";
+import AdminSystemMonitoring   from "./pages/AdminSystemMonitoring";
 
-import OwnerDashboard from "./pages/OwnerDashboard";
-import OwnerNotifications from "./pages/OwnerNotifications";
-import OwnerProfile from "./pages/OwnerProfile";
+// Owner pages
+import OwnerDashboard     from "./pages/OwnerDashboard";
 import OwnerPGSManagement from "./pages/OwnerPGSManagement";
-import OwnerApplications from "./pages/OwnerApplications";
+import OwnerApplications  from "./pages/OwnerApplications";
+import OwnerNotifications from "./pages/OwnerNotifications";
+import OwnerProfile       from "./pages/OwnerProfile";
 
-import TenantProfile from "./pages/TenantProfile";
-import TenantFindPGs from "./pages/TenantFindPGs";
-import TenantApplications from "./pages/TenantApplications";
+// Tenant pages
+import TenantDashboard     from "./pages/TenantDashboard";
+import TenantFindPGs       from "./pages/TenantFindPGs";
+import TenantApplications  from "./pages/TenantApplications";
 import TenantNotifications from "./pages/TenantNotifications";
-import TenantDashboard from "./pages/TenantDashboard";
+import TenantProfile       from "./pages/TenantProfile";
 
+// Route guards
+import ProtectedRoute from "./components/ProtectedRoute";
+import PublicRoute    from "./components/PublicRoute";
 
-
-function App() {
+export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      {/* Login */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/about" element={<About />} />
-      <Route path="/contact" element={<Contact />} />
-      <Route path="/help" element={<Help />} />
+    <>
+      <ToastContainer />
+      <Routes>
+        {/* ── Public ─────────────────────────────────────────────────── */}
+        <Route path="/"        element={<Home />} />
+        <Route path="/about"   element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/help"    element={<Help />} />
 
-      {/* Admin Routes */}
-      <Route path="/admin/dashboard" element={<AdminDashboard />} />
-      <Route path="/admin/verifymonitor" element={<AdminVerifyMonitor />} />
-      <Route path="/admin/handlecomplaints" element={<AdminHandleComplaints />} />
-      <Route path="/admin/systemmonitoring" element={<AdminSystemMonitoring />} />
-      <Route path="/admin/monitortrustscore" element={<AdminMonitorTrustScores />} />
+        {/* ── Auth (redirect to dashboard if already logged in) ───────── */}
+        <Route path="/login"    element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
 
-      {/* Tenant Routes */}
-      <Route path="/tenant/profile" element={<TenantProfile />} />
-      <Route path="/tenant/dashboard" element={<TenantDashboard />} />
-      <Route path="/tenant/findpgs" element={<TenantFindPGs />} />
-      <Route path="/tenant/applications" element={<TenantApplications />} />
-      <Route path="/tenant/notifications" element={<TenantNotifications />} />
+        {/* ── Admin ──────────────────────────────────────────────────── */}
+        <Route path="/admin/dashboard"        element={<ProtectedRoute role="admin" isDashboard><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/admin/verifymonitor"    element={<ProtectedRoute role="admin"><AdminVerifyMonitor /></ProtectedRoute>} />
+        <Route path="/admin/monitortrustscore" element={<ProtectedRoute role="admin"><AdminMonitorTrustScores /></ProtectedRoute>} />
+        <Route path="/admin/handlecomplaints" element={<ProtectedRoute role="admin"><AdminHandleComplaints /></ProtectedRoute>} />
+        <Route path="/admin/systemmonitoring" element={<ProtectedRoute role="admin"><AdminSystemMonitoring /></ProtectedRoute>} />
 
-      {/* Owner Routes */}
-      <Route path="/owner/dashboard" element={<OwnerDashboard />} />
-      <Route path="/owner/profile" element={<OwnerProfile />} />
-      <Route path="/owner/pgsmanagement" element={<OwnerPGSManagement />} />
-      <Route path="/owner/applications" element={<OwnerApplications />} />
-      <Route path="/owner/notifications" element={<OwnerNotifications />} />
-    </Routes>
+        {/* ── Owner ──────────────────────────────────────────────────── */}
+        <Route path="/owner/dashboard"     element={<ProtectedRoute role="owner" isDashboard><OwnerDashboard /></ProtectedRoute>} />
+        <Route path="/owner/pgsmanagement" element={<ProtectedRoute role="owner"><OwnerPGSManagement /></ProtectedRoute>} />
+        <Route path="/owner/applications"  element={<ProtectedRoute role="owner"><OwnerApplications /></ProtectedRoute>} />
+        <Route path="/owner/notifications" element={<ProtectedRoute role="owner"><OwnerNotifications /></ProtectedRoute>} />
+        <Route path="/owner/profile"       element={<ProtectedRoute role="owner"><OwnerProfile /></ProtectedRoute>} />
+
+        {/* ── Tenant ─────────────────────────────────────────────────── */}
+        <Route path="/tenant/dashboard"     element={<ProtectedRoute role="tenant" isDashboard><TenantDashboard /></ProtectedRoute>} />
+        <Route path="/tenant/findpgs"       element={<ProtectedRoute role="tenant"><TenantFindPGs /></ProtectedRoute>} />
+        <Route path="/tenant/applications"  element={<ProtectedRoute role="tenant"><TenantApplications /></ProtectedRoute>} />
+        <Route path="/tenant/notifications" element={<ProtectedRoute role="tenant"><TenantNotifications /></ProtectedRoute>} />
+        <Route path="/tenant/profile"       element={<ProtectedRoute role="tenant"><TenantProfile /></ProtectedRoute>} />
+
+        {/* ── Catch-all ──────────────────────────────────────────────── */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }
-
-export default App;
