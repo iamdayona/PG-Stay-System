@@ -145,9 +145,15 @@ const RoleNavigation = ({ role }) => {
   const handleLogout = () => {
     clearAuth();
     setRole(null);
-    // replace:true removes the current page from history
-    // so Back from /login goes to / (Home), never back to a protected page
-    navigate("/login", { replace: true });
+    // Step 1: Replace ALL current history entries with just "/"
+    // This makes / the only thing in the stack
+    window.history.replaceState(null, "", "/");
+    // Step 2: Push /login on top → stack is now [/ , /login]
+    window.history.pushState(null, "", "/login");
+    // Step 3: Full reload so React picks up /login cleanly
+    // After reload: PublicRoute sees no token → shows login page
+    // Pressing Back from login → goes to / (Home) ✓
+    window.location.reload();
   };
 
   return (

@@ -10,17 +10,17 @@ import About    from "./pages/About";
 import Contact  from "./pages/Contact";
 import Help     from "./pages/Help";
 
-import AdminDashboard        from "./pages/AdminDashboard";
-import AdminVerifyMonitor    from "./pages/AdminVerifyMonitor";
-import AdminHandleComplaints from "./pages/AdminHandleComplaints";
-import AdminSystemMonitoring from "./pages/AdminSystemMonitoring";
+import AdminDashboard          from "./pages/AdminDashboard";
+import AdminVerifyMonitor      from "./pages/AdminVerifyMonitor";
+import AdminHandleComplaints   from "./pages/AdminHandleComplaints";
+import AdminSystemMonitoring   from "./pages/AdminSystemMonitoring";
 import AdminMonitorTrustScores from "./pages/AdminMonitorTrustScores";
 
-import OwnerDashboard      from "./pages/OwnerDashboard";
-import OwnerNotifications  from "./pages/OwnerNotifications";
-import OwnerProfile        from "./pages/OwnerProfile";
-import OwnerPGSManagement  from "./pages/OwnerPGSManagement";
-import OwnerApplications   from "./pages/OwnerApplications";
+import OwnerDashboard     from "./pages/OwnerDashboard";
+import OwnerNotifications from "./pages/OwnerNotifications";
+import OwnerProfile       from "./pages/OwnerProfile";
+import OwnerPGSManagement from "./pages/OwnerPGSManagement";
+import OwnerApplications  from "./pages/OwnerApplications";
 
 import TenantDashboard     from "./pages/TenantDashboard";
 import TenantProfile       from "./pages/TenantProfile";
@@ -32,8 +32,8 @@ function App() {
   return (
     <Routes>
 
-      {/* ── Public pages (no auth needed) ──────────────────────────────── */}
-      <Route path="/" element={<Home />} />
+      {/* ── Public pages ───────────────────────────────────────────────── */}
+      <Route path="/"        element={<Home />} />
       <Route path="/about"   element={<About />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/help"    element={<Help />} />
@@ -42,9 +42,12 @@ function App() {
       <Route path="/login"    element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
 
-      {/* ── Admin routes ────────────────────────────────────────────────── */}
+      {/* ── Admin routes ─────────────────────────────────────────────────
+           isDashboard → back button logs out and goes to /login          */}
       <Route path="/admin/dashboard" element={
-        <ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>
+        <ProtectedRoute role="admin" isDashboard>
+          <AdminDashboard />
+        </ProtectedRoute>
       } />
       <Route path="/admin/verifymonitor" element={
         <ProtectedRoute role="admin"><AdminVerifyMonitor /></ProtectedRoute>
@@ -59,9 +62,11 @@ function App() {
         <ProtectedRoute role="admin"><AdminMonitorTrustScores /></ProtectedRoute>
       } />
 
-      {/* ── Owner routes ────────────────────────────────────────────────── */}
+      {/* ── Owner routes ──────────────────────────────────────────────── */}
       <Route path="/owner/dashboard" element={
-        <ProtectedRoute role="owner"><OwnerDashboard /></ProtectedRoute>
+        <ProtectedRoute role="owner" isDashboard>
+          <OwnerDashboard />
+        </ProtectedRoute>
       } />
       <Route path="/owner/profile" element={
         <ProtectedRoute role="owner"><OwnerProfile /></ProtectedRoute>
@@ -76,9 +81,11 @@ function App() {
         <ProtectedRoute role="owner"><OwnerNotifications /></ProtectedRoute>
       } />
 
-      {/* ── Tenant routes ────────────────────────────────────────────────── */}
+      {/* ── Tenant routes ─────────────────────────────────────────────── */}
       <Route path="/tenant/dashboard" element={
-        <ProtectedRoute role="tenant"><TenantDashboard /></ProtectedRoute>
+        <ProtectedRoute role="tenant" isDashboard>
+          <TenantDashboard />
+        </ProtectedRoute>
       } />
       <Route path="/tenant/profile" element={
         <ProtectedRoute role="tenant"><TenantProfile /></ProtectedRoute>
@@ -93,7 +100,7 @@ function App() {
         <ProtectedRoute role="tenant"><TenantNotifications /></ProtectedRoute>
       } />
 
-      {/* ── Catch-all: unknown URLs → Home ──────────────────────────────── */}
+      {/* ── Catch-all → Home ──────────────────────────────────────────── */}
       <Route path="*" element={<Navigate to="/" replace />} />
 
     </Routes>
