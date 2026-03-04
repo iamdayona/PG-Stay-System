@@ -2,42 +2,14 @@ import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import RoleNavigation from "../context/RoleNavigation";
 import { apiGetOwnerPGs, apiCreatePG, apiUpdatePG, apiGetRooms, apiAddRoom, apiUpdateRoom } from "../utils/api";
+import { CLAY_BASE, CLAY_OWNER, injectClay } from "../styles/claystyles";
 
-const css = `
-  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&family=Poppins:wght@400;500;600;700&display=swap');
-  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-
-  .clay-page {
-    min-height:100vh;
-    background:linear-gradient(135deg,#fff8e1 0%,#f3e5f5 30%,#e8f5e9 60%,#fff3e0 100%);
-    font-family:'Poppins',sans-serif; position:relative; overflow-x:hidden;
-  }
-  .clay-page::before {
-    content:''; position:fixed; width:520px; height:520px;
-    background:radial-gradient(circle,rgba(255,224,130,.45) 0%,transparent 70%);
-    border-radius:50%; top:-160px; left:-160px;
-    animation:floatBlob 9s ease-in-out infinite; pointer-events:none; z-index:0;
-  }
-  .clay-page::after {
-    content:''; position:fixed; width:420px; height:420px;
-    background:radial-gradient(circle,rgba(206,147,216,.3) 0%,transparent 70%);
-    border-radius:50%; bottom:-110px; right:-110px;
-    animation:floatBlob 11s ease-in-out infinite reverse; pointer-events:none; z-index:0;
-  }
-  @keyframes floatBlob{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(28px,18px) scale(1.05);}}
-  @keyframes fadeUp{from{opacity:0;transform:translateY(22px);}to{opacity:1;transform:translateY(0);}}
-  @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
-
-  .clay-main { position:relative; z-index:1; padding:36px 24px; }
-  .clay-container { max-width:1000px; margin:0 auto; }
-  .clay-page-title { font-family:'Nunito',sans-serif; font-size:1.9rem; font-weight:900; color:#2d2d4e; margin-bottom:4px; }
-  .clay-page-sub   { color:#7a7a9a; font-size:.92rem; margin-bottom:28px; }
-
-  /* ── PG Selector ── */
-  .pg-tab-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+const PAGE_CSS = `
+  /* ── PG Tab Selector ── */
+  .pg-tab-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:28px; }
   .pg-tab {
-    padding:9px 20px; border:2.5px solid rgba(255,255,255,.85); border-radius:50px;
-    font-family:'Poppins',sans-serif; font-size:.82rem; font-weight:700; cursor:pointer;
+    padding:10px 22px; border:2.5px solid rgba(255,255,255,.85); border-radius:50px;
+    font-family:'Poppins',sans-serif; font-size:.83rem; font-weight:700; cursor:pointer;
     background:rgba(255,255,255,.65); backdrop-filter:blur(12px); color:#5a5a7a;
     box-shadow:0 4px 14px rgba(0,0,0,.07), 0 3px 0 rgba(0,0,0,.05);
     transition:all .18s;
@@ -50,128 +22,139 @@ const css = `
     transform:translateY(-2px);
   }
   .new-pg-tab {
-    padding:9px 20px; border:2.5px dashed rgba(255,167,38,.5); border-radius:50px;
-    font-family:'Poppins',sans-serif; font-size:.82rem; font-weight:700; cursor:pointer;
+    padding:10px 22px; border:2.5px dashed rgba(255,167,38,.55); border-radius:50px;
+    font-family:'Poppins',sans-serif; font-size:.83rem; font-weight:700; cursor:pointer;
     background:rgba(255,248,225,.6); color:#f57f17;
     transition:all .18s;
   }
-  .new-pg-tab:hover { border-color:rgba(255,167,38,.8); background:rgba(255,248,225,.9); }
+  .new-pg-tab:hover { border-color:rgba(255,167,38,.85); background:rgba(255,248,225,.9); transform:translateY(-2px); }
 
-  /* ── Glass card ── */
-  .clay-card {
+  /* ── Glass cards ── */
+  .pg-card {
     background:rgba(255,255,255,.65); backdrop-filter:blur(18px);
-    border:2.5px solid rgba(255,255,255,.85); border-radius:24px; padding:28px;
+    border:2.5px solid rgba(255,255,255,.85); border-radius:24px; padding:32px;
     box-shadow:0 8px 28px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.95);
     margin-bottom:24px; animation:fadeUp .6s ease both;
     position:relative; overflow:hidden;
   }
-  .clay-card::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; border-radius:24px 24px 0 0; }
+  .pg-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:4px;
+    border-radius:24px 24px 0 0;
+  }
   .card-orange::before { background:linear-gradient(90deg,#ffa726,#ffcc02); }
   .card-amber::before  { background:linear-gradient(90deg,#ff8f00,#ffa726); }
 
-  .clay-section-title { font-family:'Nunito',sans-serif; font-size:1.1rem; font-weight:800; color:#2d2d4e; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; }
-  .card-header-right { display:flex; align-items:center; gap:10px; }
+  /* ── Section title ── */
+  .pg-section-title {
+    font-family:'Nunito',sans-serif; font-size:1.1rem; font-weight:800; color:#2d2d4e;
+    margin-bottom:24px; display:flex; align-items:center; justify-content:space-between;
+  }
 
   /* ── Form ── */
-  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:8px; }
   @media(max-width:600px){ .form-grid{grid-template-columns:1fr;} }
   .form-group { display:flex; flex-direction:column; }
 
-  .clay-label { font-size:.72rem; font-weight:700; color:#5a5a7a; margin-bottom:7px; letter-spacing:.4px; text-transform:uppercase; }
-  .clay-input {
-    padding:12px 15px;
-    background:rgba(255,255,255,.8); border:2px solid rgba(255,255,255,.9); border-radius:14px;
-    font-family:'Poppins',sans-serif; font-size:.88rem; color:#2d2d4e;
-    box-shadow:0 3px 10px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.9);
-    transition:border-color .2s, box-shadow .2s; outline:none;
-  }
-  .clay-input::placeholder { color:#bbb; }
-  .clay-input:focus {
-    border-color:rgba(255,167,38,.55);
-    box-shadow:0 0 0 3px rgba(255,167,38,.12), inset 0 1px 0 rgba(255,255,255,.9);
-  }
-
   /* ── Alert ── */
-  .clay-alert { border-radius:14px; padding:12px 16px; margin-bottom:18px; font-size:.85rem; font-weight:500; display:flex; align-items:center; gap:8px; animation:fadeIn .3s ease; }
-  .alert-info    { background:rgba(255,248,225,.9); border:2px solid rgba(255,224,130,.6); color:#f57f17; }
-  .alert-success { background:rgba(232,245,233,.9); border:2px solid rgba(165,214,167,.5); color:#2e7d32; }
+  .pg-alert {
+    border-radius:14px; padding:12px 16px; margin-bottom:18px;
+    font-size:.85rem; font-weight:500; display:flex; align-items:center; gap:8px;
+    animation:fadeIn .3s ease;
+  }
+  .pg-alert-info    { background:rgba(255,248,225,.9); border:2px solid rgba(255,224,130,.6); color:#f57f17; }
+  .pg-alert-success { background:rgba(232,245,233,.9); border:2px solid rgba(165,214,167,.5); color:#2e7d32; }
 
-  /* ── Buttons ── */
-  .clay-btn { padding:12px 22px; border:none; border-radius:14px; font-family:'Poppins',sans-serif; font-size:.88rem; font-weight:700; cursor:pointer; transition:transform .15s, box-shadow .15s, filter .15s; }
-  .clay-btn:active { transform:scale(.97) translateY(2px) !important; }
-  .clay-btn:disabled { opacity:.6; cursor:not-allowed; }
-  .clay-btn-orange {
+  /* ── Update button ── */
+  .update-btn {
+    width:100%; margin-top:18px; padding:14px 22px; border:none; border-radius:16px;
+    font-family:'Poppins',sans-serif; font-size:.92rem; font-weight:700;
+    cursor:pointer; justify-content:center;
     background:linear-gradient(135deg,#ffa726,#fb8c00); color:white;
     box-shadow:0 5px 0 #e65100, 0 8px 20px rgba(255,167,38,.35), inset 0 1px 0 rgba(255,255,255,.3);
+    transition:transform .15s, box-shadow .15s, filter .15s;
   }
-  .clay-btn-orange:hover:not(:disabled) { filter:brightness(1.06); transform:translateY(-2px); box-shadow:0 7px 0 #e65100, 0 12px 26px rgba(255,167,38,.45); }
-  .clay-btn-green {
+  .update-btn:hover:not(:disabled) {
+    filter:brightness(1.06); transform:translateY(-2px);
+    box-shadow:0 7px 0 #e65100, 0 12px 26px rgba(255,167,38,.45);
+  }
+  .update-btn:active   { transform:scale(.97) translateY(2px) !important; }
+  .update-btn:disabled { opacity:.6; cursor:not-allowed; }
+
+  /* ── Add Room button ── */
+  .add-room-btn {
+    padding:10px 20px; border:none; border-radius:14px;
+    font-family:'Poppins',sans-serif; font-size:.85rem; font-weight:700;
+    cursor:pointer; display:inline-flex; align-items:center; gap:7px;
     background:linear-gradient(135deg,#66bb6a,#43a047); color:white;
     box-shadow:0 5px 0 #2e7d32, 0 8px 18px rgba(102,187,106,.3), inset 0 1px 0 rgba(255,255,255,.3);
-    display:flex; align-items:center; gap:7px;
+    transition:transform .15s, box-shadow .15s, filter .15s;
   }
-  .clay-btn-green:hover:not(:disabled) { filter:brightness(1.06); transform:translateY(-2px); }
-  .clay-btn-w { width:100%; margin-top:8px; justify-content:center; }
+  .add-room-btn:hover { filter:brightness(1.06); transform:translateY(-2px); }
+  .add-room-btn:active { transform:scale(.97) translateY(2px) !important; }
 
   /* ── Rooms grid ── */
   .rooms-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
   @media(max-width:700px){ .rooms-grid{grid-template-columns:repeat(2,1fr);} }
   @media(max-width:420px){ .rooms-grid{grid-template-columns:1fr;} }
 
+  /* ── Room card ── */
   .room-card {
-    background:rgba(255,255,255,.6); backdrop-filter:blur(12px);
+    background:rgba(255,255,255,.62); backdrop-filter:blur(12px);
     border:2px solid rgba(255,255,255,.85); border-radius:18px; padding:18px;
     box-shadow:0 4px 16px rgba(0,0,0,.07), inset 0 1px 0 rgba(255,255,255,.9);
     transition:transform .2s; animation:fadeUp .5s ease both;
     position:relative; overflow:hidden;
   }
-  .room-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:18px 18px 0 0; }
-  .room-avail::before  { background:linear-gradient(90deg,#66bb6a,#a5d6a7); }
-  .room-unavail::before{ background:linear-gradient(90deg,#ef9a9a,#e57373); }
+  .room-card::before {
+    content:''; position:absolute; top:0; left:0; right:0;
+    height:3px; border-radius:18px 18px 0 0;
+  }
+  .room-avail::before   { background:linear-gradient(90deg,#66bb6a,#a5d6a7); }
+  .room-unavail::before { background:linear-gradient(90deg,#ef9a9a,#e57373); }
   .room-card:hover { transform:translateY(-3px); }
 
-  .room-type { font-family:'Nunito',sans-serif; font-size:.95rem; font-weight:800; color:#2d2d4e; margin-bottom:5px; }
-  .room-rent { font-size:.82rem; color:#7a7a9a; margin-bottom:14px; font-weight:500; }
+  .room-type  { font-family:'Nunito',sans-serif; font-size:.95rem; font-weight:800; color:#2d2d4e; margin-bottom:5px; }
+  .room-rent  { font-size:.82rem; color:#7a7a9a; margin-bottom:14px; font-weight:500; }
 
-  /* Toggle switch */
-  .toggle-row { display:flex; align-items:center; justify-content:space-between; }
+  /* ── Toggle row ── */
+  .toggle-row   { display:flex; align-items:center; justify-content:space-between; }
   .toggle-label { font-size:.75rem; font-weight:700; color:#5a5a7a; }
-  .toggle-wrap { position:relative; width:44px; height:24px; }
-  .toggle-wrap input { opacity:0; width:0; height:0; }
+  .toggle-wrap  { position:relative; width:44px; height:24px; }
+  .toggle-wrap input { opacity:0; width:0; height:0; position:absolute; }
   .toggle-slider {
     position:absolute; cursor:pointer; inset:0; border-radius:50px;
     transition:.3s; background:rgba(200,200,220,.5);
     box-shadow:inset 0 2px 4px rgba(0,0,0,.1);
   }
   .toggle-slider::before {
-    content:''; position:absolute; height:18px; width:18px; left:3px; bottom:3px;
-    background:white; border-radius:50%; transition:.3s;
-    box-shadow:0 2px 6px rgba(0,0,0,.15);
+    content:''; position:absolute; height:18px; width:18px;
+    left:3px; bottom:3px; background:white; border-radius:50%;
+    transition:.3s; box-shadow:0 2px 6px rgba(0,0,0,.15);
   }
   .toggle-wrap input:checked + .toggle-slider { background:linear-gradient(135deg,#66bb6a,#43a047); box-shadow:0 3px 10px rgba(102,187,106,.35); }
   .toggle-wrap input:checked + .toggle-slider::before { transform:translateX(20px); }
 
-  .empty-state { text-align:center; padding:32px; color:#9a9ab0; font-size:.88rem; }
-  .empty-emoji { font-size:2.5rem; margin-bottom:10px; display:block; }
+  /* ── Empty state ── */
+  .room-empty { text-align:center; padding:40px 24px; color:#9a9ab0; font-size:.88rem; }
+  .room-empty-emoji { font-size:2.5rem; margin-bottom:10px; display:block; }
 `;
 
-export default function OwnerPGManagement() {
-  const [pgs, setPgs]           = useState([]);
-  const [rooms, setRooms]       = useState([]);
-  const [selectedPG, setSelectedPG] = useState(null);
-  const [saving, setSaving]     = useState(false);
-  const [message, setMessage]   = useState("");
-  const [msgType, setMsgType]   = useState("info");
+const css = injectClay(CLAY_BASE, CLAY_OWNER, PAGE_CSS);
 
-  const [pgForm, setPgForm] = useState({ name:"", location:"", rent:"", amenities:"" });
+export default function OwnerPGManagement() {
+  const [pgs, setPgs]               = useState([]);
+  const [rooms, setRooms]           = useState([]);
+  const [selectedPG, setSelectedPG] = useState(null);
+  const [saving, setSaving]         = useState(false);
+  const [message, setMessage]       = useState("");
+  const [msgType, setMsgType]       = useState("info");
+  const [pgForm, setPgForm]         = useState({ name: "", location: "", rent: "", amenities: "" });
 
   const fetchPGs = async () => {
     try {
       const res = await apiGetOwnerPGs();
       setPgs(res.data);
-      if (res.data.length > 0 && !selectedPG) {
-        selectPG(res.data[0]);
-      }
+      if (res.data.length > 0 && !selectedPG) selectPG(res.data[0]);
     } catch (err) { console.error(err); }
   };
 
@@ -182,7 +165,8 @@ export default function OwnerPGManagement() {
   };
 
   const fetchRooms = async (pgId) => {
-    try { const res = await apiGetRooms(pgId); setRooms(res.data); } catch (err) { console.error(err); }
+    try { const res = await apiGetRooms(pgId); setRooms(res.data); }
+    catch (err) { console.error(err); }
   };
 
   useEffect(() => { fetchPGs(); }, []);
@@ -232,7 +216,7 @@ export default function OwnerPGManagement() {
 
   const handleNewPG = () => {
     setSelectedPG(null);
-    setPgForm({ name:"", location:"", rent:"", amenities:"" });
+    setPgForm({ name: "", location: "", rent: "", amenities: "" });
     setRooms([]);
     setMessage("");
   };
@@ -245,14 +229,18 @@ export default function OwnerPGManagement() {
 
         <main className="clay-main">
           <div className="clay-container">
-            <h2 className="clay-page-title">🏢 PG & Room Management</h2>
+            <h2 className="clay-page-title">🏢 PG &amp; Room Management</h2>
             <p className="clay-page-sub">Create, update and manage your PG properties and rooms.</p>
 
-            {/* PG Tabs */}
+            {/* ── PG Tab Selector ── */}
             {pgs.length > 0 && (
               <div className="pg-tab-row">
                 {pgs.map((pg) => (
-                  <button key={pg._id} className={`pg-tab ${selectedPG?._id === pg._id ? "active" : ""}`} onClick={() => selectPG(pg)}>
+                  <button
+                    key={pg._id}
+                    className={`pg-tab${selectedPG?._id === pg._id ? " active" : ""}`}
+                    onClick={() => selectPG(pg)}
+                  >
                     🏠 {pg.name}
                   </button>
                 ))}
@@ -260,14 +248,14 @@ export default function OwnerPGManagement() {
               </div>
             )}
 
-            {/* PG Form */}
-            <div className="clay-card card-orange">
-              <div className="clay-section-title">
+            {/* ── Edit PG Card ── */}
+            <div className="pg-card card-orange">
+              <div className="pg-section-title">
                 📝 {selectedPG ? "Edit PG Details" : "Create New PG Stay"}
               </div>
 
               {message && (
-                <div className={`clay-alert ${msgType === "success" ? "alert-success" : "alert-info"}`}>
+                <div className={`pg-alert ${msgType === "success" ? "pg-alert-success" : "pg-alert-info"}`}>
                   {msgType === "success" ? "✅" : "ℹ️"} {message}
                 </div>
               )}
@@ -275,51 +263,77 @@ export default function OwnerPGManagement() {
               <div className="form-grid">
                 <div className="form-group">
                   <label className="clay-label">PG Name</label>
-                  <input className="clay-input" placeholder="e.g. Sunshine PG" value={pgForm.name} onChange={(e) => setPgForm({ ...pgForm, name: e.target.value })} />
+                  <input
+                    className="clay-input" placeholder="e.g. Sunshine PG"
+                    value={pgForm.name}
+                    onChange={(e) => setPgForm({ ...pgForm, name: e.target.value })}
+                  />
                 </div>
                 <div className="form-group">
                   <label className="clay-label">Location</label>
-                  <input className="clay-input" placeholder="Area, City" value={pgForm.location} onChange={(e) => setPgForm({ ...pgForm, location: e.target.value })} />
+                  <input
+                    className="clay-input" placeholder="Area, City"
+                    value={pgForm.location}
+                    onChange={(e) => setPgForm({ ...pgForm, location: e.target.value })}
+                  />
                 </div>
                 <div className="form-group">
                   <label className="clay-label">Base Rent / Month (₹)</label>
-                  <input className="clay-input" type="number" placeholder="e.g. 7500" value={pgForm.rent} onChange={(e) => setPgForm({ ...pgForm, rent: e.target.value })} />
+                  <input
+                    className="clay-input" type="number" placeholder="e.g. 7500"
+                    value={pgForm.rent}
+                    onChange={(e) => setPgForm({ ...pgForm, rent: e.target.value })}
+                  />
                 </div>
                 <div className="form-group">
                   <label className="clay-label">Amenities (comma-separated)</label>
-                  <input className="clay-input" placeholder="WiFi, AC, Meals, Laundry" value={pgForm.amenities} onChange={(e) => setPgForm({ ...pgForm, amenities: e.target.value })} />
+                  <input
+                    className="clay-input" placeholder="WiFi, AC, Meals, Laundry"
+                    value={pgForm.amenities}
+                    onChange={(e) => setPgForm({ ...pgForm, amenities: e.target.value })}
+                  />
                 </div>
               </div>
 
-              <button className="clay-btn clay-btn-orange clay-btn-w" onClick={handleSavePG} disabled={saving}>
+              <button className="update-btn" onClick={handleSavePG} disabled={saving}>
                 {saving ? "⏳ Saving…" : selectedPG ? "Update PG Details →" : "Create PG Stay →"}
               </button>
             </div>
 
-            {/* Rooms */}
-            <div className="clay-card card-amber">
-              <div className="clay-section-title">
+            {/* ── Room Management Card ── */}
+            <div className="pg-card card-amber">
+              <div className="pg-section-title">
                 <span>🚪 Room Management</span>
-                <button className="clay-btn clay-btn-green" onClick={handleAddRoom}>
+                <button className="add-room-btn" onClick={handleAddRoom}>
                   <Plus size={15} /> Add Room
                 </button>
               </div>
 
               {rooms.length === 0 ? (
-                <div className="empty-state">
-                  <span className="empty-emoji">🚪</span>
+                <div className="room-empty">
+                  <span className="room-empty-emoji">🚪</span>
                   No rooms added yet. Click "Add Room" to get started.
                 </div>
               ) : (
                 <div className="rooms-grid">
                   {rooms.map((room, i) => (
-                    <div key={room._id} className={`room-card ${room.availability ? "room-avail" : "room-unavail"}`} style={{ animationDelay: `${i * .06}s` }}>
+                    <div
+                      key={room._id}
+                      className={`room-card ${room.availability ? "room-avail" : "room-unavail"}`}
+                      style={{ animationDelay: `${i * 0.06}s` }}
+                    >
                       <div className="room-type">{room.roomType}</div>
                       <div className="room-rent">₹{room.rent}/month</div>
                       <div className="toggle-row">
-                        <span className="toggle-label">{room.availability ? "✅ Available" : "❌ Unavailable"}</span>
+                        <span className="toggle-label">
+                          {room.availability ? "✅ Available" : "❌ Unavailable"}
+                        </span>
                         <label className="toggle-wrap">
-                          <input type="checkbox" checked={room.availability} onChange={() => handleToggleRoom(room)} />
+                          <input
+                            type="checkbox"
+                            checked={room.availability}
+                            onChange={() => handleToggleRoom(room)}
+                          />
                           <span className="toggle-slider" />
                         </label>
                       </div>
