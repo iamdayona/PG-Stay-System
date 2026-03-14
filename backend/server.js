@@ -30,7 +30,7 @@ app.use("/api/rooms", require("./routes/rooms"));
 app.use("/api/applications", require("./routes/applications"));
 app.use("/api/feedback", require("./routes/feedback"));
 app.use("/api/notifications", require("./routes/notifications"));
-//app.use("/api/complaints", require("./routes/complaints"));
+app.use("/api/complaints", require("./routes/complaints"));
 app.use("/api/admin", require("./routes/admin"));
 
 // Health check
