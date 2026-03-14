@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { User, Upload, CheckCircle2 } from "lucide-react";
+import { Upload, CheckCircle2, Save } from "lucide-react";
 import RoleNavigation from "../context/RoleNavigation";
-import { apiGetMe, getUser } from "../utils/api";
-import { CLAY_BASE,injectClay, CLAY_TENANT } from "../styles/claystyles";
+import { apiGetMe, apiUpdateProfile, getUser } from "../utils/api";
+import { toast } from "../components/Toast";
+import { CLAY_BASE, injectClay, CLAY_TENANT } from "../styles/claystyles";
 
 const PAGE_CSS = `
   .profile-grid { display:grid; grid-template-columns:260px 1fr; gap:24px; }
@@ -22,13 +23,22 @@ const PAGE_CSS = `
   .score-label { font-size:.65rem; font-weight:700; color:#9a9ab0; text-transform:uppercase; letter-spacing:.5px; text-align:center; margin-top:6px; }
 
   .details-card { background:rgba(255,255,255,.65); backdrop-filter:blur(18px); border:2.5px solid rgba(255,255,255,.85); border-radius:28px; padding:32px; box-shadow:0 8px 28px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.95); animation:fadeUp .7s ease both; }
-  .detail-row { display:grid; grid-template-columns:130px 1fr; gap:12px; align-items:center; padding:12px 0; border-bottom:1.5px solid rgba(255,255,255,.7); }
-  .detail-row:last-child { border-bottom:none; }
-  .detail-label { font-size:.75rem; font-weight:700; color:#9a9ab0; text-transform:uppercase; letter-spacing:.4px; }
-  .detail-value { font-size:.9rem; color:#2d2d4e; font-weight:500; }
 
-  .upload-btn { width:100%; padding:13px 20px; border-radius:16px; cursor:pointer; background:rgba(255,255,255,.72); border:2px dashed rgba(144,202,249,.7); font-family:'Poppins',sans-serif; font-size:.88rem; font-weight:600; color:#5a5a7a; box-shadow:0 4px 14px rgba(0,0,0,.07); transition:transform .15s,box-shadow .15s,border-color .2s; display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:14px; }
+  .tab-row { display:flex; gap:8px; margin-bottom:24px; }
+  .tab-btn { padding:8px 20px; border-radius:50px; border:2px solid rgba(255,255,255,.85); background:rgba(255,255,255,.6); font-family:'Poppins',sans-serif; font-size:.82rem; font-weight:700; cursor:pointer; color:#5a5a7a; transition:all .18s; }
+  .tab-btn.active { background:linear-gradient(135deg,#42a5f5,#1e88e5); color:white; border-color:transparent; box-shadow:0 4px 0 #1565c0,0 6px 14px rgba(66,165,245,.35); }
+
+  .form-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+  @media(max-width:600px){ .form-grid2{grid-template-columns:1fr;} }
+  .form-group { display:flex; flex-direction:column; gap:6px; }
+
+  .save-btn { width:100%; padding:14px 22px; border:none; border-radius:16px; font-family:'Poppins',sans-serif; font-size:.92rem; font-weight:700; cursor:pointer; background:linear-gradient(135deg,#42a5f5,#1e88e5); color:white; box-shadow:0 5px 0 #1565c0,0 8px 20px rgba(66,165,245,.35),inset 0 1px 0 rgba(255,255,255,.3); transition:transform .15s,filter .15s; display:flex; align-items:center; justify-content:center; gap:8px; margin-top:8px; }
+  .save-btn:hover:not(:disabled) { filter:brightness(1.06); transform:translateY(-2px); }
+  .save-btn:disabled { opacity:.6; cursor:not-allowed; }
+
+  .upload-btn { width:100%; padding:13px 20px; border-radius:16px; cursor:pointer; background:rgba(255,255,255,.72); border:2px dashed rgba(144,202,249,.7); font-family:'Poppins',sans-serif; font-size:.88rem; font-weight:600; color:#5a5a7a; box-shadow:0 4px 14px rgba(0,0,0,.07); transition:transform .15s,border-color .2s; display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:14px; }
   .upload-btn:hover { transform:translateY(-2px); border-color:rgba(66,165,245,.5); }
+  .upload-hint { font-size:.75rem; color:#9a9ab0; text-align:center; margin-bottom:18px; }
 
   .stat-row { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:rgba(255,255,255,.55); border:2px solid rgba(255,255,255,.85); border-radius:16px; margin-bottom:10px; box-shadow:0 3px 12px rgba(0,0,0,.06); transition:transform .15s; }
   .stat-row:hover { transform:translateX(4px); }
@@ -41,24 +51,16 @@ const PAGE_CSS = `
 `;
 
 const css = injectClay(CLAY_BASE, CLAY_TENANT, PAGE_CSS);
-
 const CIRCUMFERENCE = 2 * Math.PI * 36;
 
-function ScoreRing({ value, max = 100, color = "#42a5f5" }) {
-  const pct    = Math.min(value / max, 1);
-  const offset = CIRCUMFERENCE * (1 - pct);
+function ScoreRing({ value, color = "#42a5f5" }) {
+  const offset = CIRCUMFERENCE * (1 - Math.min(value / 100, 1));
   return (
     <>
       <div className="score-ring">
         <svg width="90" height="90" viewBox="0 0 90 90">
           <circle className="score-ring-bg" cx="45" cy="45" r="36" />
-          <circle
-            className="score-ring-fill"
-            cx="45" cy="45" r="36"
-            stroke={color}
-            strokeDasharray={CIRCUMFERENCE}
-            strokeDashoffset={offset}
-          />
+          <circle className="score-ring-fill" cx="45" cy="45" r="36" stroke={color} strokeDasharray={CIRCUMFERENCE} strokeDashoffset={offset} />
         </svg>
         <span className="score-value" style={{ color }}>{value}</span>
       </div>
@@ -68,22 +70,70 @@ function ScoreRing({ value, max = 100, color = "#42a5f5" }) {
 }
 
 export default function TenantProfile() {
-  const [user, setUser]     = useState(getUser());
+  const [user, setUser]       = useState(getUser());
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving]   = useState(false);
+  const [activeTab, setActiveTab] = useState("details");
+
+  const [form, setForm] = useState({
+    name: "", phone: "", gender: "",
+    prefLocation: "", prefBudgetMin: "", prefBudgetMax: "",
+  });
 
   useEffect(() => {
     apiGetMe()
-      .then((res) => setUser(res.user))
-      .catch(console.error)
+      .then((res) => {
+        setUser(res.user);
+        setForm({
+          name:          res.user.name         || "",
+          phone:         res.user.phone        || "",
+          gender:        res.user.gender       || "",
+          prefLocation:  res.user.preferences?.location   || "",
+          prefBudgetMin: res.user.preferences?.budgetMin  || "",
+          prefBudgetMax: res.user.preferences?.budgetMax  || "",
+        });
+      })
+      .catch((err) => toast.error(err.message))
       .finally(() => setLoading(false));
   }, []);
+
+  const handleSave = async () => {
+    if (!form.name.trim()) { toast.warning("Name cannot be empty"); return; }
+    setSaving(true);
+    try {
+      const res = await apiUpdateProfile({
+        name: form.name,
+        phone: form.phone,
+        gender: form.gender,
+        preferences: {
+          location:  form.prefLocation,
+          budgetMin: Number(form.prefBudgetMin) || 0,
+          budgetMax: Number(form.prefBudgetMax) || 50000,
+        },
+      });
+      setUser(res.user);
+      localStorage.setItem("user", JSON.stringify(res.user));
+      toast.success("Profile updated successfully!");
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDocUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    // Placeholder — backend multer endpoint not yet wired
+    toast.info("Document upload coming soon! Your file: " + file.name);
+  };
 
   if (loading) return (
     <>
       <style>{css}</style>
       <div className="clay-page">
         <RoleNavigation role="tenant" />
-        <main className="clay-main"><div className="clay-empty"><span className="clay-empty-emoji">⏳</span> Loading profile…</div></main>
+        <main className="clay-main"><div className="clay-empty"><span className="clay-empty-emoji">⏳</span>Loading profile…</div></main>
       </div>
     </>
   );
@@ -93,7 +143,6 @@ export default function TenantProfile() {
       <style>{css}</style>
       <div className="clay-page">
         <RoleNavigation role="tenant" />
-
         <main className="clay-main">
           <div className="clay-container">
             <h2 className="clay-page-title">👤 Profile & Verification</h2>
@@ -112,47 +161,104 @@ export default function TenantProfile() {
 
               {/* Details card */}
               <div className="details-card">
-                <div className="clay-section-title">📋 Profile Details</div>
+                {/* Tabs */}
+                <div className="tab-row">
+                  <button className={`tab-btn ${activeTab === "details" ? "active" : ""}`} onClick={() => setActiveTab("details")}>📋 Details</button>
+                  <button className={`tab-btn ${activeTab === "preferences" ? "active" : ""}`} onClick={() => setActiveTab("preferences")}>🎛️ Preferences</button>
+                  <button className={`tab-btn ${activeTab === "verification" ? "active" : ""}`} onClick={() => setActiveTab("verification")}>🔐 Verification</button>
+                </div>
 
-                {[
-                  { label: "Full Name", value: user?.name,   icon: "👤" },
-                  { label: "Email",     value: user?.email,  icon: "📧" },
-                  { label: "Phone",     value: user?.phone  || "Not provided", icon: "📱" },
-                  { label: "Gender",    value: user?.gender || "Not specified", icon: "👥" },
-                ].map((row) => (
-                  <div key={row.label} className="detail-row">
-                    <div className="detail-label">{row.icon} {row.label}</div>
-                    <div className="detail-value">{row.value}</div>
+                {/* Details tab */}
+                {activeTab === "details" && (
+                  <div>
+                    <div className="clay-section-title">📋 Personal Details</div>
+                    <div className="form-grid2">
+                      <div className="form-group">
+                        <label className="clay-label">Full Name</label>
+                        <input className="clay-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Your full name" />
+                      </div>
+                      <div className="form-group">
+                        <label className="clay-label">Phone Number</label>
+                        <input className="clay-input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+91 98765 43210" />
+                      </div>
+                      <div className="form-group">
+                        <label className="clay-label">Email Address</label>
+                        <input className="clay-input" value={user?.email || ""} disabled style={{ opacity: .6 }} />
+                      </div>
+                      <div className="form-group">
+                        <label className="clay-label">Gender</label>
+                        <select className="clay-input" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}>
+                          <option value="">Prefer not to say</option>
+                          <option value="male">Male</option>
+                          <option value="female">Female</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+                    <button className="save-btn" onClick={handleSave} disabled={saving}>
+                      <Save size={16} />
+                      {saving ? "Saving…" : "Save Changes"}
+                    </button>
                   </div>
-                ))}
+                )}
 
-                <div className="clay-divider" />
+                {/* Preferences tab */}
+                {activeTab === "preferences" && (
+                  <div>
+                    <div className="clay-section-title">🎛️ PG Search Preferences</div>
+                    <div className="form-grid2">
+                      <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+                        <label className="clay-label">Preferred Location</label>
+                        <input className="clay-input" value={form.prefLocation} onChange={(e) => setForm({ ...form, prefLocation: e.target.value })} placeholder="e.g. Koramangala, Bangalore" />
+                      </div>
+                      <div className="form-group">
+                        <label className="clay-label">Min Budget (₹/month)</label>
+                        <input className="clay-input" type="number" value={form.prefBudgetMin} onChange={(e) => setForm({ ...form, prefBudgetMin: e.target.value })} placeholder="e.g. 5000" />
+                      </div>
+                      <div className="form-group">
+                        <label className="clay-label">Max Budget (₹/month)</label>
+                        <input className="clay-input" type="number" value={form.prefBudgetMax} onChange={(e) => setForm({ ...form, prefBudgetMax: e.target.value })} placeholder="e.g. 15000" />
+                      </div>
+                    </div>
+                    <p style={{ fontSize: ".8rem", color: "#9a9ab0", marginBottom: 16 }}>
+                      💡 These preferences are used to personalise PG recommendations for you.
+                    </p>
+                    <button className="save-btn" onClick={handleSave} disabled={saving}>
+                      <Save size={16} />
+                      {saving ? "Saving…" : "Save Preferences"}
+                    </button>
+                  </div>
+                )}
 
-                <div className="clay-section-title">🔐 Identity Verification</div>
+                {/* Verification tab */}
+                {activeTab === "verification" && (
+                  <div>
+                    <div className="clay-section-title">🔐 Identity Verification</div>
 
-                <button className="upload-btn">
-                  <Upload size={16} />
-                  Upload Document (Aadhaar / Student ID)
-                </button>
+                    <label className="upload-btn" htmlFor="doc-upload">
+                      <Upload size={16} />
+                      Upload Document (Aadhaar / Student ID)
+                      <input id="doc-upload" type="file" accept=".jpg,.jpeg,.png,.pdf" style={{ display: "none" }} onChange={handleDocUpload} />
+                    </label>
+                    <p className="upload-hint">Accepted formats: JPG, PNG, PDF · Max 5MB</p>
 
-                <div className="stat-row">
-                  <span className="stat-row-label">🔐 Verification Status</span>
-                  {user?.verificationStatus === "verified" ? (
-                    <span className="verified-badge"><CheckCircle2 size={14} /> Verified</span>
-                  ) : (
-                    <span className="pending-badge">⏳ {user?.verificationStatus || "Unverified"}</span>
-                  )}
-                </div>
-
-                <div className="stat-row">
-                  <span className="stat-row-label">📊 Profile Completion</span>
-                  <span className="stat-row-value val-blue">{user?.profileCompletion || 0}%</span>
-                </div>
-
-                <div className="stat-row">
-                  <span className="stat-row-label">⭐ Trust Score</span>
-                  <span className="stat-row-value val-green">{user?.trustScore || 0}<span style={{ fontSize: ".7rem", color: "#9a9ab0", fontWeight: 500 }}>/100</span></span>
-                </div>
+                    <div className="stat-row">
+                      <span className="stat-row-label">🔐 Verification Status</span>
+                      {user?.verificationStatus === "verified"
+                        ? <span className="verified-badge"><CheckCircle2 size={14} /> Verified</span>
+                        : <span className="pending-badge">⏳ {user?.verificationStatus || "Unverified"}</span>
+                      }
+                    </div>
+                    <div className="stat-row">
+                      <span className="stat-row-label">📊 Profile Completion</span>
+                      <span className="stat-row-value val-blue">{user?.profileCompletion || 0}%</span>
+                    </div>
+                    <div className="stat-row">
+                      <span className="stat-row-label">⭐ Trust Score</span>
+                      <span className="stat-row-value val-green">{user?.trustScore || 0}<span style={{ fontSize: ".7rem", color: "#9a9ab0" }}>/100</span></span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
