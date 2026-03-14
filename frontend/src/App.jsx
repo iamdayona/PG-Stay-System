@@ -1,5 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { RoleProvider } from "./context/useRole";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { ToastContainer } from "./components/Toast";
 
 // Public pages
@@ -11,18 +10,18 @@ import Contact     from "./pages/Contact";
 import Help        from "./pages/Help";
 
 // Admin pages
-import AdminDashboard         from "./pages/AdminDashboard";
-import AdminVerifyMonitor     from "./pages/AdminVerifyMonitor";
+import AdminDashboard          from "./pages/AdminDashboard";
+import AdminVerifyMonitor      from "./pages/AdminVerifyMonitor";
 import AdminMonitorTrustScores from "./pages/AdminMonitorTrustScores";
-import AdminHandleComplaints  from "./pages/AdminHandleComplaints";
-import AdminSystemMonitoring  from "./pages/AdminSystemMonitoring";
+import AdminHandleComplaints   from "./pages/AdminHandleComplaints";
+import AdminSystemMonitoring   from "./pages/AdminSystemMonitoring";
 
 // Owner pages
-import OwnerDashboard      from "./pages/OwnerDashboard";
-import OwnerPGSManagement  from "./pages/OwnerPGSManagement";
-import OwnerApplications   from "./pages/OwnerApplications";
-import OwnerNotifications  from "./pages/OwnerNotifications";
-import OwnerProfile        from "./pages/OwnerProfile";
+import OwnerDashboard     from "./pages/OwnerDashboard";
+import OwnerPGSManagement from "./pages/OwnerPGSManagement";
+import OwnerApplications  from "./pages/OwnerApplications";
+import OwnerNotifications from "./pages/OwnerNotifications";
+import OwnerProfile       from "./pages/OwnerProfile";
 
 // Tenant pages
 import TenantDashboard     from "./pages/TenantDashboard";
@@ -31,57 +30,49 @@ import TenantApplications  from "./pages/TenantApplications";
 import TenantNotifications from "./pages/TenantNotifications";
 import TenantProfile       from "./pages/TenantProfile";
 
-// Route guard
-import { getUser } from "./utils/api";
-
-function PrivateRoute({ children, role }) {
-  const user = getUser();
-  if (!user) return <Navigate to="/login" replace />;
-  if (role && user.role !== role) return <Navigate to="/" replace />;
-  return children;
-}
+// Route guards
+import ProtectedRoute from "./components/ProtectedRoute";
+import PublicRoute    from "./components/PublicRoute";
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <RoleProvider>
-        {/* Global toast notifications */}
-        <ToastContainer />
+    <>
+      <ToastContainer />
+      <Routes>
+        {/* ── Public ─────────────────────────────────────────────────── */}
+        <Route path="/"        element={<Home />} />
+        <Route path="/about"   element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/help"    element={<Help />} />
 
-        <Routes>
-          {/* Public */}
-          <Route path="/"        element={<Home />} />
-          <Route path="/login"   element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/about"   element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/help"    element={<Help />} />
+        {/* ── Auth (redirect to dashboard if already logged in) ───────── */}
+        <Route path="/login"    element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
 
-          {/* Admin */}
-          <Route path="/admin/dashboard"       element={<PrivateRoute role="admin"><AdminDashboard /></PrivateRoute>} />
-          <Route path="/admin/verifymonitor"   element={<PrivateRoute role="admin"><AdminVerifyMonitor /></PrivateRoute>} />
-          <Route path="/admin/monitortrustscore" element={<PrivateRoute role="admin"><AdminMonitorTrustScores /></PrivateRoute>} />
-          <Route path="/admin/handlecomplaints"  element={<PrivateRoute role="admin"><AdminHandleComplaints /></PrivateRoute>} />
-          <Route path="/admin/systemmonitoring"  element={<PrivateRoute role="admin"><AdminSystemMonitoring /></PrivateRoute>} />
+        {/* ── Admin ──────────────────────────────────────────────────── */}
+        <Route path="/admin/dashboard"        element={<ProtectedRoute role="admin" isDashboard><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/admin/verifymonitor"    element={<ProtectedRoute role="admin"><AdminVerifyMonitor /></ProtectedRoute>} />
+        <Route path="/admin/monitortrustscore" element={<ProtectedRoute role="admin"><AdminMonitorTrustScores /></ProtectedRoute>} />
+        <Route path="/admin/handlecomplaints" element={<ProtectedRoute role="admin"><AdminHandleComplaints /></ProtectedRoute>} />
+        <Route path="/admin/systemmonitoring" element={<ProtectedRoute role="admin"><AdminSystemMonitoring /></ProtectedRoute>} />
 
-          {/* Owner */}
-          <Route path="/owner/dashboard"      element={<PrivateRoute role="owner"><OwnerDashboard /></PrivateRoute>} />
-          <Route path="/owner/pgsmanagement"  element={<PrivateRoute role="owner"><OwnerPGSManagement /></PrivateRoute>} />
-          <Route path="/owner/applications"   element={<PrivateRoute role="owner"><OwnerApplications /></PrivateRoute>} />
-          <Route path="/owner/notifications"  element={<PrivateRoute role="owner"><OwnerNotifications /></PrivateRoute>} />
-          <Route path="/owner/profile"        element={<PrivateRoute role="owner"><OwnerProfile /></PrivateRoute>} />
+        {/* ── Owner ──────────────────────────────────────────────────── */}
+        <Route path="/owner/dashboard"     element={<ProtectedRoute role="owner" isDashboard><OwnerDashboard /></ProtectedRoute>} />
+        <Route path="/owner/pgsmanagement" element={<ProtectedRoute role="owner"><OwnerPGSManagement /></ProtectedRoute>} />
+        <Route path="/owner/applications"  element={<ProtectedRoute role="owner"><OwnerApplications /></ProtectedRoute>} />
+        <Route path="/owner/notifications" element={<ProtectedRoute role="owner"><OwnerNotifications /></ProtectedRoute>} />
+        <Route path="/owner/profile"       element={<ProtectedRoute role="owner"><OwnerProfile /></ProtectedRoute>} />
 
-          {/* Tenant */}
-          <Route path="/tenant/dashboard"     element={<PrivateRoute role="tenant"><TenantDashboard /></PrivateRoute>} />
-          <Route path="/tenant/findpgs"       element={<PrivateRoute role="tenant"><TenantFindPGs /></PrivateRoute>} />
-          <Route path="/tenant/applications"  element={<PrivateRoute role="tenant"><TenantApplications /></PrivateRoute>} />
-          <Route path="/tenant/notifications" element={<PrivateRoute role="tenant"><TenantNotifications /></PrivateRoute>} />
-          <Route path="/tenant/profile"       element={<PrivateRoute role="tenant"><TenantProfile /></PrivateRoute>} />
+        {/* ── Tenant ─────────────────────────────────────────────────── */}
+        <Route path="/tenant/dashboard"     element={<ProtectedRoute role="tenant" isDashboard><TenantDashboard /></ProtectedRoute>} />
+        <Route path="/tenant/findpgs"       element={<ProtectedRoute role="tenant"><TenantFindPGs /></ProtectedRoute>} />
+        <Route path="/tenant/applications"  element={<ProtectedRoute role="tenant"><TenantApplications /></ProtectedRoute>} />
+        <Route path="/tenant/notifications" element={<ProtectedRoute role="tenant"><TenantNotifications /></ProtectedRoute>} />
+        <Route path="/tenant/profile"       element={<ProtectedRoute role="tenant"><TenantProfile /></ProtectedRoute>} />
 
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </RoleProvider>
-    </BrowserRouter>
+        {/* ── Catch-all ──────────────────────────────────────────────── */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }
