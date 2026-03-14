@@ -13,17 +13,12 @@ const NotificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["application", "success", "alert", "info", "warning"],
+      enum: ["application", "success", "alert", "info"],
       default: "info",
     },
     isRead: {
       type: Boolean,
       default: false,
-    },
-    relatedBooking: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Booking",
-      default: null,
     },
   },
   { timestamps: true }

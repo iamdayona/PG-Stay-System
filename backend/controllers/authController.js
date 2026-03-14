@@ -1,92 +1,32 @@
-const User = require("../models/User");
 const jwt = require("jsonwebtoken");
+const User = require("../models/User");
 
-// Generate JWT
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE,
-  });
-};
+const generateToken = (id) =>
+  jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
-// @desc    Register user
-// @route   POST /api/auth/register
-// @access  Public
+// POST /api/auth/register
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, role, phone, gender } = req.body;
+    const { name, email, password, role } = req.body;
 
-    // Check if user exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: "Email already registered" });
-    }
+    if (!name || !email || !password || !role)
+      return res.status(400).json({ message: "All fields are required" });
 
-    // Only tenant and owner can self-register
-    if (!["tenant", "owner"].includes(role)) {
-      return res.status(400).json({ message: "Invalid role selected" });
-    }
+    if (!["tenant", "owner"].includes(role))
+      return res.status(400).json({ message: "Role must be tenant or owner" });
 
-    const user = await User.create({
-      name,
-      email,
-      password,
-      role,
-      phone: phone || "",
-      gender: gender || "",
-    });
+    if (password.length < 6)
+      return res.status(400).json({ message: "Password must be at least 6 characters" });
 
-    const token = generateToken(user._id);
+    const exists = await User.findOne({ email });
+    if (exists) return res.status(400).json({ message: "Email already registered" });
+
+    const user = await User.create({ name, email, password, role });
 
     res.status(201).json({
-      success: true,
-      token,
+      token: generateToken(user._id),
       user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        trustScore: user.trustScore,
-        verificationStatus: user.verificationStatus,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// @desc    Login user
-// @route   POST /api/auth/login
-// @access  Public
-exports.login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ message: "Please provide email and password" });
-    }
-
-    // Find user and include password
-    const user = await User.findOne({ email }).select("+password");
-    if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
-
-    const isMatch = await user.matchPassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
-
-    if (!user.isActive) {
-      return res.status(403).json({ message: "Account suspended. Contact admin." });
-    }
-
-    const token = generateToken(user._id);
-
-    res.json({
-      success: true,
-      token,
-      user: {
-        id: user._id,
+        _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
@@ -95,47 +35,77 @@ exports.login = async (req, res) => {
         profileCompletion: user.profileCompletion,
       },
     });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// @desc    Get current logged in user
-// @route   GET /api/auth/me
-// @access  Private
+// POST /api/auth/login
+exports.login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password)
+      return res.status(400).json({ message: "Email and password are required" });
+
+    const user = await User.findOne({ email }).select("+password");
+    if (!user) return res.status(401).json({ message: "Invalid email or password" });
+
+    if (!user.isActive)
+      return res.status(403).json({ message: "Your account has been suspended" });
+
+    const isMatch = await user.matchPassword(password);
+    if (!isMatch) return res.status(401).json({ message: "Invalid email or password" });
+
+    res.json({
+      token: generateToken(user._id),
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        trustScore: user.trustScore,
+        verificationStatus: user.verificationStatus,
+        profileCompletion: user.profileCompletion,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// GET /api/auth/me
 exports.getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    res.json({ success: true, user });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    const user = await User.findById(req.user._id);
+    res.json({ user });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// @desc    Update user profile
-// @route   PUT /api/auth/profile
-// @access  Private
+// PUT /api/auth/profile
 exports.updateProfile = async (req, res) => {
   try {
     const { name, phone, gender, preferences } = req.body;
+    const user = await User.findById(req.user._id);
 
-    const updateData = { name, phone, gender };
-    if (preferences) updateData.preferences = preferences;
+    if (name) user.name = name;
+    if (phone) user.phone = phone;
+    if (gender) user.gender = gender;
+    if (preferences) user.preferences = { ...user.preferences, ...preferences };
 
-    // Calculate profile completion
+    // Recalculate profile completion
     let completion = 40;
-    if (name) completion += 15;
-    if (phone) completion += 15;
-    if (req.user.verificationStatus === "verified") completion += 30;
-    updateData.profileCompletion = Math.min(completion, 100);
+    if (user.name) completion += 15;
+    if (user.phone) completion += 15;
+    if (user.gender) completion += 10;
+    if (user.verificationStatus === "verified") completion += 20;
+    user.profileCompletion = Math.min(completion, 100);
 
-    const user = await User.findByIdAndUpdate(req.user.id, updateData, {
-      new: true,
-      runValidators: true,
-    });
-
-    res.json({ success: true, user });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    await user.save();
+    res.json({ user });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
