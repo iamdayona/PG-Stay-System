@@ -1,198 +1,174 @@
-const Booking = require("../models/Booking");
+const Application = require("../models/Application");
 const Room = require("../models/Room");
 const PGStay = require("../models/PGStay");
-const Notification = require("../models/Notification");
+const createNotification = require("../utils/createNotification");
 
-// Helper: create notification
-const createNotification = async (userId, message, type = "info", bookingId = null) => {
-  await Notification.create({
-    user: userId,
-    message,
-    type,
-    relatedBooking: bookingId,
-  });
-};
-
-// @desc    Tenant applies for a room
-// @route   POST /api/applications
-// @access  Private (tenant)
+// POST /api/applications
 exports.applyForRoom = async (req, res) => {
   try {
     const { pgStayId, roomId } = req.body;
 
+    if (!pgStayId || !roomId)
+      return res.status(400).json({ message: "PG Stay and Room are required" });
+
+    // Check room exists and is available
     const room = await Room.findById(roomId);
     if (!room) return res.status(404).json({ message: "Room not found" });
     if (!room.availability)
-      return res.status(400).json({ message: "Room is not available" });
+      return res.status(400).json({ message: "This room is not available" });
 
-    // Check if tenant already applied for this room
-    const existing = await Booking.findOne({
-      tenant: req.user.id,
-      room: roomId,
+    // Prevent duplicate active application
+    const existing = await Application.findOne({
+      tenant: req.user._id,
+      pgStay: pgStayId,
       status: { $in: ["Pending", "Under Review", "Approved"] },
     });
     if (existing)
-      return res.status(400).json({ message: "You already applied for this room" });
+      return res.status(400).json({ message: "You already have an active application for this PG" });
 
-    const pg = await PGStay.findById(pgStayId).populate("owner");
-    if (!pg) return res.status(404).json({ message: "PG Stay not found" });
+    const pg = await PGStay.findById(pgStayId).populate("owner", "name");
+    if (!pg) return res.status(404).json({ message: "PG not found" });
 
-    const booking = await Booking.create({
-      tenant: req.user.id,
+    const application = await Application.create({
+      tenant: req.user._id,
       pgStay: pgStayId,
       room: roomId,
       rentAmount: room.rent,
-      status: "Pending",
     });
 
-    // Notify tenant
-    await createNotification(
-      req.user.id,
-      `Your application for ${pg.name} has been submitted successfully.`,
-      "info",
-      booking._id
-    );
-
-    // Notify owner
+    // Notify the PG owner
     await createNotification(
       pg.owner._id,
-      `New application received from ${req.user.name} for ${pg.name}.`,
-      "application",
-      booking._id
+      `New application from ${req.user.name} for ${pg.name}`,
+      "application"
     );
 
-    res.status(201).json({ success: true, data: booking });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    // Notify the tenant
+    await createNotification(
+      req.user._id,
+      `Your application for ${pg.name} has been submitted successfully`,
+      "info"
+    );
+
+    res.status(201).json({ data: application });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// @desc    Get tenant's own applications
-// @route   GET /api/applications/my
-// @access  Private (tenant)
+// GET /api/applications/my  (tenant)
 exports.getMyApplications = async (req, res) => {
   try {
-    const bookings = await Booking.find({ tenant: req.user.id })
-      .populate("pgStay", "name location trustScore")
+    const apps = await Application.find({ tenant: req.user._id })
+      .populate("pgStay", "name location rent trustScore")
       .populate("room", "roomType rent")
       .sort({ createdAt: -1 });
-
-    res.json({ success: true, data: bookings });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.json({ data: apps });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// @desc    Get applications for owner's PG stays
-// @route   GET /api/applications/owner
-// @access  Private (owner)
+// GET /api/applications/owner  (owner)
 exports.getOwnerApplications = async (req, res) => {
   try {
-    const ownerPGs = await PGStay.find({ owner: req.user.id }).select("_id");
+    // Get all PGs owned by this user
+    const ownerPGs = await PGStay.find({ owner: req.user._id }).select("_id");
     const pgIds = ownerPGs.map((pg) => pg._id);
 
-    const bookings = await Booking.find({ pgStay: { $in: pgIds } })
-      .populate("tenant", "name email phone trustScore verificationStatus")
+    const apps = await Application.find({ pgStay: { $in: pgIds } })
+      .populate("tenant", "name email trustScore verificationStatus")
       .populate("pgStay", "name location")
       .populate("room", "roomType rent")
       .sort({ createdAt: -1 });
 
-    res.json({ success: true, data: bookings });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.json({ data: apps });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// @desc    Owner approves application
-// @route   PUT /api/applications/:id/approve
-// @access  Private (owner)
-exports.approveApplication = async (req, res) => {
-  try {
-    const booking = await Booking.findById(req.params.id)
-      .populate("pgStay")
-      .populate("room")
-      .populate("tenant", "name");
-
-    if (!booking) return res.status(404).json({ message: "Application not found" });
-
-    if (booking.pgStay.owner.toString() !== req.user.id) {
-      return res.status(403).json({ message: "Not authorized" });
-    }
-
-    booking.status = "Approved";
-    booking.allocationDate = new Date();
-    await booking.save();
-
-    // Mark room as unavailable
-    await Room.findByIdAndUpdate(booking.room._id, {
-      availability: false,
-      occupiedBy: booking.tenant._id,
-    });
-
-    // Sync available rooms on PG
-    const allRooms = await Room.find({ pgStay: booking.pgStay._id });
-    const available = allRooms.filter((r) => r.availability).length;
-    await PGStay.findByIdAndUpdate(booking.pgStay._id, { availableRooms: available });
-
-    // Notify tenant
-    await createNotification(
-      booking.tenant._id,
-      `Your application to ${booking.pgStay.name} has been approved! Room allocated successfully.`,
-      "success",
-      booking._id
-    );
-
-    res.json({ success: true, data: booking });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// @desc    Owner rejects application
-// @route   PUT /api/applications/:id/reject
-// @access  Private (owner)
-exports.rejectApplication = async (req, res) => {
-  try {
-    const booking = await Booking.findById(req.params.id)
-      .populate("pgStay")
-      .populate("tenant", "name");
-
-    if (!booking) return res.status(404).json({ message: "Application not found" });
-
-    if (booking.pgStay.owner.toString() !== req.user.id) {
-      return res.status(403).json({ message: "Not authorized" });
-    }
-
-    booking.status = "Rejected";
-    await booking.save();
-
-    // Notify tenant
-    await createNotification(
-      booking.tenant._id,
-      `Your application to ${booking.pgStay.name} was not approved this time.`,
-      "alert",
-      booking._id
-    );
-
-    res.json({ success: true, data: booking });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// @desc    Get all applications (admin)
-// @route   GET /api/applications/all
-// @access  Private (admin)
+// GET /api/applications/all  (admin)
 exports.getAllApplications = async (req, res) => {
   try {
-    const bookings = await Booking.find()
-      .populate("tenant", "name email trustScore")
+    const apps = await Application.find()
+      .populate("tenant", "name email")
       .populate("pgStay", "name location")
-      .populate("room", "roomType rent")
+      .populate("room", "roomType")
       .sort({ createdAt: -1 });
+    res.json({ data: apps });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
-    res.json({ success: true, count: bookings.length, data: bookings });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+// PUT /api/applications/:id/approve  (owner)
+exports.approveApplication = async (req, res) => {
+  try {
+    const app = await Application.findById(req.params.id)
+      .populate("pgStay", "name owner")
+      .populate("tenant", "name")
+      .populate("room");
+
+    if (!app) return res.status(404).json({ message: "Application not found" });
+
+    // Only the PG owner can approve
+    if (app.pgStay.owner.toString() !== req.user._id.toString())
+      return res.status(403).json({ message: "Not authorized" });
+
+    if (app.status !== "Pending" && app.status !== "Under Review")
+      return res.status(400).json({ message: "Application cannot be approved in its current state" });
+
+    app.status = "Approved";
+    await app.save();
+
+    // Mark room as occupied
+    await Room.findByIdAndUpdate(app.room._id, { availability: false });
+
+    // Sync availableRooms on PG
+    const availableRooms = await Room.countDocuments({
+      pgStay: app.pgStay._id,
+      availability: true,
+    });
+    await PGStay.findByIdAndUpdate(app.pgStay._id, { availableRooms });
+
+    // Notify tenant
+    await createNotification(
+      app.tenant._id,
+      `Your application for ${app.pgStay.name} has been approved! Welcome aboard.`,
+      "success"
+    );
+
+    res.json({ data: app });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// PUT /api/applications/:id/reject  (owner)
+exports.rejectApplication = async (req, res) => {
+  try {
+    const app = await Application.findById(req.params.id)
+      .populate("pgStay", "name owner")
+      .populate("tenant", "name");
+
+    if (!app) return res.status(404).json({ message: "Application not found" });
+
+    if (app.pgStay.owner.toString() !== req.user._id.toString())
+      return res.status(403).json({ message: "Not authorized" });
+
+    app.status = "Rejected";
+    await app.save();
+
+    // Notify tenant
+    await createNotification(
+      app.tenant._id,
+      `Your application for ${app.pgStay.name} was not approved. Try applying to other PGs!`,
+      "alert"
+    );
+
+    res.json({ data: app });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };

@@ -9,33 +9,20 @@ const RoomSchema = new mongoose.Schema(
     },
     roomType: {
       type: String,
-      required: true,
-      enum: [
-        "Single Room",
-        "Double Room",
-        "Triple Room",
-        "Single AC Room",
-        "Double AC Room",
-        "Triple AC Room",
-      ],
-    },
-    capacity: {
-      type: Number,
-      required: true,
-      default: 1,
+      required: [true, "Room type is required"],
+      trim: true,
     },
     rent: {
       type: Number,
-      required: true,
+      required: [true, "Rent is required"],
+    },
+    capacity: {
+      type: Number,
+      default: 1,
     },
     availability: {
       type: Boolean,
       default: true,
-    },
-    occupiedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      default: null,
     },
   },
   { timestamps: true }

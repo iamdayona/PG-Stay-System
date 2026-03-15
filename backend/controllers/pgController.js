@@ -1,250 +1,173 @@
 const PGStay = require("../models/PGStay");
 const Room = require("../models/Room");
-const User = require("../models/User");
 
-// ─────────────────────────────────────────────
-// RECOMMENDATION ENGINE
-// Weighted Multi-Criteria Scoring (Hybrid Filtering)
-// Justified by Literature Survey: Roy & Dutta (2022),
-// Patil & Khaiyum (2023), Nicula et al. (2025)
-//
-// Final Score =
-//   Location Match  × 0.30
-//   Budget Match    × 0.25
-//   Room Type Match × 0.20
-//   Amenities Match × 0.15
-//   Trust Score     × 0.10
-// ─────────────────────────────────────────────
-const computeRecommendationScore = (pg, preferences, rooms) => {
-  const {
-    location = "",
-    budgetMin = 0,
-    budgetMax = 50000,
-    roomType = "",
-    amenities = [],
-  } = preferences;
-
-  // 1. Location match (0 or 1)
-  const locationScore =
-    location && pg.location.toLowerCase().includes(location.toLowerCase())
-      ? 1
-      : location
-      ? 0
-      : 1;
-
-  // 2. Budget match — how well rent fits in range (normalized 0–1)
-  let budgetScore = 0;
-  if (pg.rent >= budgetMin && pg.rent <= budgetMax) {
-    // Closer to midpoint = better score
-    const mid = (budgetMin + budgetMax) / 2;
-    const range = (budgetMax - budgetMin) / 2 || 1;
-    budgetScore = 1 - Math.abs(pg.rent - mid) / range;
-    budgetScore = Math.max(0, budgetScore);
-  }
-
-  // 3. Room type match (0 or 1)
-  const hasMatchingRoom =
-    !roomType ||
-    rooms.some(
-      (r) =>
-        r.availability &&
-        r.roomType.toLowerCase().includes(roomType.toLowerCase())
-    );
-  const roomTypeScore = hasMatchingRoom ? 1 : 0;
-
-  // 4. Amenities match (proportion matched)
-  let amenitiesScore = 1;
-  if (amenities.length > 0) {
-    const pgAmenitiesLower = pg.amenities.map((a) => a.toLowerCase());
-    const matched = amenities.filter((a) =>
-      pgAmenitiesLower.includes(a.toLowerCase())
-    ).length;
-    amenitiesScore = matched / amenities.length;
-  }
-
-  // 5. Trust score (normalized 0–1)
-  const trustScore = pg.trustScore / 100;
-
-  // Weighted final score
-  const finalScore =
-    locationScore * 0.3 +
-    budgetScore * 0.25 +
-    roomTypeScore * 0.2 +
-    amenitiesScore * 0.15 +
-    trustScore * 0.1;
-
-  return Math.round(finalScore * 100); // return as percentage
-};
-
-// @desc    Get recommended PG stays for tenant
-// @route   GET /api/pgs/recommendations
-// @access  Private (tenant)
+// GET /api/pgs/recommendations  (tenant only)
+// Returns verified PGs sorted by trust score + amenity match
 exports.getRecommendations = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    const preferences = user.preferences || {};
+    const user = req.user;
+    const pgs = await PGStay.find({ verificationStatus: "verified", isActive: true })
+      .populate("owner", "name email trustScore verificationStatus");
 
-    // Query filters
-    const query = { verificationStatus: "verified", isActive: true };
-    if (preferences.location) {
-      query.location = { $regex: preferences.location, $options: "i" };
-    }
-    if (preferences.budgetMax) {
-      query.rent = { $lte: preferences.budgetMax };
-    }
-    if (preferences.budgetMin) {
-      query.rent = { ...query.rent, $gte: preferences.budgetMin };
-    }
-
-    const pgs = await PGStay.find(query).populate("owner", "name email");
-
-    // Attach rooms and compute scores
+    // Attach available room count
     const results = await Promise.all(
       pgs.map(async (pg) => {
-        const rooms = await Room.find({ pgStay: pg._id });
-        const matchScore = computeRecommendationScore(pg, preferences, rooms);
-        const availableRooms = rooms.filter((r) => r.availability);
-        return {
-          ...pg.toObject(),
-          matchScore,
-          availableRoomCount: availableRooms.length,
-          rooms: availableRooms,
-        };
+        const availableRoomCount = await Room.countDocuments({
+          pgStay: pg._id,
+          availability: true,
+        });
+
+        // Score: base trust + amenity match bonus
+        let matchScore = pg.trustScore;
+        if (user.preferences?.amenities?.length > 0) {
+          const matched = (pg.amenities || []).filter((a) =>
+            user.preferences.amenities.includes(a)
+          ).length;
+          matchScore = Math.min(100, matchScore + matched * 5);
+        }
+
+        return { ...pg.toObject(), availableRoomCount, matchScore };
       })
     );
 
-    // Sort by match score descending
+    // Sort by matchScore descending
     results.sort((a, b) => b.matchScore - a.matchScore);
 
-    res.json({ success: true, count: results.length, data: results });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.json({ data: results });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// @desc    Get all PG stays (with optional filters from query params)
-// @route   GET /api/pgs
-// @access  Private
+// GET /api/pgs  — with optional filters
 exports.getAllPGs = async (req, res) => {
   try {
     const { location, budgetMin, budgetMax, amenities } = req.query;
-    const query = { isActive: true };
+    const filter = { verificationStatus: "verified", isActive: true };
 
-    if (location) query.location = { $regex: location, $options: "i" };
-    if (budgetMax) query.rent = { $lte: Number(budgetMax) };
-    if (budgetMin) query.rent = { ...query.rent, $gte: Number(budgetMin) };
+    if (location) filter.location = { $regex: location, $options: "i" };
+    if (budgetMin || budgetMax) {
+      filter.rent = {};
+      if (budgetMin) filter.rent.$gte = Number(budgetMin);
+      if (budgetMax) filter.rent.$lte = Number(budgetMax);
+    }
     if (amenities) {
-      const amenityList = amenities.split(",");
-      query.amenities = { $all: amenityList };
+      const list = amenities.split(",").map((a) => a.trim());
+      filter.amenities = { $all: list };
     }
 
-    const pgs = await PGStay.find(query).populate("owner", "name email phone");
-    res.json({ success: true, count: pgs.length, data: pgs });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+    const pgs = await PGStay.find(filter).populate("owner", "name email");
 
-// @desc    Get single PG stay
-// @route   GET /api/pgs/:id
-// @access  Private
-exports.getPGById = async (req, res) => {
-  try {
-    const pg = await PGStay.findById(req.params.id).populate(
-      "owner",
-      "name email phone"
-    );
-    if (!pg) return res.status(404).json({ message: "PG Stay not found" });
-    const rooms = await Room.find({ pgStay: pg._id });
-    res.json({ success: true, data: { ...pg.toObject(), rooms } });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// @desc    Get PG stays owned by logged-in owner
-// @route   GET /api/pgs/owner/mine
-// @access  Private (owner)
-exports.getOwnerPGs = async (req, res) => {
-  try {
-    const pgs = await PGStay.find({ owner: req.user.id });
     const results = await Promise.all(
       pgs.map(async (pg) => {
-        const rooms = await Room.find({ pgStay: pg._id });
-        const occupied = rooms.filter((r) => !r.availability).length;
-        return {
-          ...pg.toObject(),
-          totalRooms: rooms.length,
-          occupiedRooms: occupied,
-          availableRooms: rooms.length - occupied,
-          rooms,
-        };
+        const availableRoomCount = await Room.countDocuments({
+          pgStay: pg._id,
+          availability: true,
+        });
+        return { ...pg.toObject(), availableRoomCount };
       })
     );
-    res.json({ success: true, data: results });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+
+    res.json({ data: results });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// @desc    Create PG stay
-// @route   POST /api/pgs
-// @access  Private (owner)
+// GET /api/pgs/:id
+exports.getPGById = async (req, res) => {
+  try {
+    const pg = await PGStay.findById(req.params.id).populate("owner", "name email trustScore");
+    if (!pg) return res.status(404).json({ message: "PG not found" });
+    res.json({ data: pg });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// GET /api/pgs/owner/mine
+exports.getOwnerPGs = async (req, res) => {
+  try {
+    const pgs = await PGStay.find({ owner: req.user._id });
+
+    const results = await Promise.all(
+      pgs.map(async (pg) => {
+        const totalRooms = await Room.countDocuments({ pgStay: pg._id });
+        const occupiedRooms = await Room.countDocuments({
+          pgStay: pg._id,
+          availability: false,
+        });
+        return { ...pg.toObject(), totalRooms, occupiedRooms };
+      })
+    );
+
+    res.json({ data: results });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// POST /api/pgs
 exports.createPG = async (req, res) => {
   try {
     const { name, location, rent, amenities, description } = req.body;
+
+    if (!name || !location || !rent)
+      return res.status(400).json({ message: "Name, location and rent are required" });
+
     const pg = await PGStay.create({
-      owner: req.user.id,
+      owner: req.user._id,
       name,
       location,
-      rent,
+      rent: Number(rent),
       amenities: amenities || [],
       description: description || "",
     });
-    res.status(201).json({ success: true, data: pg });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+
+    res.status(201).json({ data: pg });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// @desc    Update PG stay
-// @route   PUT /api/pgs/:id
-// @access  Private (owner)
+// PUT /api/pgs/:id
 exports.updatePG = async (req, res) => {
   try {
-    let pg = await PGStay.findById(req.params.id);
-    if (!pg) return res.status(404).json({ message: "PG Stay not found" });
+    const pg = await PGStay.findById(req.params.id);
+    if (!pg) return res.status(404).json({ message: "PG not found" });
 
-    if (pg.owner.toString() !== req.user.id && req.user.role !== "admin") {
-      return res.status(403).json({ message: "Not authorized" });
-    }
+    // Owner can only update their own PG (admin can update any)
+    if (req.user.role === "owner" && pg.owner.toString() !== req.user._id.toString())
+      return res.status(403).json({ message: "Not authorized to update this PG" });
 
-    pg = await PGStay.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const { name, location, rent, amenities, description } = req.body;
+    if (name) pg.name = name;
+    if (location) pg.location = location;
+    if (rent) pg.rent = Number(rent);
+    if (amenities) pg.amenities = amenities;
+    if (description !== undefined) pg.description = description;
 
-    res.json({ success: true, data: pg });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    await pg.save();
+    res.json({ data: pg });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// @desc    Delete PG stay
-// @route   DELETE /api/pgs/:id
-// @access  Private (owner/admin)
+// DELETE /api/pgs/:id
 exports.deletePG = async (req, res) => {
   try {
     const pg = await PGStay.findById(req.params.id);
-    if (!pg) return res.status(404).json({ message: "PG Stay not found" });
+    if (!pg) return res.status(404).json({ message: "PG not found" });
 
-    if (pg.owner.toString() !== req.user.id && req.user.role !== "admin") {
-      return res.status(403).json({ message: "Not authorized" });
-    }
+    if (req.user.role === "owner" && pg.owner.toString() !== req.user._id.toString())
+      return res.status(403).json({ message: "Not authorized to delete this PG" });
 
     await pg.deleteOne();
-    res.json({ success: true, message: "PG Stay removed" });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    await Room.deleteMany({ pgStay: req.params.id });
+
+    res.json({ message: "PG deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };

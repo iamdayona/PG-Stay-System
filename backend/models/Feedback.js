@@ -12,11 +12,6 @@ const FeedbackSchema = new mongoose.Schema(
       ref: "PGStay",
       required: true,
     },
-    booking: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Booking",
-      default: null,
-    },
     rating: {
       type: Number,
       required: true,
@@ -26,9 +21,13 @@ const FeedbackSchema = new mongoose.Schema(
     comment: {
       type: String,
       default: "",
+      trim: true,
     },
   },
   { timestamps: true }
 );
+
+// One feedback per tenant per PG
+FeedbackSchema.index({ tenant: 1, pgStay: 1 }, { unique: true });
 
 module.exports = mongoose.model("Feedback", FeedbackSchema);

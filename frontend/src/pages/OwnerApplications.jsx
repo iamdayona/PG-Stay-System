@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, XCircle } from "lucide-react";
 import RoleNavigation from "../context/RoleNavigation";
 import { apiGetOwnerApplications, apiApproveApplication, apiRejectApplication } from "../utils/api";
+import { toast } from "../components/Toast";
 import { CLAY_BASE, CLAY_OWNER, injectClay } from "../styles/claystyles";
 
 const PAGE_CSS = `
-  .app-card { background:rgba(255,255,255,.65); backdrop-filter:blur(18px); border:2.5px solid rgba(255,255,255,.85); border-radius:24px; padding:28px; box-shadow:0 8px 28px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.95); margin-bottom:22px; animation:fadeUp .6s ease both; position:relative; overflow:hidden; transition:transform .22s,box-shadow .22s; }
+  .app-card { background:rgba(255,255,255,.65); backdrop-filter:blur(18px); border:2.5px solid rgba(255,255,255,.85); border-radius:24px; padding:28px; box-shadow:0 8px 28px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.95); margin-bottom:22px; animation:fadeUp .6s ease both; transition:transform .22s,box-shadow .22s; position:relative; overflow:hidden; }
   .app-card:hover { transform:translateY(-3px); box-shadow:0 16px 40px rgba(0,0,0,.11); }
   .app-card::before { content:''; position:absolute; top:0; left:0; bottom:0; width:5px; border-radius:24px 0 0 24px; }
   .app-card.card-pending::before  { background:linear-gradient(180deg,#ffe082,#ffd54f); }
@@ -50,24 +51,39 @@ export default function OwnerApplications() {
     try {
       const res = await apiGetOwnerApplications();
       setApplications(res.data);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchApps(); }, []);
 
-  const handleApprove = async (id) => {
+  const handleApprove = async (id, tenantName) => {
     setActionLoading(id + "approve");
-    try { await apiApproveApplication(id); await fetchApps(); }
-    catch (err) { alert(err.message); }
-    finally { setActionLoading(""); }
+    try {
+      await apiApproveApplication(id);
+      toast.success(`Application approved for ${tenantName}! Room has been allocated.`);
+      await fetchApps();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setActionLoading("");
+    }
   };
 
-  const handleReject = async (id) => {
+  const handleReject = async (id, tenantName) => {
     setActionLoading(id + "reject");
-    try { await apiRejectApplication(id); await fetchApps(); }
-    catch (err) { alert(err.message); }
-    finally { setActionLoading(""); }
+    try {
+      await apiRejectApplication(id);
+      toast.info(`Application from ${tenantName} has been rejected.`);
+      await fetchApps();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setActionLoading("");
+    }
   };
 
   const getTrustClass = (score) => score >= 85 ? "trust-high" : score >= 70 ? "trust-mid" : "trust-low";
@@ -79,7 +95,6 @@ export default function OwnerApplications() {
       <style>{css}</style>
       <div className="clay-page">
         <RoleNavigation role="owner" />
-
         <main className="clay-main">
           <div className="clay-container">
             <h2 className="clay-page-title">📋 Applications Received</h2>
@@ -90,13 +105,12 @@ export default function OwnerApplications() {
             ) : applications.length === 0 ? (
               <div className="clay-empty">
                 <span className="clay-empty-emoji">📭</span>
-                No applications received yet.<br/>
-                <span style={{ color:"#ffa726", fontWeight:700 }}>Applications will appear here once tenants apply!</span>
+                No applications received yet.<br />
+                <span style={{ color: "#ffa726", fontWeight: 700 }}>Applications will appear here once tenants apply!</span>
               </div>
             ) : (
               applications.map((app, i) => (
-                <div key={app._id} className={`app-card ${getCardClass(app.status)}`} style={{ animationDelay:`${i * .08}s` }}>
-
+                <div key={app._id} className={`app-card ${getCardClass(app.status)}`} style={{ animationDelay: `${i * .08}s` }}>
                   <div className="app-header">
                     <div>
                       <div className="tenant-name">👤 {app.tenant?.name}</div>
@@ -109,7 +123,7 @@ export default function OwnerApplications() {
                       <div className={`trust-value ${getTrustClass(app.tenant?.trustScore)}`}>
                         {app.tenant?.trustScore ?? "—"}
                       </div>
-                      <div style={{ fontSize:".65rem", color:"#bbb", marginTop:2 }}>/100</div>
+                      <div style={{ fontSize: ".65rem", color: "#bbb", marginTop: 2 }}>/100</div>
                     </div>
                   </div>
 
@@ -120,11 +134,19 @@ export default function OwnerApplications() {
 
                     {app.status === "Pending" && (
                       <div className="action-btns">
-                        <button className="clay-btn btn-approve" onClick={() => handleApprove(app._id)} disabled={actionLoading === app._id + "approve"}>
+                        <button
+                          className="clay-btn btn-approve"
+                          onClick={() => handleApprove(app._id, app.tenant?.name)}
+                          disabled={!!actionLoading}
+                        >
                           <CheckCircle2 size={15} />
                           {actionLoading === app._id + "approve" ? "Approving…" : "Approve"}
                         </button>
-                        <button className="clay-btn btn-reject" onClick={() => handleReject(app._id)} disabled={actionLoading === app._id + "reject"}>
+                        <button
+                          className="clay-btn btn-reject"
+                          onClick={() => handleReject(app._id, app.tenant?.name)}
+                          disabled={!!actionLoading}
+                        >
                           <XCircle size={15} />
                           {actionLoading === app._id + "reject" ? "Rejecting…" : "Reject"}
                         </button>
@@ -133,7 +155,7 @@ export default function OwnerApplications() {
 
                     {app.status === "Approved" && (
                       <div className="approved-notice">
-                        <CheckCircle2 size={16} /> Room allocated successfully to {app.tenant?.name}
+                        <CheckCircle2 size={16} /> Room allocated to {app.tenant?.name}
                       </div>
                     )}
                   </div>
