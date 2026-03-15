@@ -11,6 +11,9 @@ const {
   suspendUser,
   verifyUser,
   getSystemStats,
+  getComplaints,
+  resolveComplaint,
+  rejectComplaint,
 } = require("../controllers/adminController");
 const { protect, authorize } = require("../middleware/auth");
 
@@ -27,5 +30,10 @@ router.get("/trustscores", getTrustScores);
 router.put("/users/:id/suspend", suspendUser);
 router.put("/users/:id/verify", verifyUser);
 router.get("/system", getSystemStats);
+
+// Complaint routes (new)
+router.get("/complaints", getComplaints);
+router.put("/complaints/:id/resolve", resolveComplaint);
+router.put("/complaints/:id/reject", rejectComplaint);
 
 module.exports = router;

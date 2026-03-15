@@ -1,222 +1,256 @@
 const User = require("../models/User");
 const PGStay = require("../models/PGStay");
-const Booking = require("../models/Booking");
+const Room = require("../models/Room");
+const Application = require("../models/Application");
 const Feedback = require("../models/Feedback");
+const Complaint = require("../models/Complaint");
 const Notification = require("../models/Notification");
+const createNotification = require("../utils/createNotification");
+const mongoose = require("mongoose");
 
-// @desc    Get admin dashboard stats
-// @route   GET /api/admin/stats
-// @access  Private (admin)
+// GET /api/admin/stats
 exports.getDashboardStats = async (req, res) => {
   try {
-    const totalUsers = await User.countDocuments({ role: { $ne: "admin" } });
-    const totalPGs = await PGStay.countDocuments();
-    const pendingVerifications = await PGStay.countDocuments({ verificationStatus: "pending" });
-    const totalBookings = await Booking.countDocuments();
-    const activeBookings = await Booking.countDocuments({ status: "Approved" });
-
-    // Recent system activity
-    const recentPGs = await PGStay.find({ verificationStatus: "pending" })
-      .populate("owner", "name")
-      .sort({ createdAt: -1 })
-      .limit(5);
+    const [totalUsers, totalPGs, pendingVerifications, activeBookings, recentPGs] =
+      await Promise.all([
+        User.countDocuments({ isActive: true }),
+        PGStay.countDocuments({ isActive: true }),
+        PGStay.countDocuments({ verificationStatus: "pending" }),
+        Application.countDocuments({ status: "Approved" }),
+        PGStay.find({ verificationStatus: "pending" })
+          .sort({ createdAt: -1 })
+          .limit(5)
+          .populate("owner", "name"),
+      ]);
 
     res.json({
-      success: true,
-      data: {
-        totalUsers,
-        totalPGs,
-        pendingVerifications,
-        totalBookings,
-        activeBookings,
-        recentPGs,
-      },
+      data: { totalUsers, totalPGs, pendingVerifications, activeBookings, recentPGs },
     });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// @desc    Get all PG stays with verification status
-// @route   GET /api/admin/pgs
-// @access  Private (admin)
+// GET /api/admin/pgs
 exports.getAllPGsAdmin = async (req, res) => {
   try {
     const pgs = await PGStay.find()
-      .populate("owner", "name email phone trustScore")
+      .populate("owner", "name email")
       .sort({ createdAt: -1 });
 
-    res.json({ success: true, count: pgs.length, data: pgs });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    const results = await Promise.all(
+      pgs.map(async (pg) => {
+        const complaints = await Complaint.countDocuments({
+          pgStay: pg._id,
+          status: "pending",
+        });
+        return { ...pg.toObject(), complaints };
+      })
+    );
+
+    res.json({ data: results });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// @desc    Verify a PG stay
-// @route   PUT /api/admin/pgs/:id/verify
-// @access  Private (admin)
+// PUT /api/admin/pgs/:id/verify
 exports.verifyPG = async (req, res) => {
   try {
-    const pg = await PGStay.findByIdAndUpdate(
-      req.params.id,
-      { verificationStatus: "verified" },
-      { new: true }
-    ).populate("owner", "name");
+    const pg = await PGStay.findById(req.params.id).populate("owner", "name _id");
+    if (!pg) return res.status(404).json({ message: "PG not found" });
 
-    if (!pg) return res.status(404).json({ message: "PG Stay not found" });
+    pg.verificationStatus = "verified";
+    await pg.save();
 
-    // Notify owner
-    await Notification.create({
-      user: pg.owner._id,
-      message: `Your PG Stay '${pg.name}' has been verified by admin.`,
-      type: "success",
-    });
+    await createNotification(
+      pg.owner._id,
+      `Your PG "${pg.name}" has been verified and is now live on the platform!`,
+      "success"
+    );
 
-    res.json({ success: true, data: pg });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.json({ data: pg });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// @desc    Restrict a PG stay
-// @route   PUT /api/admin/pgs/:id/restrict
-// @access  Private (admin)
+// PUT /api/admin/pgs/:id/restrict
 exports.restrictPG = async (req, res) => {
   try {
-    const pg = await PGStay.findByIdAndUpdate(
-      req.params.id,
-      { verificationStatus: "restricted", isActive: false },
-      { new: true }
-    ).populate("owner", "name");
+    const pg = await PGStay.findById(req.params.id).populate("owner", "name _id");
+    if (!pg) return res.status(404).json({ message: "PG not found" });
 
-    if (!pg) return res.status(404).json({ message: "PG Stay not found" });
+    pg.verificationStatus = "restricted";
+    await pg.save();
 
-    // Notify owner
-    await Notification.create({
-      user: pg.owner._id,
-      message: `Your PG Stay '${pg.name}' has been restricted by admin. Please contact support.`,
-      type: "alert",
-    });
+    await createNotification(
+      pg.owner._id,
+      `Your PG "${pg.name}" has been restricted by admin. Please contact support.`,
+      "alert"
+    );
 
-    res.json({ success: true, data: pg });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.json({ data: pg });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// @desc    Delete a PG stay (admin)
-// @route   DELETE /api/admin/pgs/:id
-// @access  Private (admin)
+// DELETE /api/admin/pgs/:id
 exports.deletePGAdmin = async (req, res) => {
   try {
-    const pg = await PGStay.findByIdAndDelete(req.params.id);
-    if (!pg) return res.status(404).json({ message: "PG Stay not found" });
-    res.json({ success: true, message: "PG Stay deleted" });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    const pg = await PGStay.findById(req.params.id);
+    if (!pg) return res.status(404).json({ message: "PG not found" });
+
+    await pg.deleteOne();
+    await Room.deleteMany({ pgStay: req.params.id });
+
+    res.json({ message: "PG deleted" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// @desc    Get all users (admin)
-// @route   GET /api/admin/users
-// @access  Private (admin)
+// GET /api/admin/users
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.find({ role: { $ne: "admin" } }).sort({ createdAt: -1 });
-    res.json({ success: true, count: users.length, data: users });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    const users = await User.find().sort({ createdAt: -1 });
+    res.json({ data: users });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// @desc    Get all trust scores (admin)
-// @route   GET /api/admin/trustscores
-// @access  Private (admin)
+// GET /api/admin/trustscores
 exports.getTrustScores = async (req, res) => {
   try {
-    const pgs = await PGStay.find()
-      .select("name trustScore verificationStatus complaints owner")
-      .populate("owner", "name trustScore");
-
-    const users = await User.find({ role: { $ne: "admin" } })
-      .select("name role trustScore verificationStatus");
-
-    res.json({ success: true, data: { pgs, users } });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    const [pgs, users] = await Promise.all([
+      PGStay.find({ isActive: true }).populate("owner", "name"),
+      User.find({ isActive: true, role: { $in: ["tenant", "owner"] } }),
+    ]);
+    res.json({ data: { pgs, users } });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// @desc    Suspend user account
-// @route   PUT /api/admin/users/:id/suspend
-// @access  Private (admin)
+// PUT /api/admin/users/:id/suspend
 exports.suspendUser = async (req, res) => {
   try {
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { isActive: false },
-      { new: true }
-    );
+    const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.role === "admin")
+      return res.status(400).json({ message: "Cannot suspend an admin" });
 
-    await Notification.create({
-      user: user._id,
-      message: "Your account has been suspended. Please contact admin for support.",
-      type: "alert",
-    });
+    user.isActive = false;
+    user.trustScore = Math.max(0, user.trustScore - 20);
+    await user.save();
 
-    res.json({ success: true, message: "User suspended", data: user });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.json({ data: user, message: "User suspended" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// @desc    Verify user identity
-// @route   PUT /api/admin/users/:id/verify
-// @access  Private (admin)
+// PUT /api/admin/users/:id/verify
 exports.verifyUser = async (req, res) => {
   try {
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { verificationStatus: "verified", profileCompletion: 100 },
-      { new: true }
-    );
+    const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    await Notification.create({
-      user: user._id,
-      message: "Your identity has been verified. Your profile is now fully verified.",
-      type: "success",
-    });
+    user.verificationStatus = "verified";
+    user.trustScore = Math.min(100, user.trustScore + 20);
+    user.profileCompletion = Math.min(100, user.profileCompletion + 20);
+    await user.save();
 
-    res.json({ success: true, data: user });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    await createNotification(
+      user._id,
+      "Your identity has been verified! Your trust score has been updated.",
+      "success"
+    );
+
+    res.json({ data: user });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// @desc    Get system monitoring stats
-// @route   GET /api/admin/system
-// @access  Private (admin)
+// GET /api/admin/system
 exports.getSystemStats = async (req, res) => {
   try {
-    const totalUsers = await User.countDocuments();
-    const totalPGs = await PGStay.countDocuments();
-    const totalBookings = await Booking.countDocuments();
-    const totalFeedback = await Feedback.countDocuments();
+    const dbStatus =
+      mongoose.connection.readyState === 1 ? "Online" : "Offline";
+
+    const [totalUsers, totalPGs, totalBookings, totalFeedback] = await Promise.all([
+      User.countDocuments(),
+      PGStay.countDocuments(),
+      Application.countDocuments({ status: "Approved" }),
+      Feedback.countDocuments(),
+    ]);
 
     res.json({
-      success: true,
       data: {
+        serverStatus: "Online",
+        dbStatus,
         totalUsers,
         totalPGs,
         totalBookings,
         totalFeedback,
-        serverStatus: "Operational",
-        dbStatus: "Connected",
       },
     });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// GET /api/admin/complaints
+exports.getComplaints = async (req, res) => {
+  try {
+    const complaints = await Complaint.find()
+      .populate("reportedBy", "name email")
+      .populate("pgStay", "name")
+      .sort({ createdAt: -1 });
+    res.json({ data: complaints });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// PUT /api/admin/complaints/:id/resolve
+exports.resolveComplaint = async (req, res) => {
+  try {
+    const complaint = await Complaint.findById(req.params.id)
+      .populate("pgStay", "name complaints");
+    if (!complaint) return res.status(404).json({ message: "Complaint not found" });
+
+    complaint.status = "resolved";
+    complaint.resolvedAt = new Date();
+    await complaint.save();
+
+    // Notify reporter
+    await createNotification(
+      complaint.reportedBy,
+      `Your complaint about "${complaint.pgStay.name}" has been resolved.`,
+      "success"
+    );
+
+    res.json({ data: complaint });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// PUT /api/admin/complaints/:id/reject
+exports.rejectComplaint = async (req, res) => {
+  try {
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) return res.status(404).json({ message: "Complaint not found" });
+
+    complaint.status = "rejected";
+    await complaint.save();
+
+    res.json({ data: complaint });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
