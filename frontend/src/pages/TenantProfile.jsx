@@ -1,87 +1,269 @@
 import { useEffect, useState } from "react";
-import { Button } from "../components/ui/button";
-import { Card } from "../components/ui/card";
-import { User, Upload, CheckCircle2 } from "lucide-react";
+import { Upload, CheckCircle2, Save } from "lucide-react";
 import RoleNavigation from "../context/RoleNavigation";
-import { apiGetMe, getUser } from "../utils/api";
+import { apiGetMe, apiUpdateProfile, getUser } from "../utils/api";
+import { toast } from "../components/Toast";
+import { CLAY_BASE, injectClay, CLAY_TENANT } from "../styles/claystyles";
+
+const PAGE_CSS = `
+  .profile-grid { display:grid; grid-template-columns:260px 1fr; gap:24px; }
+  @media(max-width:760px){ .profile-grid{grid-template-columns:1fr;} }
+
+  .avatar-card { background:rgba(255,255,255,.65); backdrop-filter:blur(18px); border:2.5px solid rgba(255,255,255,.85); border-radius:28px; padding:32px 24px; box-shadow:0 8px 28px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.95); text-align:center; animation:fadeUp .6s ease both; height:fit-content; position:relative; overflow:hidden; }
+  .avatar-card::before { content:''; position:absolute; top:0; left:0; right:0; height:5px; background:linear-gradient(90deg,#42a5f5,#e040fb,#66bb6a); border-radius:28px 28px 0 0; }
+  .avatar-ring { width:110px; height:110px; border-radius:50%; margin:0 auto 16px; background:linear-gradient(135deg,#bbdefb,#e3f2fd); border:4px solid rgba(255,255,255,.95); box-shadow:0 8px 28px rgba(66,165,245,.25),inset 0 2px 0 rgba(255,255,255,.8); display:flex; align-items:center; justify-content:center; font-size:2.8rem; }
+  .avatar-name { font-family:'Nunito',sans-serif; font-size:1.3rem; font-weight:900; color:#2d2d4e; margin-bottom:10px; }
+  .avatar-role-badge { display:inline-block; background:rgba(227,242,253,.9); color:#1565c0; border:1.5px solid rgba(144,202,249,.5); border-radius:50px; padding:5px 16px; font-size:.75rem; font-weight:700; }
+
+  .score-ring { margin:22px auto 0; width:90px; height:90px; position:relative; display:flex; align-items:center; justify-content:center; }
+  .score-ring svg { position:absolute; top:0; left:0; transform:rotate(-90deg); }
+  .score-ring-bg   { fill:none; stroke:rgba(200,200,220,.3); stroke-width:7; }
+  .score-ring-fill { fill:none; stroke-width:7; stroke-linecap:round; transition:stroke-dashoffset .8s ease; }
+  .score-value { font-family:'Nunito',sans-serif; font-size:1.5rem; font-weight:900; color:#1565c0; z-index:1; }
+  .score-label { font-size:.65rem; font-weight:700; color:#9a9ab0; text-transform:uppercase; letter-spacing:.5px; text-align:center; margin-top:6px; }
+
+  .details-card { background:rgba(255,255,255,.65); backdrop-filter:blur(18px); border:2.5px solid rgba(255,255,255,.85); border-radius:28px; padding:32px; box-shadow:0 8px 28px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.95); animation:fadeUp .7s ease both; }
+
+  .tab-row { display:flex; gap:8px; margin-bottom:24px; }
+  .tab-btn { padding:8px 20px; border-radius:50px; border:2px solid rgba(255,255,255,.85); background:rgba(255,255,255,.6); font-family:'Poppins',sans-serif; font-size:.82rem; font-weight:700; cursor:pointer; color:#5a5a7a; transition:all .18s; }
+  .tab-btn.active { background:linear-gradient(135deg,#42a5f5,#1e88e5); color:white; border-color:transparent; box-shadow:0 4px 0 #1565c0,0 6px 14px rgba(66,165,245,.35); }
+
+  .form-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+  @media(max-width:600px){ .form-grid2{grid-template-columns:1fr;} }
+  .form-group { display:flex; flex-direction:column; gap:6px; }
+
+  .save-btn { width:100%; padding:14px 22px; border:none; border-radius:16px; font-family:'Poppins',sans-serif; font-size:.92rem; font-weight:700; cursor:pointer; background:linear-gradient(135deg,#42a5f5,#1e88e5); color:white; box-shadow:0 5px 0 #1565c0,0 8px 20px rgba(66,165,245,.35),inset 0 1px 0 rgba(255,255,255,.3); transition:transform .15s,filter .15s; display:flex; align-items:center; justify-content:center; gap:8px; margin-top:8px; }
+  .save-btn:hover:not(:disabled) { filter:brightness(1.06); transform:translateY(-2px); }
+  .save-btn:disabled { opacity:.6; cursor:not-allowed; }
+
+  .upload-btn { width:100%; padding:13px 20px; border-radius:16px; cursor:pointer; background:rgba(255,255,255,.72); border:2px dashed rgba(144,202,249,.7); font-family:'Poppins',sans-serif; font-size:.88rem; font-weight:600; color:#5a5a7a; box-shadow:0 4px 14px rgba(0,0,0,.07); transition:transform .15s,border-color .2s; display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:14px; }
+  .upload-btn:hover { transform:translateY(-2px); border-color:rgba(66,165,245,.5); }
+  .upload-hint { font-size:.75rem; color:#9a9ab0; text-align:center; margin-bottom:18px; }
+
+  .stat-row { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:rgba(255,255,255,.55); border:2px solid rgba(255,255,255,.85); border-radius:16px; margin-bottom:10px; box-shadow:0 3px 12px rgba(0,0,0,.06); transition:transform .15s; }
+  .stat-row:hover { transform:translateX(4px); }
+  .stat-row-label { font-size:.82rem; color:#5a5a7a; font-weight:600; display:flex; align-items:center; gap:8px; }
+  .stat-row-value { font-family:'Nunito',sans-serif; font-size:1.4rem; font-weight:900; }
+  .val-blue  { color:#1565c0; } .val-green { color:#2e7d32; } .val-yellow { color:#f57f17; }
+
+  .verified-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(232,245,233,.9); color:#2e7d32; border:1.5px solid rgba(165,214,167,.5); border-radius:50px; padding:6px 16px; font-size:.8rem; font-weight:700; }
+  .pending-badge  { display:inline-flex; align-items:center; gap:6px; background:rgba(255,249,196,.9); color:#f57f17; border:1.5px solid rgba(255,224,130,.5); border-radius:50px; padding:6px 16px; font-size:.8rem; font-weight:700; }
+`;
+
+const css = injectClay(CLAY_BASE, CLAY_TENANT, PAGE_CSS);
+const CIRCUMFERENCE = 2 * Math.PI * 36;
+
+function ScoreRing({ value, color = "#42a5f5" }) {
+  const offset = CIRCUMFERENCE * (1 - Math.min(value / 100, 1));
+  return (
+    <>
+      <div className="score-ring">
+        <svg width="90" height="90" viewBox="0 0 90 90">
+          <circle className="score-ring-bg" cx="45" cy="45" r="36" />
+          <circle className="score-ring-fill" cx="45" cy="45" r="36" stroke={color} strokeDasharray={CIRCUMFERENCE} strokeDashoffset={offset} />
+        </svg>
+        <span className="score-value" style={{ color }}>{value}</span>
+      </div>
+      <div className="score-label">Trust Score</div>
+    </>
+  );
+}
 
 export default function TenantProfile() {
-  const [user, setUser]   = useState(getUser());
+  const [user, setUser]       = useState(getUser());
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving]   = useState(false);
+  const [activeTab, setActiveTab] = useState("details");
+
+  const [form, setForm] = useState({
+    name: "", phone: "", gender: "",
+    prefLocation: "", prefBudgetMin: "", prefBudgetMax: "",
+  });
 
   useEffect(() => {
     apiGetMe()
-      .then((res) => setUser(res.user))
-      .catch(console.error)
+      .then((res) => {
+        setUser(res.user);
+        setForm({
+          name:          res.user.name         || "",
+          phone:         res.user.phone        || "",
+          gender:        res.user.gender       || "",
+          prefLocation:  res.user.preferences?.location   || "",
+          prefBudgetMin: res.user.preferences?.budgetMin  || "",
+          prefBudgetMax: res.user.preferences?.budgetMax  || "",
+        });
+      })
+      .catch((err) => toast.error(err.message))
       .finally(() => setLoading(false));
   }, []);
 
+  const handleSave = async () => {
+    if (!form.name.trim()) { toast.warning("Name cannot be empty"); return; }
+    setSaving(true);
+    try {
+      const res = await apiUpdateProfile({
+        name: form.name,
+        phone: form.phone,
+        gender: form.gender,
+        preferences: {
+          location:  form.prefLocation,
+          budgetMin: Number(form.prefBudgetMin) || 0,
+          budgetMax: Number(form.prefBudgetMax) || 50000,
+        },
+      });
+      setUser(res.user);
+      localStorage.setItem("user", JSON.stringify(res.user));
+      toast.success("Profile updated successfully!");
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDocUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    // Placeholder — backend multer endpoint not yet wired
+    toast.info("Document upload coming soon! Your file: " + file.name);
+  };
+
+  if (loading) return (
+    <>
+      <style>{css}</style>
+      <div className="clay-page">
+        <RoleNavigation role="tenant" />
+        <main className="clay-main"><div className="clay-empty"><span className="clay-empty-emoji">⏳</span>Loading profile…</div></main>
+      </div>
+    </>
+  );
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <RoleNavigation role="tenant" />
+    <>
+      <style>{css}</style>
+      <div className="clay-page">
+        <RoleNavigation role="tenant" />
+        <main className="clay-main">
+          <div className="clay-container">
+            <h2 className="clay-page-title">👤 Profile & Verification</h2>
+            <p className="clay-page-sub">Manage your identity and track your trust score.</p>
 
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <h2 className="text-2xl mb-8 text-gray-800">Tenant Profile & Verification</h2>
-
-        {loading ? <p className="text-gray-500">Loading...</p> : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="p-6 bg-white border border-gray-300">
-              <div className="flex flex-col items-center text-center">
-                <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center mb-4">
-                  <User className="w-16 h-16 text-gray-400" />
+            <div className="profile-grid">
+              {/* Avatar card */}
+              <div className="avatar-card">
+                <div className="avatar-ring">
+                  {user?.name ? user.name[0].toUpperCase() : "🧑"}
                 </div>
-                <h3 className="text-xl mb-1 text-gray-800">{user?.name}</h3>
-                <span className="text-sm bg-blue-100 text-blue-600 px-3 py-1 rounded">Tenant</span>
+                <div className="avatar-name">{user?.name}</div>
+                <span className="avatar-role-badge">🏠 Tenant</span>
+                <ScoreRing value={user?.trustScore || 0} />
               </div>
-            </Card>
 
-            <Card className="md:col-span-2 p-6 bg-white border border-gray-300">
-              <h3 className="text-lg mb-4 text-gray-800">Profile Details</h3>
-              <div className="space-y-4 mb-8">
-                {[
-                  { label: "Name",   value: user?.name },
-                  { label: "Email",  value: user?.email },
-                  { label: "Phone",  value: user?.phone  || "Not provided" },
-                  { label: "Gender", value: user?.gender || "Not specified" },
-                ].map((row, i) => (
-                  <div key={i} className="grid grid-cols-3 gap-4">
-                    <span className="text-gray-600">{row.label}:</span>
-                    <span className="col-span-2 text-gray-800">{row.value}</span>
+              {/* Details card */}
+              <div className="details-card">
+                {/* Tabs */}
+                <div className="tab-row">
+                  <button className={`tab-btn ${activeTab === "details" ? "active" : ""}`} onClick={() => setActiveTab("details")}>📋 Details</button>
+                  <button className={`tab-btn ${activeTab === "preferences" ? "active" : ""}`} onClick={() => setActiveTab("preferences")}>🎛️ Preferences</button>
+                  <button className={`tab-btn ${activeTab === "verification" ? "active" : ""}`} onClick={() => setActiveTab("verification")}>🔐 Verification</button>
+                </div>
+
+                {/* Details tab */}
+                {activeTab === "details" && (
+                  <div>
+                    <div className="clay-section-title">📋 Personal Details</div>
+                    <div className="form-grid2">
+                      <div className="form-group">
+                        <label className="clay-label">Full Name</label>
+                        <input className="clay-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Your full name" />
+                      </div>
+                      <div className="form-group">
+                        <label className="clay-label">Phone Number</label>
+                        <input className="clay-input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+91 98765 43210" />
+                      </div>
+                      <div className="form-group">
+                        <label className="clay-label">Email Address</label>
+                        <input className="clay-input" value={user?.email || ""} disabled style={{ opacity: .6 }} />
+                      </div>
+                      <div className="form-group">
+                        <label className="clay-label">Gender</label>
+                        <select className="clay-input" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}>
+                          <option value="">Prefer not to say</option>
+                          <option value="male">Male</option>
+                          <option value="female">Female</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+                    <button className="save-btn" onClick={handleSave} disabled={saving}>
+                      <Save size={16} />
+                      {saving ? "Saving…" : "Save Changes"}
+                    </button>
                   </div>
-                ))}
-              </div>
+                )}
 
-              <div className="border-t border-gray-300 pt-6">
-                <h3 className="text-lg mb-4 text-gray-800">Identity Verification</h3>
-                <div className="space-y-4">
-                  <Button variant="outline" className="w-full justify-start border-gray-300">
-                    <Upload className="w-4 h-4 mr-2" />
-                    Upload Document (Aadhaar / Student ID)
-                  </Button>
-                  <div className="flex items-center justify-between p-4 bg-gray-50 border border-gray-300 rounded">
-                    <span className="text-gray-700">Verification Status:</span>
-                    <div className="flex items-center gap-2">
-                      {user?.verificationStatus === "verified" ? (
-                        <><CheckCircle2 className="w-5 h-5 text-green-600" /><span className="text-green-600">Verified</span></>
-                      ) : (
-                        <span className="text-yellow-600 capitalize">{user?.verificationStatus}</span>
-                      )}
+                {/* Preferences tab */}
+                {activeTab === "preferences" && (
+                  <div>
+                    <div className="clay-section-title">🎛️ PG Search Preferences</div>
+                    <div className="form-grid2">
+                      <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+                        <label className="clay-label">Preferred Location</label>
+                        <input className="clay-input" value={form.prefLocation} onChange={(e) => setForm({ ...form, prefLocation: e.target.value })} placeholder="e.g. Koramangala, Bangalore" />
+                      </div>
+                      <div className="form-group">
+                        <label className="clay-label">Min Budget (₹/month)</label>
+                        <input className="clay-input" type="number" value={form.prefBudgetMin} onChange={(e) => setForm({ ...form, prefBudgetMin: e.target.value })} placeholder="e.g. 5000" />
+                      </div>
+                      <div className="form-group">
+                        <label className="clay-label">Max Budget (₹/month)</label>
+                        <input className="clay-input" type="number" value={form.prefBudgetMax} onChange={(e) => setForm({ ...form, prefBudgetMax: e.target.value })} placeholder="e.g. 15000" />
+                      </div>
+                    </div>
+                    <p style={{ fontSize: ".8rem", color: "#9a9ab0", marginBottom: 16 }}>
+                      💡 These preferences are used to personalise PG recommendations for you.
+                    </p>
+                    <button className="save-btn" onClick={handleSave} disabled={saving}>
+                      <Save size={16} />
+                      {saving ? "Saving…" : "Save Preferences"}
+                    </button>
+                  </div>
+                )}
+
+                {/* Verification tab */}
+                {activeTab === "verification" && (
+                  <div>
+                    <div className="clay-section-title">🔐 Identity Verification</div>
+
+                    <label className="upload-btn" htmlFor="doc-upload">
+                      <Upload size={16} />
+                      Upload Document (Aadhaar / Student ID)
+                      <input id="doc-upload" type="file" accept=".jpg,.jpeg,.png,.pdf" style={{ display: "none" }} onChange={handleDocUpload} />
+                    </label>
+                    <p className="upload-hint">Accepted formats: JPG, PNG, PDF · Max 5MB</p>
+
+                    <div className="stat-row">
+                      <span className="stat-row-label">🔐 Verification Status</span>
+                      {user?.verificationStatus === "verified"
+                        ? <span className="verified-badge"><CheckCircle2 size={14} /> Verified</span>
+                        : <span className="pending-badge">⏳ {user?.verificationStatus || "Unverified"}</span>
+                      }
+                    </div>
+                    <div className="stat-row">
+                      <span className="stat-row-label">📊 Profile Completion</span>
+                      <span className="stat-row-value val-blue">{user?.profileCompletion || 0}%</span>
+                    </div>
+                    <div className="stat-row">
+                      <span className="stat-row-label">⭐ Trust Score</span>
+                      <span className="stat-row-value val-green">{user?.trustScore || 0}<span style={{ fontSize: ".7rem", color: "#9a9ab0" }}>/100</span></span>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between p-4 bg-gray-50 border border-gray-300 rounded">
-                    <span className="text-gray-700">Profile Completion:</span>
-                    <span className="text-2xl text-blue-600">{user?.profileCompletion || 0}%</span>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-gray-50 border border-gray-300 rounded">
-                    <span className="text-gray-700">Trust Score:</span>
-                    <span className="text-2xl text-blue-600">{user?.trustScore || 0}/100</span>
-                  </div>
-                </div>
+                )}
               </div>
-            </Card>
+            </div>
           </div>
-        )}
+        </main>
       </div>
-    </div>
+    </>
   );
 }
