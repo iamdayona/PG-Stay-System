@@ -1,8 +1,8 @@
-const express = require("express");
-const dotenv = require("dotenv");
-const cors = require("cors");
-const rateLimit = require("express-rate-limit");
-const connectDB = require("./config/db");
+const express    = require("express");
+const dotenv     = require("dotenv");
+const cors       = require("cors");
+const rateLimit  = require("express-rate-limit");
+const connectDB  = require("./config/db");
 
 dotenv.config();
 connectDB();
@@ -14,7 +14,6 @@ app.use(cors({
   origin: ["http://localhost:5173", "http://localhost:5174"],
   credentials: true
 }));
-
 app.use(express.json());
 
 // Rate limiting on auth endpoints
@@ -25,14 +24,15 @@ const authLimiter = rateLimit({
 });
 
 // Routes
-app.use("/api/auth", authLimiter, require("./routes/auth"));
-app.use("/api/pgs", require("./routes/pgs"));
-app.use("/api/rooms", require("./routes/rooms"));
-app.use("/api/applications", require("./routes/applications"));
-app.use("/api/feedback", require("./routes/feedback"));
+app.use("/api/auth",          authLimiter, require("./routes/auth"));
+app.use("/api/pgs",           require("./routes/pgs"));
+app.use("/api/rooms",         require("./routes/rooms"));
+app.use("/api/applications",  require("./routes/applications"));
+app.use("/api/feedback",      require("./routes/feedback"));
 app.use("/api/notifications", require("./routes/notifications"));
-app.use("/api/complaints", require("./routes/complaints"));
-app.use("/api/admin", require("./routes/admin"));
+app.use("/api/complaints",    require("./routes/complaints"));
+app.use("/api/admin",         require("./routes/admin"));
+app.use("/api/verify",        require("./routes/verify"));  // ← NEW
 
 // Health check
 app.get("/", (req, res) => res.json({ message: "PG Stay API is running" }));
