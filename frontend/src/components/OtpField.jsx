@@ -14,7 +14,7 @@
  */
 import { useState } from "react";
 
-const BASE_URL = "http://localhost:5000/api";
+const BASE_URL = import.meta.env.VITE_API_URL;
 
 async function apiPost(endpoint, body) {
     const res = await fetch(`${BASE_URL}${endpoint}`, {
