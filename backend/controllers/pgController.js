@@ -171,3 +171,61 @@ exports.deletePG = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+const cloudinary = require("cloudinary").v2;
+
+// POST /api/pgs/:id/images  (owner only)
+exports.uploadImages = async (req, res) => {
+  try {
+    const pg = await PGStay.findById(req.params.id);
+    if (!pg) return res.status(404).json({ message: "PG not found" });
+
+    if (pg.owner.toString() !== req.user._id.toString())
+      return res.status(403).json({ message: "Not authorized" });
+
+    if (!req.files || req.files.length === 0)
+      return res.status(400).json({ message: "No images uploaded" });
+
+    const remaining = 10 - pg.images.length;
+    if (remaining <= 0)
+      return res.status(400).json({ message: "Maximum 10 images already reached" });
+
+    const toAdd = req.files.slice(0, remaining);
+    const newImages = toAdd.map((file) => ({
+      url:      file.path,          // Cloudinary URL
+      publicId: file.filename,      // Cloudinary public_id
+      caption:  "",
+    }));
+
+    pg.images.push(...newImages);
+    await pg.save();
+
+    res.status(201).json({ data: pg.images });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// DELETE /api/pgs/:id/images/:imgId  (owner only)
+exports.deleteImage = async (req, res) => {
+  try {
+    const pg = await PGStay.findById(req.params.id);
+    if (!pg) return res.status(404).json({ message: "PG not found" });
+
+    if (pg.owner.toString() !== req.user._id.toString())
+      return res.status(403).json({ message: "Not authorized" });
+
+    const img = pg.images.id(req.params.imgId);
+    if (!img) return res.status(404).json({ message: "Image not found" });
+
+    // Delete from Cloudinary
+    await cloudinary.uploader.destroy(img.publicId);
+
+    img.deleteOne();
+    await pg.save();
+
+    res.json({ message: "Image deleted", data: pg.images });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
