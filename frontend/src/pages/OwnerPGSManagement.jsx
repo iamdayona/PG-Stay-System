@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
 import RoleNavigation from "../context/RoleNavigation";
 import Modal from "../components/Modal";
 import { toast } from "../components/Toast";
 import { apiGetOwnerPGs, apiCreatePG, apiUpdatePG, apiGetRooms, apiAddRoom, apiUpdateRoom } from "../utils/api";
 import { CLAY_BASE, CLAY_OWNER, injectClay } from "../styles/claystyles";
+import { Plus, Trash2, ImagePlus } from "lucide-react";
+import { apiUploadPGImages, apiDeletePGImage } from "../utils/api";
 
 const PAGE_CSS = `
   .pg-tab-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:28px; }
@@ -58,6 +59,16 @@ const PAGE_CSS = `
 
   .room-empty { text-align:center; padding:40px 24px; color:#9a9ab0; font-size:.88rem; }
   .room-empty-emoji { font-size:2.5rem; margin-bottom:10px; display:block; }
+  .photo-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
+@media(max-width:600px){ .photo-grid{grid-template-columns:repeat(2,1fr);} }
+.photo-thumb { position:relative; border-radius:14px; overflow:hidden; aspect-ratio:4/3; background:rgba(200,200,220,.2); border:2px solid rgba(255,255,255,.8); box-shadow:0 4px 12px rgba(0,0,0,.08); }
+.photo-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+.photo-del-btn { position:absolute; top:6px; right:6px; background:rgba(220,50,50,.88); border:none; border-radius:50%; width:26px; height:26px; cursor:pointer; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .2s; }
+.photo-thumb:hover .photo-del-btn { opacity:1; }
+.upload-zone { border:2.5px dashed rgba(255,167,38,.55); border-radius:16px; padding:24px; text-align:center; cursor:pointer; transition:all .18s; background:rgba(255,248,225,.4); }
+.upload-zone:hover { border-color:rgba(255,167,38,.9); background:rgba(255,248,225,.7); }
+.upload-zone-label { display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer; color:#f57f17; font-weight:600; font-size:.88rem; }
+.upload-zone input[type="file"] { display:none; }
 `;
 
 const css = injectClay(CLAY_BASE, CLAY_OWNER, PAGE_CSS);
@@ -68,12 +79,13 @@ export default function OwnerPGManagement() {
   const [selectedPG, setSelectedPG] = useState(null);
   const [saving, setSaving]         = useState(false);
   const [pgForm, setPgForm]         = useState({ name: "", location: "", rent: "", amenities: "" });
-
+  const [uploading, setUploading] = useState(false);
+  const [pgImages, setPgImages]   = useState([]);
   // Modal state
   const [showRoomModal, setShowRoomModal] = useState(false);
   const [roomForm, setRoomForm]           = useState({ roomType: "", rent: "", capacity: "1" });
   const [addingRoom, setAddingRoom]       = useState(false);
-
+  
   const fetchPGs = async () => {
     try {
       const res = await apiGetOwnerPGs();
@@ -87,6 +99,7 @@ export default function OwnerPGManagement() {
   const selectPG = (pg) => {
     setSelectedPG(pg);
     setPgForm({ name: pg.name, location: pg.location, rent: pg.rent, amenities: pg.amenities?.join(", ") || "" });
+    setPgImages(pg.images || []);
     fetchRooms(pg._id);
   };
 
@@ -170,7 +183,37 @@ export default function OwnerPGManagement() {
     setPgForm({ name: "", location: "", rent: "", amenities: "" });
     setRooms([]);
   };
+  const handleUploadImages = async (e) => {
+  const files = Array.from(e.target.files);
+  if (!selectedPG) { toast.warning("Save PG details first before uploading photos."); return; }
+  if (files.length === 0) return;
 
+  const formData = new FormData();
+  files.forEach((f) => formData.append("images", f));
+
+  setUploading(true);
+  try {
+    const res = await apiUploadPGImages(selectedPG._id, formData);
+    setPgImages(res.data);
+    toast.success(`${files.length} photo(s) uploaded! 🎉`);
+  } catch (err) {
+    toast.error(err.message);
+  } finally {
+    setUploading(false);
+    e.target.value = "";  // reset file input
+  }
+};
+
+const handleDeleteImage = async (imgId) => {
+  if (!window.confirm("Remove this photo?")) return;
+  try {
+    const res = await apiDeletePGImage(selectedPG._id, imgId);
+    setPgImages(res.data);
+    toast.success("Photo removed.");
+  } catch (err) {
+    toast.error(err.message);
+  }
+};
   return (
     <>
       <style>{css}</style>
@@ -280,7 +323,50 @@ export default function OwnerPGManagement() {
                   <Plus size={15} /> Add Room
                 </button>
               </div>
+{/* ─── Photo Management Card ─── */}
+{selectedPG && (
+  <div className="pg-card card-orange">
+    <div className="pg-section-title">
+      <span>📸 PG Photos ({pgImages.length}/10)</span>
+    </div>
 
+    {pgImages.length > 0 && (
+      <div className="photo-grid">
+        {pgImages.map((img) => (
+          <div key={img._id} className="photo-thumb">
+            <img src={img.url} alt="PG" />
+            <button
+              className="photo-del-btn"
+              onClick={() => handleDeleteImage(img._id)}
+              title="Delete photo"
+            >
+              <Trash2 size={13} color="white" />
+            </button>
+          </div>
+        ))}
+      </div>
+    )}
+
+    {pgImages.length < 10 && (
+      <div className="upload-zone">
+        <label className="upload-zone-label">
+          <ImagePlus size={28} />
+          {uploading ? "⏳ Uploading…" : "Click to upload photos (max 10, 5MB each)"}
+          <span style={{ fontSize: ".75rem", color: "#9a9ab0", fontWeight: 500 }}>
+            JPG, PNG or WebP accepted
+          </span>
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleUploadImages}
+            disabled={uploading}
+          />
+        </label>
+      </div>
+    )}
+  </div>
+)}
               {rooms.length === 0 ? (
                 <div className="room-empty">
                   <span className="room-empty-emoji">🚪</span>

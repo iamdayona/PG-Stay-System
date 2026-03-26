@@ -41,6 +41,12 @@ const PAGE_CSS = `
   .apply-btn { flex-shrink:0; padding:12px 22px; border:none; border-radius:16px; font-family:'Poppins',sans-serif; font-size:.88rem; font-weight:700; cursor:pointer; white-space:nowrap; align-self:flex-start; background:linear-gradient(135deg,#42a5f5,#1e88e5); color:white; box-shadow:0 5px 0 #1565c0,0 8px 18px rgba(66,165,245,.35),inset 0 1px 0 rgba(255,255,255,.3); transition:transform .15s,box-shadow .15s,filter .15s; }
   .apply-btn:hover:not(:disabled) { filter:brightness(1.06); transform:translateY(-2px); }
   .apply-btn:disabled { opacity:.6; cursor:not-allowed; }
+  .gallery { display:flex; gap:8px; overflow-x:auto; padding:10px 0 4px; scrollbar-width:thin; }
+.gallery::-webkit-scrollbar { height:4px; }
+.gallery::-webkit-scrollbar-thumb { background:rgba(180,180,200,.4); border-radius:4px; }
+.gallery-img { flex-shrink:0; width:130px; height:86px; border-radius:12px; object-fit:cover; border:2px solid rgba(255,255,255,.85); box-shadow:0 3px 10px rgba(0,0,0,.1); transition:transform .2s; cursor:pointer; }
+.gallery-img:hover { transform:scale(1.04); }
+.gallery-placeholder { flex-shrink:0; width:130px; height:86px; border-radius:12px; background:rgba(200,200,220,.2); border:2px dashed rgba(180,180,200,.4); display:flex; align-items:center; justify-content:center; color:#b0b0c8; font-size:.75rem; }
 `;
 
 const css = injectClay(CLAY_BASE, CLAY_TENANT, PAGE_CSS);
@@ -193,6 +199,23 @@ export default function FindPGs() {
                               <span key={a} className="clay-badge badge-gray">{a}</span>
                             ))}
                           </div>
+                          {/* Photo gallery */}
+{pg.images && pg.images.length > 0 ? (
+  <div className="gallery">
+    {pg.images.map((img) => (
+      <img
+        key={img._id}
+        className="gallery-img"
+        src={img.url}
+        alt={pg.name}
+      />
+    ))}
+  </div>
+) : (
+  <div className="gallery">
+    <div className="gallery-placeholder">📷 No photos yet</div>
+  </div>
+)}
                           <div className="rooms-text">
                             🚪 {pg.availableRoomCount ?? pg.availableRooms ?? 0} room(s) available
                           </div>

@@ -52,6 +52,17 @@ const PGStaySchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    images: {
+      type: [
+      {
+        url:       { type: String, required: true },
+        publicId:  { type: String, required: true }, // for Cloudinary delete
+        caption:   { type: String, default: "" },
+      }
+      ],
+      default: [],
+      validate: [arr => arr.length <= 10, "Maximum 10 images allowed"],
+    },
     isActive: {
       type: Boolean,
       default: true,

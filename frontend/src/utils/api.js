@@ -50,6 +50,22 @@ export const apiGetOwnerPGs        = ()           => request("/pgs/owner/mine");
 export const apiCreatePG           = (body)       => request("/pgs",      { method: "POST",   body: JSON.stringify(body) });
 export const apiUpdatePG           = (id, body)   => request(`/pgs/${id}`, { method: "PUT",   body: JSON.stringify(body) });
 export const apiDeletePG           = (id)         => request(`/pgs/${id}`, { method: "DELETE" });
+// Upload images for a PG (multipart/form-data — no JSON Content-Type)
+export const apiUploadPGImages = (pgId, formData) => {
+  const token = getToken();
+  return fetch(`${BASE_URL}/pgs/${pgId}/images`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },  // NO Content-Type — browser sets it with boundary
+    body: formData,
+  }).then(async (res) => {
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Upload failed");
+    return data;
+  });
+};
+
+export const apiDeletePGImage = (pgId, imgId) =>
+  request(`/pgs/${pgId}/images/${imgId}`, { method: "DELETE" });
 
 // ── Rooms ─────────────────────────────────────────────
 export const apiGetRooms   = (pgId)        => request(`/rooms/${pgId}`);
