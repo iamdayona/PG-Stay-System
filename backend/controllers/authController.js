@@ -13,10 +13,21 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
 
     if (!["tenant", "owner"].includes(role))
-      return res.status(400).json({ message: "Role must be tenant or owner" });
+  return res.status(400).json({ message: "Role must be tenant or owner" });
 
-    if (password.length < 6)
-      return res.status(400).json({ message: "Password must be at least 6 characters" });
+    // Name: alphabets and spaces only
+    if (!/^[A-Za-z\s]+$/.test(name.trim()))
+      return res.status(400).json({ message: "Name must contain alphabets only (no numbers or special characters)." });
+
+    // Password requirements: min 5 chars, at least one letter, one number, one special char
+    if (password.length < 5)
+      return res.status(400).json({ message: "Password must be at least 5 characters long." });
+    if (!/[A-Za-z]/.test(password))
+      return res.status(400).json({ message: "Password must contain at least one letter." });
+    if (!/[0-9]/.test(password))
+      return res.status(400).json({ message: "Password must contain at least one number." });
+    if (!/[^A-Za-z0-9]/.test(password))
+      return res.status(400).json({ message: "Password must contain at least one special character (e.g. !@#$%)." });
 
     const exists = await User.findOne({ email });
     if (exists) return res.status(400).json({ message: "Email already registered" });
