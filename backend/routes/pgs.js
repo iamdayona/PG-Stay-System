@@ -10,7 +10,7 @@ const {
   deletePG,
 } = require("../controllers/pgController");
 const { protect, authorize } = require("../middleware/auth");
-const upload = require("../middleware/upload");
+const { upload } = require("../middleware/upload");
 const { uploadImages, deleteImage } = require("../controllers/pgController");
 
 router.get("/recommendations", protect, authorize("tenant"), getRecommendations);

@@ -25,7 +25,6 @@ const request = async (endpoint, options = {}) => {
 
   const data = await res.json();
 
-  // Auto logout on expired / invalid token
   if (res.status === 401) {
     clearAuth();
     window.location.href = "/login";
@@ -42,6 +41,34 @@ export const apiRegister      = (body) => request("/auth/register", { method: "P
 export const apiGetMe         = ()     => request("/auth/me");
 export const apiUpdateProfile = (body) => request("/auth/profile",  { method: "PUT",  body: JSON.stringify(body) });
 
+// Upload Aadhaar / identity document (multipart, max 15MB, JPG/PNG/PDF)
+export const apiUploadAadhaar = (formData) => {
+  const token = getToken();
+  return fetch(`${BASE_URL}/auth/upload-aadhaar`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  }).then(async (res) => {
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Upload failed");
+    return data;
+  });
+};
+
+// Upload profile photo (multipart, max 5MB, image only)
+export const apiUploadProfilePhoto = (formData) => {
+  const token = getToken();
+  return fetch(`${BASE_URL}/auth/upload-profile-photo`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  }).then(async (res) => {
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Upload failed");
+    return data;
+  });
+};
+
 // ── PG Stays ──────────────────────────────────────────
 export const apiGetRecommendations = ()           => request("/pgs/recommendations");
 export const apiGetAllPGs          = (params = "") => request(`/pgs${params}`);
@@ -50,12 +77,12 @@ export const apiGetOwnerPGs        = ()           => request("/pgs/owner/mine");
 export const apiCreatePG           = (body)       => request("/pgs",      { method: "POST",   body: JSON.stringify(body) });
 export const apiUpdatePG           = (id, body)   => request(`/pgs/${id}`, { method: "PUT",   body: JSON.stringify(body) });
 export const apiDeletePG           = (id)         => request(`/pgs/${id}`, { method: "DELETE" });
-// Upload images for a PG (multipart/form-data — no JSON Content-Type)
+
 export const apiUploadPGImages = (pgId, formData) => {
   const token = getToken();
   return fetch(`${BASE_URL}/pgs/${pgId}/images`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },  // NO Content-Type — browser sets it with boundary
+    headers: { Authorization: `Bearer ${token}` },
     body: formData,
   }).then(async (res) => {
     const data = await res.json();
@@ -105,6 +132,6 @@ export const apiAdminTrustScores = ()     => request("/admin/trustscores");
 export const apiAdminSuspendUser = (id)   => request(`/admin/users/${id}/suspend`,   { method: "PUT" });
 export const apiAdminVerifyUser  = (id)   => request(`/admin/users/${id}/verify`,    { method: "PUT" });
 export const apiAdminSystemStats = ()     => request("/admin/system");
-export const apiAdminGetComplaints       = ()   => request("/admin/complaints");
-export const apiAdminResolveComplaint    = (id) => request(`/admin/complaints/${id}/resolve`, { method: "PUT" });
-export const apiAdminRejectComplaint     = (id) => request(`/admin/complaints/${id}/reject`,  { method: "PUT" });
+export const apiAdminGetComplaints    = ()   => request("/admin/complaints");
+export const apiAdminResolveComplaint = (id) => request(`/admin/complaints/${id}/resolve`, { method: "PUT" });
+export const apiAdminRejectComplaint  = (id) => request(`/admin/complaints/${id}/reject`,  { method: "PUT" });
