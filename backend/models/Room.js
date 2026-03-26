@@ -15,7 +15,7 @@ const RoomSchema = new mongoose.Schema(
     rent: {
       type: Number,
       required: [true, "Rent is required"],
-    },
+    }
     capacity: {
       type: Number,
       default: 1,
