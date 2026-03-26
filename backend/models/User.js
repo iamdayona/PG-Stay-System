@@ -7,6 +7,10 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: [true, "Name is required"],
       trim: true,
+      validate: {
+        validator: (v) => /^[A-Za-z\s]+$/.test(v.trim()),
+        message: "Name must contain alphabets only (no numbers or special characters).",
+      },
     },
     email: {
       type: String,
@@ -18,7 +22,7 @@ const UserSchema = new mongoose.Schema(
     password: {
       type: String,
       required: [true, "Password is required"],
-      minlength: 6,
+      minlength: 5,
       select: false,
     },
     role: {

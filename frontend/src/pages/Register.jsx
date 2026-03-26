@@ -51,7 +51,14 @@ const PAGE_CSS = `
   .clay-footer-links { display:flex; gap:6px; }
   .clay-footer-btn { background:rgba(255,255,255,.72); outline:1.5px solid rgba(255,255,255,.85); border:none; border-radius:10px; padding:7px 16px; font-family:'Poppins',sans-serif; font-size:.8rem; font-weight:600; color:#5a5a7a; cursor:pointer; box-shadow:0 3px 8px rgba(0,0,0,.07); transition:transform .15s,color .15s; }
   .clay-footer-btn:hover { color:#e040fb; transform:translateY(-2px); }
-  @media(max-width:520px){ .register-card{padding:36px 20px;} .role-grid{grid-template-columns:1fr;} .clay-nav{padding:14px 20px;} }
+  .clay-field-error { color:#c62828; font-size:.78rem; font-weight:600; margin-top:6px; display:flex; align-items:center; gap:5px; animation:fadeIn .25s ease; }
+  .pwd-rules { background:rgba(240,245,255,.85); border:1.5px solid rgba(180,200,255,.6); border-radius:12px; padding:10px 14px; margin-top:8px; animation:fadeIn .3s ease; }
+  .pwd-rules-title { font-size:.76rem; font-weight:700; color:#5a5a7a; margin-bottom:7px; }
+  .pwd-rule { font-size:.76rem; font-weight:600; display:flex; align-items:center; gap:7px; margin-bottom:4px; transition:color .2s; }
+  .pwd-rule.ok  { color:#2e7d32; }
+  .pwd-rule.bad { color:#b71c1c; }
+  .pwd-rule-icon { font-size:.8rem; }
+
 `;
 
 const css = injectClay(CLAY_BASE, CLAY_AUTH, PAGE_CSS);
@@ -66,18 +73,41 @@ export default function Register() {
   const { setRole } = useRole();
 
   const [selectedRole, setSelectedRole] = useState("");
-  const [name,     setName]     = useState("");
-  const [email,    setEmail]    = useState("");
-  const [password, setPassword] = useState("");
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState("");
+  const [name,        setName]        = useState("");
+  const [nameError,   setNameError]   = useState("");
+  const [email,       setEmail]       = useState("");
+  const [password,    setPassword]    = useState("");
+  const [pwdTouched,  setPwdTouched]  = useState(false);
+  const [loading,     setLoading]     = useState(false);
+  const [error,       setError]       = useState("");
   const [emailVerified, setEmailVerified] = useState(false);
+
+  // ── Validation helpers ──────────────────────────────────────────────
+  const isNameValid     = (v) => /^[A-Za-z\s]+$/.test(v.trim());
+  const isPwdLongEnough = (v) => v.length >= 5;
+  const hasPwdLetter    = (v) => /[A-Za-z]/.test(v);
+  const hasPwdNumber    = (v) => /[0-9]/.test(v);
+  const hasPwdSpecial   = (v) => /[^A-Za-z0-9]/.test(v);
+  const isPwdValid      = (v) =>
+    isPwdLongEnough(v) && hasPwdLetter(v) && hasPwdNumber(v) && hasPwdSpecial(v);
+
+  const handleNameChange = (e) => {
+    const val = e.target.value;
+    setName(val);
+    if (val && !isNameValid(val)) {
+      setNameError("Name must contain alphabets only (no numbers or special characters).");
+    } else {
+      setNameError("");
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (!selectedRole)  { setError("Please select a role to continue."); return; }
-    if (!emailVerified) { setError("Please verify your email address before registering."); return; }
+    if (!selectedRole)         { setError("Please select a role to continue."); return; }
+    if (!emailVerified)        { setError("Please verify your email address before registering."); return; }
+    if (!isNameValid(name))    { setError("Name must contain alphabets only."); return; }
+    if (!isPwdValid(password)) { setError("Password does not meet the requirements listed below."); setPwdTouched(true); return; }
     setLoading(true);
     try {
       const data = await apiRegister({ name, email, password, role: selectedRole });
@@ -113,8 +143,19 @@ export default function Register() {
               {/* Name */}
               <div className="form-group">
                 <label className="clay-label">Full Name</label>
-                <input className="clay-input" type="text" placeholder="Your full name"
-                  required value={name} onChange={(e) => setName(e.target.value)} />
+                <input
+                  className="clay-input"
+                  type="text"
+                  placeholder="Your full name (alphabets only)"
+                  required
+                  value={name}
+                  onChange={handleNameChange}
+                />
+                {nameError && (
+                  <div className="clay-field-error">
+                    <span>⚠️</span> {nameError}
+                  </div>
+                )}
               </div>
 
               {/* Email + OTP */}
@@ -130,8 +171,30 @@ export default function Register() {
               {/* Password */}
               <div className="form-group">
                 <label className="clay-label">Password</label>
-                <input className="clay-input" type="password" placeholder="Create a strong password"
-                  required value={password} onChange={(e) => setPassword(e.target.value)} />
+                <input
+                  className="clay-input"
+                  type="password"
+                  placeholder="Create a strong password"
+                  required
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); setPwdTouched(true); }}
+                />
+                {pwdTouched && (
+                  <div className="pwd-rules">
+                    <div className="pwd-rules-title">Password Requirements:</div>
+                    {[
+                      { ok: isPwdLongEnough(password), label: "At least 5 characters" },
+                      { ok: hasPwdLetter(password),    label: "Contains at least one letter (a–z, A–Z)" },
+                      { ok: hasPwdNumber(password),    label: "Contains at least one number (0–9)" },
+                      { ok: hasPwdSpecial(password),   label: "Contains at least one special character (!@#$…)" },
+                    ].map(({ ok, label }) => (
+                      <div key={label} className={`pwd-rule ${ok ? "ok" : "bad"}`}>
+                        <span className="pwd-rule-icon">{ok ? "✅" : "❌"}</span>
+                        {label}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Role */}
