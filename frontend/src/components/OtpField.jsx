@@ -124,6 +124,14 @@ export default function OtpField({
     const [sending, setSending] = useState(false);
     const [checking, setChecking] = useState(false);
     const [cooldown, setCooldown] = useState(0);
+    const [emailTouched, setEmailTouched] = useState(false);
+
+    // Email format: must have chars @ domain . extension (min 2-char TLD)
+    const isValidEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
+    const emailError =
+        isEmail && emailTouched && value && !isValidEmail(value)
+            ? "Please enter a valid email address (e.g. name@gmail.com)."
+            : "";
 
     function startCooldown(s = 30) {
         setCooldown(s);
@@ -132,6 +140,11 @@ export default function OtpField({
 
     async function handleSend() {
         if (!value.trim()) { setMsg({ text: `Enter your ${type} first.`, kind: "err" }); return; }
+        if (isEmail && !isValidEmail(value)) {
+            setEmailTouched(true);
+            setMsg({ text: "Please enter a valid email address (e.g. name@gmail.com).", kind: "err" });
+            return;
+        }
         setSending(true); setMsg(null);
         try {
             const payload = isEmail
@@ -174,7 +187,8 @@ export default function OtpField({
                     type={isEmail ? "email" : "tel"}
                     placeholder={placeholder}
                     value={value}
-                    onChange={e => { onChange?.(e.target.value); if (step !== "idle") { setStep("idle"); setMsg(null); } }}
+                    onChange={e => { onChange?.(e.target.value); setEmailTouched(true); if (step !== "idle") { setStep("idle"); setMsg(null); } }}
+                    onBlur={() => isEmail && setEmailTouched(true)}
                     disabled={isVerified}
                 />
                 {isVerified
@@ -185,6 +199,12 @@ export default function OtpField({
                     </button>
                 }
             </div>
+
+            {emailError && (
+                <div style={{color:"#c62828",fontSize:".78rem",fontWeight:600,marginTop:"6px",display:"flex",alignItems:"center",gap:"5px",animation:"otpfIn .25s ease"}}>
+                    <span>⚠️</span> {emailError}
+                </div>
+            )}
 
             {isSent && (
                 <>
