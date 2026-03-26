@@ -16,15 +16,20 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Rate limiting on auth endpoints
-const authLimiter = rateLimit({
+// Rate limiting only on login/register (POST /auth/login, POST /auth/register)
+const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
   message: { message: "Too many attempts. Please try again after 15 minutes." },
+  keyGenerator: (req) => req.body?.email || req.ip, // Limit per email or IP
+  skip: (req) => {
+    // Only apply rate limit to login and register
+    return !req.path.match(/^\/(login|register)$/);
+  },
 });
 
 // Routes
-app.use("/api/auth",          authLimiter, require("./routes/auth"));
+app.use("/api/auth",          loginLimiter, require("./routes/auth"));
 app.use("/api/pgs",           require("./routes/pgs"));
 app.use("/api/rooms",         require("./routes/rooms"));
 app.use("/api/applications",  require("./routes/applications"));
