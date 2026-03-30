@@ -5,6 +5,7 @@ import { apiGetMe, apiUpdateProfile, apiUploadAadhaar, apiUploadProfilePhoto, ge
 import { toast } from "../components/Toast";
 import { CLAY_BASE, CLAY_OWNER, injectClay } from "../styles/claystyles";
 import OtpField from "../components/OtpField";
+import PhoneInput from "../components/PhoneInput";
 
 const PAGE_CSS = `
   .profile-grid { display:grid; grid-template-columns:260px 1fr; gap:24px; }
@@ -245,7 +246,7 @@ export default function OwnerProfile() {
                       </div>
                       <div className="form-group">
                         <label className="clay-label">Phone Number</label>
-                        <input className="clay-input" value={form.phone} onChange={(e) => setForm({...form, phone:e.target.value})} placeholder="+91 98765 43210"/>
+                        <PhoneInput value={form.phone} onChange={(val) => setForm({...form, phone:val})} />
                       </div>
                       <div className="form-group" style={{gridColumn:"1 / -1"}}>
                         <label className="clay-label">Email Address</label>
