@@ -36,7 +36,7 @@ const PAGE_CSS = `
   .activity-status { margin-left:auto; font-size:.72rem; font-weight:700; padding:3px 10px; border-radius:50px; border:1.5px solid transparent; }
   .status-approved { background:rgba(232,245,233,.9); color:#2e7d32; border-color:rgba(165,214,167,.5); }
   .status-pending  { background:rgba(255,249,196,.9); color:#f57f17; border-color:rgba(255,224,130,.5); }
-  .status-review   { background:rgba(227,242,253,.9); color:#1565c0; border-color:rgba(144,202,249,.5); }
+  .status-rejected { background:rgba(255,235,238,.9); color:#c62828; border-color:rgba(239,154,154,.5); }
 `;
 
 
@@ -59,17 +59,17 @@ export default function TenantDashboard() {
   }, []);
 
   const menuItems = [
-    { icon: User,     title: "Profile & Verification", desc: "Manage your profile and identity verification", path: "/tenant/profile",       emoji: "👤" },
-    { icon: Search,   title: "Search PG",              desc: "Find and apply for PG accommodations",          path: "/tenant/findpgs",        emoji: "🔍" },
-    { icon: FileText, title: "My Applications",        desc: "Track your application status",                 path: "/tenant/applications",   emoji: "📋" },
-    { icon: Bell,     title: "Notifications",          desc: "View updates and feedback",                     path: "/tenant/notifications",  emoji: "🔔" },
+    { icon: User,     title: "Profile & Verification",    desc: "Manage your profile and identity verification", path: "/tenant/profile",       emoji: "👤" },
+    { icon: Search,   title: "Search PG",                 desc: "Find and apply for PG accommodations",          path: "/tenant/findpgs",        emoji: "🔍" },
+    { icon: FileText, title: "My Applications",           desc: "Track your application status",                 path: "/tenant/applications",   emoji: "📋" },
+    { icon: Bell,     title: "Notifications & Feedback",  desc: "View updates and share your experience",        path: "/tenant/notifications",  emoji: "🔔" },
   ];
 
-  const activeCount = recentApps.filter((a) => ["Pending", "Under Review"].includes(a.status)).length;
+  const activeCount = recentApps.filter((a) => a.status === "Pending").length;
 
   const statusClass = (s) => {
-    if (s === "Approved")     return "status-approved";
-    if (s === "Under Review") return "status-review";
+    if (s === "Approved") return "status-approved";
+    if (s === "Rejected") return "status-rejected";
     return "status-pending";
   };
 
