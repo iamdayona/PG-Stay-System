@@ -221,10 +221,6 @@ export default function OwnerProfile() {
                 <div style={{fontSize:".7rem",color:"#9a9ab0",marginBottom:12}}>Tap photo to change</div>
                 <div className="avatar-name">{user?.name}</div>
                 <span className="avatar-role-badge">🏢 PG Owner</span>
-                <div className="pg-count-pill">
-                  <div className="pill-label">PGs Listed</div>
-                  <div className="pill-val">{user?.totalPGs ?? 0}</div>
-                </div>
                 <TrustRing value={user?.trustScore || 0}/>
               </div>
 

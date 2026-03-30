@@ -10,14 +10,17 @@ const {
   deletePG,
 } = require("../controllers/pgController");
 const { protect, authorize } = require("../middleware/auth");
-const { upload } = require("../middleware/upload");
+const { upload, uploadLicense } = require("../middleware/upload");
 const { uploadImages, deleteImage } = require("../controllers/pgController");
 
 router.get("/recommendations", protect, authorize("tenant"), getRecommendations);
 router.get("/owner/mine", protect, authorize("owner"), getOwnerPGs);
 router.get("/", protect, getAllPGs);
 router.get("/:id", protect, getPGById);
-router.post("/", protect, authorize("owner"), createPG);
+
+// License document upload is handled by uploadLicense middleware (required for new PG)
+router.post("/", protect, authorize("owner"), uploadLicense.single("licenseDocument"), createPG);
+
 router.put("/:id", protect, authorize("owner", "admin"), updatePG);
 router.delete("/:id", protect, authorize("owner", "admin"), deletePG);
 router.post(

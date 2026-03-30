@@ -108,6 +108,7 @@ exports.getOwnerPGs = async (req, res) => {
 };
 
 // POST /api/pgs
+// Expects multipart/form-data with field "licenseDocument" (required)
 exports.createPG = async (req, res) => {
   try {
     const { name, location, rent, amenities, description } = req.body;
@@ -115,13 +116,24 @@ exports.createPG = async (req, res) => {
     if (!name || !location || !rent)
       return res.status(400).json({ message: "Name, location and rent are required" });
 
+    // License document is mandatory
+    if (!req.file)
+      return res.status(400).json({ message: "License document is required to create a PG listing" });
+
+    const fileType = req.file.mimetype === "application/pdf" ? "pdf" : "image";
+
     const pg = await PGStay.create({
       owner: req.user._id,
       name,
       location,
       rent: Number(rent),
-      amenities: amenities || [],
+      amenities: amenities ? (Array.isArray(amenities) ? amenities : JSON.parse(amenities)) : [],
       description: description || "",
+      licenseDocument: {
+        url:      req.file.path,
+        publicId: req.file.filename,
+        fileType,
+      },
     });
 
     res.status(201).json({ data: pg });

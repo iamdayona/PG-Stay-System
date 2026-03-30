@@ -78,4 +78,24 @@ const uploadProfilePhoto = multer({
   },
 });
 
-module.exports = { upload, uploadAadhaar, uploadProfilePhoto };
+// ── PG License document uploads (jpg/png/pdf, max 15MB) ──────────────────
+const licenseStorage = new CloudinaryStorage({
+  cloudinary,
+  params: (req, file) => ({
+    folder: "pg-licenses",
+    allowed_formats: ["jpg", "jpeg", "png", "pdf"],
+    resource_type: file.mimetype === "application/pdf" ? "raw" : "image",
+  }),
+});
+
+const uploadLicense = multer({
+  storage: licenseStorage,
+  limits: { fileSize: 15 * 1024 * 1024 }, // 15 MB
+  fileFilter: (req, file, cb) => {
+    const allowed = ["image/jpeg", "image/jpg", "image/png", "application/pdf"];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error("Only JPG, PNG, or PDF files are allowed for license document"), false);
+  },
+});
+
+module.exports = { upload, uploadAadhaar, uploadProfilePhoto, uploadLicense };

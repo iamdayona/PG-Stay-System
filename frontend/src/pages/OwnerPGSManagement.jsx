@@ -98,6 +98,13 @@ const PAGE_CSS = `
   .room-type-row { display:flex; gap:12px; margin-bottom:4px; }
   .room-type-btn { flex:1; padding:12px; border:2.5px solid rgba(200,200,220,.5); border-radius:14px; font-size:.88rem; font-weight:700; cursor:pointer; background:rgba(255,255,255,.6); color:#5a5a7a; transition:all .16s; text-align:center; }
   .room-type-btn.active { border-color:#ffa726; background:linear-gradient(135deg,rgba(255,167,38,.15),rgba(255,204,2,.1)); color:#e65100; box-shadow:0 3px 12px rgba(255,167,38,.2); }
+  /* ── License document upload ── */
+  .license-upload-zone { width:100%; padding:18px 16px; border-radius:14px; cursor:pointer; background:rgba(255,255,255,.72); border:2.5px dashed rgba(255,167,38,.55); font-family:'Poppins',sans-serif; font-size:.85rem; font-weight:600; color:#5a5a7a; transition:all .2s; display:flex; align-items:center; gap:12px; }
+  .license-upload-zone:hover { border-color:rgba(255,167,38,.85); background:rgba(255,248,225,.6); }
+  .license-upload-zone input[type="file"] { display:none; }
+  .license-upload-ready { border-color:rgba(102,187,106,.7); background:rgba(232,245,233,.6); color:#2e7d32; }
+  .license-error { color:#c62828; font-size:.78rem; font-weight:600; margin-top:6px; display:flex; align-items:center; gap:5px; }
+  .license-required-badge { display:inline-flex; align-items:center; gap:4px; background:rgba(255,235,238,.9); color:#c62828; border:1.5px solid rgba(239,154,154,.5); border-radius:50px; padding:3px 10px; font-size:.72rem; font-weight:700; margin-left:8px; }
 `;
 
 const css = injectClay(CLAY_BASE, CLAY_OWNER, PAGE_CSS);
@@ -196,6 +203,10 @@ export default function OwnerPGManagement() {
   const [roomForm, setRoomForm]           = useState({ roomType:"", rent:"", capacity:"2" });
   const [addingRoom, setAddingRoom]       = useState(false);
 
+  // License document state (only required when creating new PG)
+  const [licenseFile, setLicenseFile]   = useState(null);
+  const [licenseError, setLicenseError] = useState("");
+
   const fetchPGs = async () => {
     try {
       const res = await apiGetOwnerPGs();
@@ -225,20 +236,34 @@ export default function OwnerPGManagement() {
       toast.warning("Name, location and rent are required");
       return;
     }
+    // License document is mandatory only when creating a new PG
+    if (!selectedPG && !licenseFile) {
+      setLicenseError("Please upload the PG license document before submitting.");
+      return;
+    }
     setSaving(true);
     try {
-      const payload = {
-        name:      pgForm.name,
-        location:  pgForm.location,
-        rent:      Number(pgForm.rent),
-        amenities: pgForm.amenities,
-      };
       if (selectedPG) {
+        const payload = {
+          name:      pgForm.name,
+          location:  pgForm.location,
+          rent:      Number(pgForm.rent),
+          amenities: pgForm.amenities,
+        };
         await apiUpdatePG(selectedPG._id, payload);
         toast.success("PG details updated successfully!");
       } else {
-        const res = await apiCreatePG(payload);
+        // Build multipart FormData for new PG creation (license required)
+        const fd = new FormData();
+        fd.append("name",      pgForm.name);
+        fd.append("location",  pgForm.location);
+        fd.append("rent",      String(pgForm.rent));
+        fd.append("amenities", JSON.stringify(pgForm.amenities));
+        fd.append("licenseDocument", licenseFile);
+        const res = await apiCreatePG(fd);
         setSelectedPG(res.data);
+        setLicenseFile(null);
+        setLicenseError("");
         toast.success("PG Stay created successfully!");
       }
       await fetchPGs();
@@ -281,6 +306,8 @@ export default function OwnerPGManagement() {
     setSelectedPG(null);
     setPgForm({ name:"", location:"", rent:"", amenities:[] });
     setRooms([]);
+    setLicenseFile(null);
+    setLicenseError("");
   };
 
   const handleUploadImages = async (e) => {
@@ -446,6 +473,47 @@ export default function OwnerPGManagement() {
                   />
                 </div>
               </div>
+
+              {/* License Document — required only for new PG creation */}
+              {!selectedPG && (
+                <div style={{ marginTop: 16 }}>
+                  <label className="clay-label" style={{ display:"flex", alignItems:"center", marginBottom:8 }}>
+                    📄 License / Registration Document
+                    <span className="license-required-badge">* Required</span>
+                  </label>
+                  <label
+                    className={`license-upload-zone${licenseFile ? " license-upload-ready" : ""}`}
+                    htmlFor="pg-license-upload"
+                  >
+                    <input
+                      id="pg-license-upload"
+                      type="file"
+                      accept=".jpg,.jpeg,.png,.pdf"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        setLicenseFile(file);
+                        setLicenseError("");
+                      }}
+                    />
+                    <span style={{ fontSize:"1.6rem" }}>{licenseFile ? "✅" : "📋"}</span>
+                    <div>
+                      <div style={{ fontWeight:700, color: licenseFile ? "#2e7d32" : "#2d2d4e", fontSize:".88rem" }}>
+                        {licenseFile ? licenseFile.name : "Upload PG License / Registration Document"}
+                      </div>
+                      <div style={{ fontSize:".74rem", color:"#9a9ab0", marginTop:3 }}>
+                        JPG · PNG · PDF &nbsp;·&nbsp; Max 15MB &nbsp;·&nbsp; Admin will verify before listing goes live
+                      </div>
+                    </div>
+                  </label>
+                  {licenseError && (
+                    <div className="license-error">
+                      <span>⚠️</span> {licenseError}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <button className="update-btn" onClick={handleSavePG} disabled={saving}>
                 {saving ? "⏳ Saving…" : selectedPG ? "Update PG Details →" : "Create PG Stay →"}
               </button>

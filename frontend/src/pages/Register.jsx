@@ -4,6 +4,7 @@ import { useRole } from "../context/useRole";
 import { apiRegister, saveAuth } from "../utils/api";
 import { CLAY_BASE, CLAY_AUTH, injectClay } from "../styles/claystyles";
 import OtpField from "../components/OtpField";
+import { Eye, EyeOff } from "lucide-react";
 
 const PAGE_CSS = `
   @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
@@ -58,6 +59,9 @@ const PAGE_CSS = `
   .pwd-rule.ok  { color:#2e7d32; }
   .pwd-rule.bad { color:#b71c1c; }
   .pwd-rule-icon { font-size:.8rem; }
+  .pwd-wrap { position:relative; }
+  .pwd-eye  { position:absolute; right:14px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:#9a9ab0; display:flex; align-items:center; padding:0; transition:color .15s; }
+  .pwd-eye:hover { color:#5a5a7a; }
 
 `;
 
@@ -73,17 +77,20 @@ export default function Register() {
   const { setRole } = useRole();
 
   const [selectedRole, setSelectedRole] = useState("");
-  const [name,        setName]        = useState("");
-  const [nameError,   setNameError]   = useState("");
-  const [email,       setEmail]       = useState("");
-  const [password,    setPassword]    = useState("");
-  const [pwdTouched,  setPwdTouched]  = useState(false);
-  const [loading,     setLoading]     = useState(false);
-  const [error,       setError]       = useState("");
+  const [name,         setName]         = useState("");
+  const [nameError,    setNameError]    = useState("");
+  const [email,        setEmail]        = useState("");
+  const [password,     setPassword]     = useState("");
+  const [confirmPwd,   setConfirmPwd]   = useState("");
+  const [confirmError, setConfirmError] = useState("");
+  const [showPwd,      setShowPwd]      = useState(false);
+  const [showConfirm,  setShowConfirm]  = useState(false);
+  const [pwdTouched,   setPwdTouched]   = useState(false);
+  const [loading,      setLoading]      = useState(false);
+  const [error,        setError]        = useState("");
   const [emailVerified, setEmailVerified] = useState(false);
 
   // ── Validation helpers ──────────────────────────────────────────────
-  const isNameValid     = (v) => /^[A-Za-z\s]+$/.test(v.trim());
   const isPwdLongEnough = (v) => v.length >= 5;
   const hasPwdLetter    = (v) => /[A-Za-z]/.test(v);
   const hasPwdNumber    = (v) => /[0-9]/.test(v);
@@ -91,26 +98,51 @@ export default function Register() {
   const isPwdValid      = (v) =>
     isPwdLongEnough(v) && hasPwdLetter(v) && hasPwdNumber(v) && hasPwdSpecial(v);
 
+  // Name must have at least two words (Firstname Lastname)
+  const hasTwoWords = (v) => v.trim().split(/\s+/).filter(Boolean).length >= 2;
+
+  // Auto-capitalise each word, allow only letters + single spaces
   const handleNameChange = (e) => {
-    const val = e.target.value;
-    setName(val);
-    if (val && !isNameValid(val)) {
-      setNameError("Name must contain alphabets only (no numbers or special characters).");
+    let raw = e.target.value;
+    // Strip characters that are not letters or spaces
+    raw = raw.replace(/[^A-Za-z\s]/g, "");
+    // Collapse multiple consecutive spaces into one
+    raw = raw.replace(/  +/g, " ");
+    // Capitalise first letter of each word
+    const titled = raw.replace(/(^|\s)([a-z])/g, (_, space, char) => space + char.toUpperCase());
+    setName(titled);
+
+    if (titled.trim() && !hasTwoWords(titled)) {
+      setNameError("Full name must contain at least two words (e.g. John Doe).");
     } else {
       setNameError("");
+    }
+  };
+
+  const handleConfirmChange = (e) => {
+    setConfirmPwd(e.target.value);
+    if (e.target.value && e.target.value !== password) {
+      setConfirmError("Passwords do not match.");
+    } else {
+      setConfirmError("");
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (!selectedRole)         { setError("Please select a role to continue."); return; }
-    if (!emailVerified)        { setError("Please verify your email address before registering."); return; }
-    if (!isNameValid(name))    { setError("Name must contain alphabets only."); return; }
-    if (!isPwdValid(password)) { setError("Password does not meet the requirements listed below."); setPwdTouched(true); return; }
+
+    if (!selectedRole)              { setError("Please select a role to continue."); return; }
+    if (!emailVerified)             { setError("Please verify your email address before registering."); return; }
+
+    const trimmedName = name.trim();
+    if (!hasTwoWords(trimmedName))  { setNameError("Full name must contain at least two words (e.g. John Doe)."); setError("Please fix the errors above."); return; }
+    if (!isPwdValid(password))      { setError("Password does not meet the requirements listed below."); setPwdTouched(true); return; }
+    if (confirmPwd !== password)    { setConfirmError("Passwords do not match."); setError("Please fix the errors above."); return; }
+
     setLoading(true);
     try {
-      const data = await apiRegister({ name, email, password, role: selectedRole });
+      const data = await apiRegister({ name: trimmedName, email, password, role: selectedRole });
       saveAuth(data.token, data.user);
       setRole(data.user.role);
       if (data.user.role === "tenant")     navigate("/tenant/dashboard");
@@ -146,10 +178,15 @@ export default function Register() {
                 <input
                   className="clay-input"
                   type="text"
-                  placeholder="Your full name (alphabets only)"
+                  placeholder="First and Last name (e.g. John Doe)"
                   required
                   value={name}
                   onChange={handleNameChange}
+                  onBlur={() => {
+                    const trimmed = name.trim();
+                    if (trimmed && !hasTwoWords(trimmed))
+                      setNameError("Full name must contain at least two words (e.g. John Doe).");
+                  }}
                 />
                 {nameError && (
                   <div className="clay-field-error">
@@ -171,14 +208,35 @@ export default function Register() {
               {/* Password */}
               <div className="form-group">
                 <label className="clay-label">Password</label>
-                <input
-                  className="clay-input"
-                  type="password"
-                  placeholder="Create a strong password"
-                  required
-                  value={password}
-                  onChange={(e) => { setPassword(e.target.value); setPwdTouched(true); }}
-                />
+                <div className="pwd-wrap">
+                  <input
+                    className="clay-input"
+                    type={showPwd ? "text" : "password"}
+                    placeholder="Create a strong password"
+                    required
+                    value={password}
+                    style={{ paddingRight: 42 }}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setPwdTouched(true);
+                      // Re-validate confirm as password changes
+                      if (confirmPwd && e.target.value !== confirmPwd) {
+                        setConfirmError("Passwords do not match.");
+                      } else {
+                        setConfirmError("");
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="pwd-eye"
+                    onClick={() => setShowPwd((v) => !v)}
+                    tabIndex={-1}
+                    aria-label={showPwd ? "Hide password" : "Show password"}
+                  >
+                    {showPwd ? <EyeOff size={18}/> : <Eye size={18}/>}
+                  </button>
+                </div>
                 {pwdTouched && (
                   <div className="pwd-rules">
                     <div className="pwd-rules-title">Password Requirements:</div>
@@ -193,6 +251,36 @@ export default function Register() {
                         {label}
                       </div>
                     ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Confirm Password */}
+              <div className="form-group">
+                <label className="clay-label">Confirm Password</label>
+                <div className="pwd-wrap">
+                  <input
+                    className="clay-input"
+                    type={showConfirm ? "text" : "password"}
+                    placeholder="Re-enter your password"
+                    required
+                    value={confirmPwd}
+                    style={{ paddingRight: 42 }}
+                    onChange={handleConfirmChange}
+                  />
+                  <button
+                    type="button"
+                    className="pwd-eye"
+                    onClick={() => setShowConfirm((v) => !v)}
+                    tabIndex={-1}
+                    aria-label={showConfirm ? "Hide confirm password" : "Show confirm password"}
+                  >
+                    {showConfirm ? <EyeOff size={18}/> : <Eye size={18}/>}
+                  </button>
+                </div>
+                {confirmError && (
+                  <div className="clay-field-error">
+                    <span>⚠️</span> {confirmError}
                   </div>
                 )}
               </div>

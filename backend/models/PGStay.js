@@ -67,6 +67,11 @@ const PGStaySchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    licenseDocument: {
+      url:      { type: String, default: "" },
+      publicId: { type: String, default: "" },
+      fileType: { type: String, default: "" }, // "pdf" | "image"
+    },
   },
   { timestamps: true }
 );
