@@ -1,15 +1,22 @@
 const PGStay = require("../models/PGStay");
-const Room = require("../models/Room");
+const Room   = require("../models/Room");
 
 // GET /api/pgs/recommendations  (tenant only)
-// Returns verified PGs sorted by trust score + amenity match
+// Returns verified PGs sorted by trust score + preference match (location, budget, amenities)
 exports.getRecommendations = async (req, res) => {
   try {
-    const user = req.user;
-    const pgs = await PGStay.find({ verificationStatus: "verified", isActive: true })
+    const user  = req.user;
+    const prefs = user.preferences || {};
+
+    // Build base filter
+    const filter = { verificationStatus: "verified", isActive: true };
+
+    // If tenant has location preference, pre-filter (soft — still show others after)
+    // We score rather than hard-filter, so no DB-level location filter here
+
+    const pgs = await PGStay.find(filter)
       .populate("owner", "name email trustScore verificationStatus");
 
-    // Attach available room count
     const results = await Promise.all(
       pgs.map(async (pg) => {
         const availableRoomCount = await Room.countDocuments({
@@ -17,13 +24,30 @@ exports.getRecommendations = async (req, res) => {
           availability: true,
         });
 
-        // Score: base trust + amenity match bonus
+        // ── Match score: base trust + preference bonuses ──
         let matchScore = pg.trustScore;
-        if (user.preferences?.amenities?.length > 0) {
+
+        // Amenity match: +5 per matched amenity
+        if (prefs.amenities?.length > 0) {
           const matched = (pg.amenities || []).filter((a) =>
-            user.preferences.amenities.includes(a)
+            prefs.amenities.includes(a)
           ).length;
           matchScore = Math.min(100, matchScore + matched * 5);
+        }
+
+        // Location match: +10 if location contains preference
+        if (prefs.location && pg.location) {
+          const prefLoc = prefs.location.toLowerCase();
+          if (pg.location.toLowerCase().includes(prefLoc)) {
+            matchScore = Math.min(100, matchScore + 10);
+          }
+        }
+
+        // Budget match: +5 if rent is within budget range
+        if (prefs.budgetMin !== undefined && prefs.budgetMax !== undefined) {
+          if (pg.rent >= (prefs.budgetMin || 0) && pg.rent <= (prefs.budgetMax || 999999)) {
+            matchScore = Math.min(100, matchScore + 5);
+          }
         }
 
         return { ...pg.toObject(), availableRoomCount, matchScore };
@@ -39,13 +63,13 @@ exports.getRecommendations = async (req, res) => {
   }
 };
 
-// GET /api/pgs  — with optional filters
+// GET /api/pgs  — with optional filters (location, budgetMin, budgetMax, amenities, roomType, capacity)
 exports.getAllPGs = async (req, res) => {
   try {
-    const { location, budgetMin, budgetMax, amenities } = req.query;
+    const { location, budgetMin, budgetMax, amenities, roomType, capacity } = req.query;
     const filter = { verificationStatus: "verified", isActive: true };
 
-    if (location) filter.location = { $regex: location, $options: "i" };
+    if (location)  filter.location = { $regex: location, $options: "i" };
     if (budgetMin || budgetMax) {
       filter.rent = {};
       if (budgetMin) filter.rent.$gte = Number(budgetMin);
@@ -56,7 +80,18 @@ exports.getAllPGs = async (req, res) => {
       filter.amenities = { $all: list };
     }
 
-    const pgs = await PGStay.find(filter).populate("owner", "name email");
+    let pgs = await PGStay.find(filter).populate("owner", "name email");
+
+    // Room-type filter: only keep PGs that have at least one matching available room
+    if (roomType) {
+      const roomFilter = { availability: true, roomType };
+      if (roomType === "Shared" && capacity) roomFilter.capacity = { $gte: Number(capacity) };
+
+      const pgIdsWithMatchingRooms = await Room.distinct("pgStay", roomFilter);
+      pgs = pgs.filter((pg) =>
+        pgIdsWithMatchingRooms.some((id) => id.toString() === pg._id.toString())
+      );
+    }
 
     const results = await Promise.all(
       pgs.map(async (pg) => {
@@ -92,11 +127,8 @@ exports.getOwnerPGs = async (req, res) => {
 
     const results = await Promise.all(
       pgs.map(async (pg) => {
-        const totalRooms = await Room.countDocuments({ pgStay: pg._id });
-        const occupiedRooms = await Room.countDocuments({
-          pgStay: pg._id,
-          availability: false,
-        });
+        const totalRooms    = await Room.countDocuments({ pgStay: pg._id });
+        const occupiedRooms = await Room.countDocuments({ pgStay: pg._id, availability: false });
         return { ...pg.toObject(), totalRooms, occupiedRooms };
       })
     );
@@ -108,7 +140,6 @@ exports.getOwnerPGs = async (req, res) => {
 };
 
 // POST /api/pgs
-// Expects multipart/form-data with field "licenseDocument" (required)
 exports.createPG = async (req, res) => {
   try {
     const { name, location, rent, amenities, description } = req.body;
@@ -116,7 +147,6 @@ exports.createPG = async (req, res) => {
     if (!name || !location || !rent)
       return res.status(400).json({ message: "Name, location and rent are required" });
 
-    // License document is mandatory
     if (!req.file)
       return res.status(400).json({ message: "License document is required to create a PG listing" });
 
@@ -126,8 +156,8 @@ exports.createPG = async (req, res) => {
       owner: req.user._id,
       name,
       location,
-      rent: Number(rent),
-      amenities: amenities ? (Array.isArray(amenities) ? amenities : JSON.parse(amenities)) : [],
+      rent:        Number(rent),
+      amenities:   amenities ? (Array.isArray(amenities) ? amenities : JSON.parse(amenities)) : [],
       description: description || "",
       licenseDocument: {
         url:      req.file.path,
@@ -148,15 +178,14 @@ exports.updatePG = async (req, res) => {
     const pg = await PGStay.findById(req.params.id);
     if (!pg) return res.status(404).json({ message: "PG not found" });
 
-    // Owner can only update their own PG (admin can update any)
     if (req.user.role === "owner" && pg.owner.toString() !== req.user._id.toString())
       return res.status(403).json({ message: "Not authorized to update this PG" });
 
     const { name, location, rent, amenities, description } = req.body;
-    if (name) pg.name = name;
-    if (location) pg.location = location;
-    if (rent) pg.rent = Number(rent);
-    if (amenities) pg.amenities = amenities;
+    if (name)                 pg.name        = name;
+    if (location)             pg.location    = location;
+    if (rent)                 pg.rent        = Number(rent);
+    if (amenities)            pg.amenities   = amenities;
     if (description !== undefined) pg.description = description;
 
     await pg.save();
@@ -202,10 +231,10 @@ exports.uploadImages = async (req, res) => {
     if (remaining <= 0)
       return res.status(400).json({ message: "Maximum 10 images already reached" });
 
-    const toAdd = req.files.slice(0, remaining);
+    const toAdd     = req.files.slice(0, remaining);
     const newImages = toAdd.map((file) => ({
-      url:      file.path,          // Cloudinary URL
-      publicId: file.filename,      // Cloudinary public_id
+      url:      file.path,
+      publicId: file.filename,
       caption:  "",
     }));
 
@@ -230,9 +259,7 @@ exports.deleteImage = async (req, res) => {
     const img = pg.images.id(req.params.imgId);
     if (!img) return res.status(404).json({ message: "Image not found" });
 
-    // Delete from Cloudinary
     await cloudinary.uploader.destroy(img.publicId);
-
     img.deleteOne();
     await pg.save();
 

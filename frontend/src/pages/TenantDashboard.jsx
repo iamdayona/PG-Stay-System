@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Search, FileText, Bell, CheckCircle2, Clock } from "lucide-react";
+import { User, Search, FileText, Bell, CheckCircle2, Clock, MapPin, IndianRupee } from "lucide-react";
 import RoleNavigation from "../context/RoleNavigation";
-import { apiGetMe, apiGetMyApplications, getUser } from "../utils/api";
-import { CLAY_BASE,injectClay, CLAY_TENANT } from "../styles/claystyles";
+import { apiGetMe, apiGetMyApplications, apiGetRecommendations, getUser } from "../utils/api";
+import { CLAY_BASE, injectClay, CLAY_TENANT } from "../styles/claystyles";
 
 const PAGE_CSS = `
   .stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-bottom:28px; }
@@ -37,22 +37,50 @@ const PAGE_CSS = `
   .status-approved { background:rgba(232,245,233,.9); color:#2e7d32; border-color:rgba(165,214,167,.5); }
   .status-pending  { background:rgba(255,249,196,.9); color:#f57f17; border-color:rgba(255,224,130,.5); }
   .status-rejected { background:rgba(255,235,238,.9); color:#c62828; border-color:rgba(239,154,154,.5); }
-`;
 
+  /* ── Recommendation cards ── */
+  .rec-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
+  .rec-card { background:rgba(255,255,255,.6); backdrop-filter:blur(14px); border:2px solid rgba(255,255,255,.85); border-radius:20px; padding:20px; box-shadow:0 6px 20px rgba(0,0,0,.07),inset 0 1px 0 rgba(255,255,255,.95); cursor:pointer; transition:transform .2s,box-shadow .2s,border-color .2s; position:relative; overflow:hidden; animation:fadeUp .6s ease both; }
+  .rec-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:20px 20px 0 0; background:linear-gradient(90deg,#42a5f5,#66bb6a); opacity:0; transition:opacity .2s; }
+  .rec-card:hover { transform:translateY(-4px); box-shadow:0 14px 36px rgba(0,0,0,.11); border-color:rgba(66,165,245,.25); }
+  .rec-card:hover::before { opacity:1; }
+  .rec-name { font-family:'Nunito',sans-serif; font-size:1rem; font-weight:900; color:#2d2d4e; margin-bottom:5px; }
+  .rec-loc  { display:flex; align-items:center; gap:5px; font-size:.78rem; color:#7a7a9a; margin-bottom:7px; }
+  .rec-price { font-family:'Nunito',sans-serif; font-size:.95rem; font-weight:800; color:#1565c0; display:flex; align-items:center; gap:2px; margin-bottom:8px; }
+  .rec-tags { display:flex; gap:6px; flex-wrap:wrap; }
+  .rec-tag  { font-size:.68rem; font-weight:600; padding:2px 9px; border-radius:50px; background:rgba(227,242,253,.9); color:#1565c0; border:1px solid rgba(144,202,249,.4); }
+  .rec-match-badge { display:inline-flex; align-items:center; gap:3px; font-size:.68rem; font-weight:700; padding:2px 9px; border-radius:50px; background:rgba(232,245,233,.9); color:#2e7d32; border:1px solid rgba(165,214,167,.4); margin-left:auto; }
+  .rec-header { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:4px; }
+  .rec-empty { text-align:center; padding:24px 16px; color:#9a9ab0; font-size:.88rem; }
+  .rec-empty-emoji { font-size:2rem; display:block; margin-bottom:8px; }
+`;
 
 const css = injectClay(CLAY_BASE, CLAY_TENANT, PAGE_CSS);
 
 export default function TenantDashboard() {
   const navigate = useNavigate();
-  const [user, setUser]         = useState(getUser());
-  const [recentApps, setRecentApps] = useState([]);
-  const [loading, setLoading]   = useState(true);
+  const [user, setUser]           = useState(getUser());
+  const [recentApps, setRecentApps]   = useState([]);
+  const [recommendations, setRecs]    = useState([]);
+  const [loading, setLoading]         = useState(true);
 
   useEffect(() => {
     Promise.all([apiGetMe(), apiGetMyApplications()])
       .then(([meRes, appsRes]) => {
         setUser(meRes.user);
         setRecentApps(appsRes.data.slice(0, 3));
+
+        // Only fetch recommendations if user has preferences set
+        const prefs = meRes.user?.preferences;
+        const hasPrefs = prefs?.location || (prefs?.amenities?.length > 0) ||
+          (prefs?.budgetMax && prefs.budgetMax !== 50000);
+        if (hasPrefs) {
+          return apiGetRecommendations();
+        }
+        return null;
+      })
+      .then((recRes) => {
+        if (recRes?.data) setRecs(recRes.data.slice(0, 3));
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -123,7 +151,7 @@ export default function TenantDashboard() {
             </div>
 
             {/* Recent Activity */}
-            <div className="clay-card clay-card-p" style={{ "--bar-bg":"linear-gradient(90deg,#ef5350,#e040fb,#42a5f5)" }}>
+            <div className="clay-card clay-card-p" style={{ marginBottom: 24 }}>
               <style>{`.clay-card::before{background:linear-gradient(90deg,#ef5350,#e040fb,#42a5f5);}`}</style>
               <div className="clay-section-title">⚡ Recent Activity</div>
               {loading ? (
@@ -151,6 +179,44 @@ export default function TenantDashboard() {
                 ))
               )}
             </div>
+
+            {/* Preference-based Recommendations — only shown when preferences are set */}
+            {recommendations.length > 0 && (
+              <div className="clay-card clay-card-p">
+                <div className="clay-section-title">✨ Recommended for You</div>
+                <p style={{ fontSize:".82rem", color:"#7a7a9a", marginBottom:16 }}>
+                  Based on your preferences — <a style={{ color:"#42a5f5", fontWeight:700, cursor:"pointer" }} onClick={() => navigate("/tenant/profile")}>update preferences</a>
+                </p>
+                <div className="rec-grid">
+                  {recommendations.map((pg, i) => (
+                    <div
+                      key={pg._id}
+                      className="rec-card"
+                      style={{ animationDelay: `${i * 0.07}s` }}
+                      onClick={() => navigate("/tenant/findpgs")}
+                    >
+                      <div className="rec-header">
+                        <div className="rec-name">{pg.name}</div>
+                        {pg.matchScore !== undefined && (
+                          <span className="rec-match-badge">⚡ {pg.matchScore}% match</span>
+                        )}
+                      </div>
+                      <div className="rec-loc"><MapPin size={12}/> {pg.location}</div>
+                      <div className="rec-price"><IndianRupee size={13}/>{pg.rent}<span style={{ fontSize:".7rem", color:"#9a9ab0", fontWeight:500 }}>/mo</span></div>
+                      <div className="rec-tags">
+                        <span className="rec-tag">⭐ {pg.trustScore}/100</span>
+                        {(pg.amenities || []).slice(0, 3).map((a) => (
+                          <span key={a} className="rec-tag">{a}</span>
+                        ))}
+                        {(pg.amenities || []).length > 3 && (
+                          <span className="rec-tag">+{pg.amenities.length - 3} more</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
           </div>
         </main>
