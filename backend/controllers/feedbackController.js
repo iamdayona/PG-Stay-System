@@ -1,5 +1,6 @@
 const Feedback = require("../models/Feedback");
 const Application = require("../models/Application");
+const PGStay = require("../models/PGStay");
 const { recalcPGTrustScore } = require("../utils/trustScore");
 const createNotification = require("../utils/createNotification");
 
@@ -32,6 +33,17 @@ exports.submitFeedback = async (req, res) => {
 
     // Recalculate PG trust score
     await recalcPGTrustScore(pgStayId);
+
+    // Notify the PG owner
+    const pg = await PGStay.findById(pgStayId).populate("owner", "_id name");
+    if (pg?.owner) {
+      const stars = "⭐".repeat(rating);
+      await createNotification(
+        pg.owner._id,
+        `${req.user.name} left a ${rating}-star review ${stars} for your PG "${pg.name}": "${comment || "No comment"}"`,
+        "info"
+      );
+    }
 
     res.status(201).json({ data: feedback });
   } catch (err) {

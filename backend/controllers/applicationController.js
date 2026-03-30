@@ -21,7 +21,7 @@ exports.applyForRoom = async (req, res) => {
     const existing = await Application.findOne({
       tenant: req.user._id,
       pgStay: pgStayId,
-      status: { $in: ["Pending", "Under Review", "Approved"] },
+      status: { $in: ["Pending", "Approved"] },
     });
     if (existing)
       return res.status(400).json({ message: "You already have an active application for this PG" });
@@ -116,7 +116,7 @@ exports.approveApplication = async (req, res) => {
     if (app.pgStay.owner.toString() !== req.user._id.toString())
       return res.status(403).json({ message: "Not authorized" });
 
-    if (app.status !== "Pending" && app.status !== "Under Review")
+    if (app.status !== "Pending")
       return res.status(400).json({ message: "Application cannot be approved in its current state" });
 
     app.status = "Approved";

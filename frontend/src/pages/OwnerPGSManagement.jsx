@@ -23,6 +23,10 @@ const AMENITY_OPTIONS = [
   "Induction or Microwave for Basic Cooking",
   "Common Lounge or Seating Area",
   "Parking for Bikes",
+  "AC",
+  "CCTV",
+  "Gym",
+  "24/7 Water Supply",
 ];
 
 const PAGE_CSS = `
@@ -32,7 +36,7 @@ const PAGE_CSS = `
   .pg-tab.active { background:linear-gradient(135deg,#ffa726,#ff8f00); color:white; border-color:transparent; box-shadow:0 5px 0 #e65100,0 8px 20px rgba(255,167,38,.4); transform:translateY(-2px); }
   .new-pg-tab { padding:10px 22px; border:2.5px dashed rgba(255,167,38,.55); border-radius:50px; font-family:'Poppins',sans-serif; font-size:.83rem; font-weight:700; cursor:pointer; background:rgba(255,248,225,.6); color:#f57f17; transition:all .18s; }
   .new-pg-tab:hover { border-color:rgba(255,167,38,.85); background:rgba(255,248,225,.9); transform:translateY(-2px); }
-  .pg-card { background:rgba(255,255,255,.65); backdrop-filter:blur(18px); border:2.5px solid rgba(255,255,255,.85); border-radius:24px; padding:32px; box-shadow:0 8px 28px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.95); margin-bottom:24px; animation:fadeUp .6s ease both; position:relative; overflow:hidden; }
+  .pg-card { background:rgba(255,255,255,.65); backdrop-filter:blur(18px); border:2.5px solid rgba(255,255,255,.85); border-radius:24px; padding:32px; box-shadow:0 8px 28px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.95); margin-bottom:24px; animation:fadeUp .6s ease both; position:relative; overflow:visible; }
   .pg-card::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; border-radius:24px 24px 0 0; }
   .card-orange::before { background:linear-gradient(90deg,#ffa726,#ffcc02); }
   .card-amber::before  { background:linear-gradient(90deg,#ff8f00,#ffa726); }
@@ -79,12 +83,12 @@ const PAGE_CSS = `
   .upload-zone-label { display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer; color:#f57f17; font-weight:600; font-size:.88rem; }
   .upload-zone input[type="file"] { display:none; }
   .amenity-wrapper { position:relative; }
-  .amenity-display { display:flex; align-items:center; justify-content:space-between; min-height:44px; padding:10px 14px; background:rgba(255,255,255,.7); border:2px solid rgba(255,255,255,.9); border-radius:14px; cursor:pointer; box-shadow:0 3px 10px rgba(0,0,0,.06); gap:8px; flex-wrap:wrap; }
+  .amenity-display { display:flex; align-items:center; justify-content:space-between; min-height:44px; padding:10px 14px; background:rgba(255,255,255,.7); border:2px solid rgba(255,255,255,.9); border-radius:14px; cursor:pointer; box-shadow:0 3px 10px rgba(0,0,0,.06); gap:8px; flex-wrap:wrap; overflow:visible; }
   .amenity-display:hover { border-color:rgba(255,167,38,.5); }
   .amenity-tag { display:inline-flex; align-items:center; gap:4px; background:linear-gradient(135deg,rgba(255,167,38,.2),rgba(255,204,2,.2)); border:1.5px solid rgba(255,167,38,.4); border-radius:20px; padding:3px 10px; font-size:.75rem; font-weight:600; color:#e65100; }
   .amenity-tag button { background:none; border:none; cursor:pointer; color:#e65100; display:flex; padding:0; }
   .amenity-placeholder { color:#9a9ab0; font-size:.85rem; font-style:italic; }
-  .amenity-dropdown { position:absolute; top:calc(100% + 6px); left:0; right:0; background:rgba(255,255,255,.97); backdrop-filter:blur(20px); border:2px solid rgba(255,255,255,.9); border-radius:18px; box-shadow:0 12px 40px rgba(0,0,0,.14); z-index:200; max-height:260px; overflow-y:auto; padding:8px 0; }
+  .amenity-dropdown { position:absolute; top:calc(100% + 6px); left:0; right:0; background:rgba(255,255,255,.97); backdrop-filter:blur(20px); border:2px solid rgba(255,255,255,.9); border-radius:18px; box-shadow:0 12px 40px rgba(0,0,0,.14); z-index:500; max-height:260px; overflow-y:auto; padding:8px 0; }
   .amenity-option { padding:10px 16px; cursor:pointer; font-size:.85rem; font-weight:500; color:#3a3a5e; display:flex; align-items:center; gap:10px; transition:background .12s; }
   .amenity-option:hover { background:rgba(255,167,38,.08); }
   .amenity-option.selected { color:#e65100; background:rgba(255,167,38,.1); }

@@ -11,7 +11,6 @@ const PAGE_CSS = `
   .app-approved::before { background:linear-gradient(180deg,#66bb6a,#a5d6a7); }
   .app-rejected::before { background:linear-gradient(180deg,#ef9a9a,#e57373); }
   .app-pending::before  { background:linear-gradient(180deg,#ffe082,#ffd54f); }
-  .app-review::before   { background:linear-gradient(180deg,#42a5f5,#90caf9); }
 
   .app-header  { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:6px; }
   .app-name    { font-family:'Nunito',sans-serif; font-size:1.25rem; font-weight:900; color:#2d2d4e; }
@@ -23,7 +22,6 @@ const PAGE_CSS = `
   .badge-approved { background:rgba(232,245,233,.9); color:#2e7d32; border-color:rgba(165,214,167,.5); }
   .badge-rejected { background:rgba(255,235,238,.9); color:#c62828; border-color:rgba(239,154,154,.5); }
   .badge-pending  { background:rgba(255,249,196,.9); color:#f57f17; border-color:rgba(255,224,130,.5); }
-  .badge-review   { background:rgba(227,242,253,.9); color:#1565c0; border-color:rgba(144,202,249,.5); }
 
   .tracker { margin-top:22px; padding-top:22px; border-top:2px solid rgba(255,255,255,.7); }
   .tracker-label { font-size:.72rem; font-weight:700; color:#9a9ab0; text-transform:uppercase; letter-spacing:.5px; margin-bottom:18px; }
@@ -42,6 +40,9 @@ const PAGE_CSS = `
 
 const css = injectClay(CLAY_BASE, CLAY_TENANT, PAGE_CSS);
 
+// Two-stage tracker: Pending → Approved
+const STAGES = ["Pending", "Approved"];
+
 export default function TenantApplications() {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,25 +54,20 @@ export default function TenantApplications() {
       .finally(() => setLoading(false));
   }, []);
 
-  const stages = ["Pending", "Under Review", "Approved"];
-
   const getStageIndex = (status) => {
-    if (status === "Approved")     return 2;
-    if (status === "Under Review") return 1;
-    return 0;
+    if (status === "Approved") return 1;
+    return 0; // Pending
   };
 
   const getCardClass = (status) => {
-    if (status === "Approved")     return "app-approved";
-    if (status === "Rejected")     return "app-rejected";
-    if (status === "Under Review") return "app-review";
+    if (status === "Approved") return "app-approved";
+    if (status === "Rejected") return "app-rejected";
     return "app-pending";
   };
 
   const getBadgeClass = (status) => {
-    if (status === "Approved")     return "badge-approved";
-    if (status === "Rejected")     return "badge-rejected";
-    if (status === "Under Review") return "badge-review";
+    if (status === "Approved") return "badge-approved";
+    if (status === "Rejected") return "badge-rejected";
     return "badge-pending";
   };
 
@@ -103,7 +99,7 @@ export default function TenantApplications() {
             ) : (
               applications.map((app, i) => {
                 const stageIdx = getStageIndex(app.status);
-                const fillPct = app.status === "Rejected" ? 0 : (stageIdx / (stages.length - 1)) * 100;
+                const fillPct  = app.status === "Rejected" ? 0 : (stageIdx / (STAGES.length - 1)) * 100;
                 return (
                   <div key={app._id} className={`app-card ${getCardClass(app.status)}`} style={{ animationDelay: `${i * .08}s` }}>
 
@@ -121,7 +117,7 @@ export default function TenantApplications() {
                       </span>
                     </div>
 
-                    {/* Progress Tracker */}
+                    {/* Progress Tracker — only for non-rejected */}
                     {app.status !== "Rejected" && (
                       <div className="tracker">
                         <div className="tracker-label">Application Progress</div>
@@ -129,20 +125,22 @@ export default function TenantApplications() {
                           <div className="tracker-line">
                             <div className="tracker-line-fill" style={{ width: `${fillPct}%` }} />
                           </div>
-                          {stages.map((stage, idx) => {
+                          {STAGES.map((stage, idx) => {
                             const done   = idx < stageIdx;
                             const active = idx === stageIdx;
+                            // Approved step: always render as green "done" dot
+                            const isApprovedStep = stage === "Approved" && app.status === "Approved";
                             return (
                               <div key={stage} className="tracker-step">
-                                <div className={`step-dot ${done ? "step-dot-done" : active ? "step-dot-active" : "step-dot-inactive"}`}>
-                                  {done
+                                <div className={`step-dot ${isApprovedStep || done ? "step-dot-done" : active ? "step-dot-active" : "step-dot-inactive"}`}>
+                                  {isApprovedStep || done
                                     ? <CheckCircle2 size={18} color="white" />
                                     : active
                                       ? <div style={{ width: 10, height: 10, borderRadius: "50%", background: "white" }} />
                                       : <div style={{ width: 8, height: 8, borderRadius: "50%", background: "rgba(255,255,255,.6)" }} />
                                   }
                                 </div>
-                                <span className={`step-label ${done ? "step-label-done" : active ? "step-label-active" : ""}`}>
+                                <span className={`step-label ${isApprovedStep || done ? "step-label-done" : active ? "step-label-active" : ""}`}>
                                   {stage}
                                 </span>
                               </div>
@@ -155,6 +153,12 @@ export default function TenantApplications() {
                     {app.status === "Rejected" && (
                       <div style={{ marginTop: 16, padding: "12px 16px", background: "rgba(255,235,238,.7)", borderRadius: 14, fontSize: ".82rem", color: "#c62828", fontWeight: 600 }}>
                         ❌ This application was not approved. Try applying to other PGs!
+                      </div>
+                    )}
+
+                    {app.status === "Approved" && (
+                      <div style={{ marginTop: 16, padding: "12px 16px", background: "rgba(232,245,233,.7)", borderRadius: 14, fontSize: ".82rem", color: "#2e7d32", fontWeight: 600 }}>
+                        ✅ Congratulations! Your application has been approved. Please contact the owner to proceed.
                       </div>
                     )}
                   </div>
