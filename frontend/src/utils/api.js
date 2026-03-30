@@ -74,7 +74,18 @@ export const apiGetRecommendations = ()           => request("/pgs/recommendatio
 export const apiGetAllPGs          = (params = "") => request(`/pgs${params}`);
 export const apiGetPGById          = (id)         => request(`/pgs/${id}`);
 export const apiGetOwnerPGs        = ()           => request("/pgs/owner/mine");
-export const apiCreatePG           = (body)       => request("/pgs",      { method: "POST",   body: JSON.stringify(body) });
+export const apiCreatePG = (formData) => {
+  const token = getToken();
+  return fetch(`${BASE_URL}/pgs`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData, // FormData — browser sets Content-Type multipart automatically
+  }).then(async (res) => {
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Failed to create PG");
+    return data;
+  });
+};
 export const apiUpdatePG           = (id, body)   => request(`/pgs/${id}`, { method: "PUT",   body: JSON.stringify(body) });
 export const apiDeletePG           = (id)         => request(`/pgs/${id}`, { method: "DELETE" });
 

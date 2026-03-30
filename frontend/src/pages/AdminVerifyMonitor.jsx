@@ -29,11 +29,11 @@ const PAGE_CSS = `
   .sec-tab-count { display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 6px; border-radius:50px; font-size:.68rem; font-weight:800; background:rgba(255,255,255,.25); }
   .sec-tab:not(.active) .sec-tab-count { background:rgba(239,83,80,.15); color:#c62828; }
   /* ── Column headers ── */
-  .col-header-pg   { display:grid; grid-template-columns:1.8fr 1fr 100px 90px 80px auto; gap:12px; padding:8px 18px; margin-bottom:6px; }
+  .col-header-pg   { display:grid; grid-template-columns:1.8fr 1fr 100px 90px 80px 70px auto; gap:12px; padding:8px 18px; margin-bottom:6px; }
   .col-header-user { display:grid; grid-template-columns:1.6fr 1.2fr 100px 80px auto; gap:12px; padding:8px 18px; margin-bottom:6px; }
   .col-head { font-size:.67rem; font-weight:700; color:#9a9ab0; text-transform:uppercase; letter-spacing:.5px; }
   /* ── PG row ── */
-  .pg-row { display:grid; grid-template-columns:1.8fr 1fr 100px 90px 80px auto; align-items:center; gap:12px; padding:14px 18px; background:rgba(255,255,255,.55); border:1.5px solid rgba(255,255,255,.8); border-radius:16px; margin-bottom:10px; transition:transform .15s,box-shadow .15s; position:relative; overflow:hidden; }
+  .pg-row { display:grid; grid-template-columns:1.8fr 1fr 100px 90px 80px 70px auto; align-items:center; gap:12px; padding:14px 18px; background:rgba(255,255,255,.55); border:1.5px solid rgba(255,255,255,.8); border-radius:16px; margin-bottom:10px; transition:transform .15s,box-shadow .15s; position:relative; overflow:hidden; }
   .pg-row::before { content:''; position:absolute; top:0; left:0; bottom:0; width:4px; border-radius:16px 0 0 16px; }
   .pg-row-verified::before  { background:linear-gradient(180deg,#66bb6a,#a5d6a7); }
   .pg-row-pending::before   { background:linear-gradient(180deg,#ffe082,#ffd54f); }
@@ -72,9 +72,11 @@ const PAGE_CSS = `
   .btn-warn     { background:rgba(255,249,196,.9); border:1.5px solid rgba(255,224,130,.5); color:#f57f17; }
   .btn-view-doc { background:rgba(227,242,253,.9); border:1.5px solid rgba(144,202,249,.5); color:#1565c0; }
   /* ── Doc thumb ── */
-  .doc-thumb { width:36px; height:36px; border-radius:8px; overflow:hidden; border:1.5px solid rgba(255,255,255,.85); flex-shrink:0; }
-  .doc-thumb img { width:100%; height:100%; object-fit:cover; }
-  .doc-thumb-pdf { width:36px; height:36px; border-radius:8px; background:linear-gradient(135deg,#ef5350,#e53935); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .doc-thumb { width:36px; height:36px; border-radius:8px; overflow:hidden; border:1.5px solid rgba(200,200,220,.5); box-shadow:0 2px 6px rgba(0,0,0,.1); flex-shrink:0; display:block; }
+  .doc-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .doc-thumb-pdf { width:36px; height:36px; border-radius:8px; background:linear-gradient(135deg,#ef5350,#e53935); display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 2px 6px rgba(239,83,80,.3); }
+  .license-cell { display:flex; align-items:center; justify-content:center; }
+  .license-cell a { display:flex; align-items:center; justify-content:center; }
   .no-doc { font-size:.75rem; color:#b0bec5; font-style:italic; }
   /* ── Avatar mini ── */
   .user-avatar { width:36px; height:36px; border-radius:50%; overflow:hidden; border:2px solid rgba(255,255,255,.85); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:.9rem; font-weight:700; color:white; }
@@ -294,6 +296,7 @@ export default function AdminVerifyMonitor() {
                       <span className="col-head">Status</span>
                       <span className="col-head">Trust</span>
                       <span className="col-head">Complaints</span>
+                      <span className="col-head">License</span>
                       <span className="col-head">Actions</span>
                     </div>
                     {pgListings.map((pg) => (
@@ -307,6 +310,20 @@ export default function AdminVerifyMonitor() {
                         <div className="trust-cell" style={{ color: tsColor(pg.trustScore) }}>{pg.trustScore}/100</div>
                         <div className={`complaints-cell ${pg.complaints > 0 ? "c-warn" : "c-ok"}`}>
                           {pg.complaints > 0 ? `⚠️ ${pg.complaints}` : "✓ 0"}
+                        </div>
+                        {/* License document */}
+                        <div className="license-cell">
+                          {pg.licenseDocument?.url ? (
+                            pg.licenseDocument.fileType === "pdf"
+                              ? <a href={pg.licenseDocument.url} target="_blank" rel="noreferrer" title="View License PDF">
+                                  <div className="doc-thumb-pdf"><FileText size={14} color="white"/></div>
+                                </a>
+                              : <a href={pg.licenseDocument.url} target="_blank" rel="noreferrer" title="View License Document">
+                                  <div className="doc-thumb"><img src={pg.licenseDocument.url} alt="license doc"/></div>
+                                </a>
+                          ) : (
+                            <span style={{fontSize:".72rem",color:"#9a9ab0",fontWeight:600}}>—</span>
+                          )}
                         </div>
                         <div className="act-group">
                           {pg.verificationStatus === "pending" && (
