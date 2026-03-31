@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Bell, CheckCircle2, AlertCircle, Star } from "lucide-react";
 import RoleNavigation from "../context/RoleNavigation";
+import Modal from "../components/Modal";
 import {
   apiGetNotifications, apiMarkAllRead, apiSubmitFeedback,
-  apiGetMyFeedback, apiGetMyApplications,
+  apiGetMyFeedback, apiGetMyApplications, apiMarkRead,
 } from "../utils/api";
 import { CLAY_BASE, CLAY_TENANT, injectClay } from "../styles/claystyles";
 
@@ -18,6 +19,7 @@ const PAGE_CSS = `
 
   .notif-item { display:flex; gap:12px; padding:13px 14px; border-radius:16px; margin-bottom:10px; border:1.5px solid rgba(255,255,255,.8); transition:transform .15s; }
   .notif-item:hover { transform:translateX(3px); }
+  .notif-button { width:100%; border:none; background:transparent; padding:0; text-align:left; cursor:pointer; }
   .notif-read   { background:rgba(255,255,255,.45); }
   .notif-unread { background:rgba(227,242,253,.7); border-color:rgba(144,202,249,.5); }
   .notif-icon   { width:36px; height:36px; border-radius:11px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.7); box-shadow:0 2px 8px rgba(0,0,0,.08); }
@@ -59,6 +61,8 @@ export default function TenantNotifications() {
   const [comment, setComment]             = useState("");
   const [submitting, setSubmitting]       = useState(false);
   const [feedbackMsg, setFeedbackMsg]     = useState("");
+  const [selectedNotification, setSelectedNotification] = useState(null);
+  const [markingRead, setMarkingRead]     = useState(false);
 
   const fetchAll = async () => {
     try {
@@ -103,6 +107,25 @@ export default function TenantNotifications() {
     return <Bell size={16} color="#1e88e5" />;
   };
 
+  const handleOpenNotification = async (notification) => {
+    setSelectedNotification(notification);
+    if (!notification.isRead) {
+      setMarkingRead(true);
+      try {
+        await apiMarkRead(notification._id);
+        setNotifications((prev) => prev.map((n) =>
+          n._id === notification._id ? { ...n, isRead: true } : n
+        ));
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setMarkingRead(false);
+      }
+    }
+  };
+
+  const closeModal = () => setSelectedNotification(null);
+
   const unread = notifications.filter((n) => !n.isRead).length;
 
   return (
@@ -137,13 +160,17 @@ export default function TenantNotifications() {
                     <div className="clay-empty"><span className="clay-empty-emoji">🔕</span>No notifications yet.</div>
                   ) : (
                     notifications.map((n) => (
-                      <div key={n._id} className={`notif-item ${n.isRead ? "notif-read" : "notif-unread"}`}>
+                      <button
+                        key={n._id}
+                        className={`notif-item notif-button ${n.isRead ? "notif-read" : "notif-unread"}`}
+                        onClick={() => handleOpenNotification(n)}
+                      >
                         <div className="notif-icon">{getIcon(n.type)}</div>
                         <div>
                           <div className="notif-message">{n.message}</div>
-                          <div className="notif-time">{new Date(n.createdAt).toLocaleString()}</div>
+                          <div className="notif-time">{new Date(n.createdAt).toLocaleDateString()}</div>
                         </div>
-                      </div>
+                      </button>
                     ))
                   )}
                 </div>
@@ -234,6 +261,23 @@ export default function TenantNotifications() {
           </div>
         </main>
       </div>
+      {selectedNotification && (
+        <Modal
+          title="Notification details"
+          subtitle={new Date(selectedNotification.createdAt).toLocaleDateString()}
+          onClose={closeModal}
+          onConfirm={closeModal}
+          confirmLabel="Close"
+          loading={markingRead}
+        >
+          <div style={{ marginTop: 12, lineHeight: 1.75, color: "#2d2d4e" }}>
+            {selectedNotification.message}
+          </div>
+          <div style={{ marginTop: 18, fontSize: ".82rem", color: "#7a7a9a" }}>
+            Type: {selectedNotification.type || "general"}
+          </div>
+        </Modal>
+      )}
     </>
   );
 }

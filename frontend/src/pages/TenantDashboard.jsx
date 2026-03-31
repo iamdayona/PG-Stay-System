@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Search, FileText, Bell, CheckCircle2, Clock, MapPin, IndianRupee } from "lucide-react";
 import RoleNavigation from "../context/RoleNavigation";
-import { apiGetMe, apiGetMyApplications, apiGetRecommendations, getUser } from "../utils/api";
+import { apiGetMe, apiGetMyApplications, apiGetMyBookings, apiGetRecommendations, getUser } from "../utils/api";
 import { CLAY_BASE, injectClay, CLAY_TENANT } from "../styles/claystyles";
 
 const PAGE_CSS = `
@@ -62,13 +62,18 @@ export default function TenantDashboard() {
   const [user, setUser]           = useState(getUser());
   const [recentApps, setRecentApps]   = useState([]);
   const [recommendations, setRecs]    = useState([]);
+  const [hasManagement, setHasManagement] = useState(false);
   const [loading, setLoading]         = useState(true);
 
   useEffect(() => {
-    Promise.all([apiGetMe(), apiGetMyApplications()])
-      .then(([meRes, appsRes]) => {
+    Promise.all([apiGetMe(), apiGetMyApplications(), apiGetMyBookings()])
+      .then(([meRes, appsRes, bookingsRes]) => {
         setUser(meRes.user);
         setRecentApps(appsRes.data.slice(0, 3));
+        setHasManagement(
+          appsRes.data.some((app) => app.status === "Approved") ||
+          (bookingsRes.data || []).length > 0
+        );
 
         // Only fetch recommendations if user has preferences set
         const prefs = meRes.user?.preferences;
@@ -91,9 +96,10 @@ export default function TenantDashboard() {
   }, []);
 
   const menuItems = [
-    { icon: User,     title: "Profile & Verification",    desc: "Manage your profile and identity verification", path: "/tenant/profile",       emoji: "👤" },
+    { icon: User,     title: "Profile",    desc: "Manage your profile and verify your identity ", path: "/tenant/profile",       emoji: "👤" },
     { icon: Search,   title: "Search PG",                 desc: "Find and apply for PG accommodations",          path: "/tenant/findpgs",        emoji: "🔍" },
     { icon: FileText, title: "My Applications",           desc: "Track your application status",                 path: "/tenant/applications",   emoji: "📋" },
+    ...(hasManagement ? [{ icon: FileText, title: "My PG Stay", desc: "Manage your confirmed PG booking and agreement", path: "/tenant/pgmanagement", emoji: "🏠" }] : []),
     { icon: Bell,     title: "Notifications & Feedback",  desc: "View updates and share your experience",        path: "/tenant/notifications",  emoji: "🔔" },
   ];
 

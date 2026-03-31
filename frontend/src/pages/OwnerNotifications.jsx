@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Bell, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import RoleNavigation from "../context/RoleNavigation";
-import { apiGetNotifications, apiMarkAllRead } from "../utils/api";
+import Modal from "../components/Modal";
+import { apiGetNotifications, apiMarkAllRead, apiMarkRead } from "../utils/api";
 import { CLAY_BASE, CLAY_OWNER, injectClay } from "../styles/claystyles";
 
 const PAGE_CSS = `
@@ -15,6 +16,7 @@ const PAGE_CSS = `
   .notif-item { display:flex; gap:14px; align-items:flex-start; padding:15px 16px; border-radius:18px; margin-bottom:10px; border:2px solid rgba(255,255,255,.8); transition:transform .18s; position:relative; overflow:hidden; }
   .notif-item:hover { transform:translateX(5px); }
   .notif-read   { background:rgba(255,255,255,.4); }
+  .notif-button { width:100%; border:none; background:transparent; padding:0; text-align:left; cursor:pointer; }
   .notif-unread { background:rgba(255,248,225,.75); border-color:rgba(255,224,130,.6); }
   .notif-unread::before { content:''; position:absolute; top:0; left:0; bottom:0; width:4px; background:linear-gradient(180deg,#ffa726,#ffcc02); border-radius:18px 0 0 18px; }
   .notif-icon-wrap { width:40px; height:40px; border-radius:13px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.72); box-shadow:0 3px 10px rgba(0,0,0,.08); }
@@ -34,6 +36,8 @@ const css = injectClay(CLAY_BASE, CLAY_OWNER, PAGE_CSS);
 export default function OwnerNotifications() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedNotification, setSelectedNotification] = useState(null);
+  const [markingRead, setMarkingRead] = useState(false);
 
   const fetchNotifs = async () => {
     try {
@@ -58,6 +62,25 @@ export default function OwnerNotifications() {
     if (type === "application") return <Clock        size={18} color="#ffa726" />;
     return <Bell size={18} color="#ffa726" />;
   };
+
+  const handleOpenNotification = async (notification) => {
+    setSelectedNotification(notification);
+    if (!notification.isRead) {
+      setMarkingRead(true);
+      try {
+        await apiMarkRead(notification._id);
+        setNotifications((prev) => prev.map((n) =>
+          n._id === notification._id ? { ...n, isRead: true } : n
+        ));
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setMarkingRead(false);
+      }
+    }
+  };
+
+  const closeModal = () => setSelectedNotification(null);
 
   const unread  = notifications.filter((n) => !n.isRead).length;
   const total   = notifications.length;
@@ -113,14 +136,18 @@ export default function OwnerNotifications() {
                 </div>
               ) : (
                 notifications.map((n) => (
-                  <div key={n._id} className={`notif-item ${n.isRead ? "notif-read" : "notif-unread"}`}>
+                  <button
+                    key={n._id}
+                    className={`notif-button notif-item ${n.isRead ? "notif-read" : "notif-unread"}`}
+                    onClick={() => handleOpenNotification(n)}
+                  >
                     <div className="notif-icon-wrap">{getIcon(n.type)}</div>
                     <div style={{ flex:1 }}>
                       <div className="notif-message">{n.message}</div>
                       <div className="notif-time">{new Date(n.createdAt).toLocaleString()}</div>
                     </div>
                     {!n.isRead && <div className="unread-dot" />}
-                  </div>
+                  </button>
                 ))
               )}
             </div>
@@ -128,6 +155,23 @@ export default function OwnerNotifications() {
           </div>
         </main>
       </div>
+      {selectedNotification && (
+        <Modal
+          title="Notification details"
+          subtitle={new Date(selectedNotification.createdAt).toLocaleDateString()}
+          onClose={closeModal}
+          onConfirm={closeModal}
+          confirmLabel="Close"
+          loading={markingRead}
+        >
+          <div style={{ marginTop: 12, lineHeight: 1.75, color: "#2d2d4e" }}>
+            {selectedNotification.message}
+          </div>
+          <div style={{ marginTop: 18, fontSize: ".82rem", color: "#7a7a9a" }}>
+            Type: {selectedNotification.type || "general"}
+          </div>
+        </Modal>
+      )}
     </>
   );
 }

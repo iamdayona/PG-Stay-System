@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
-import { CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, XCircle, Bell, ShieldAlert } from "lucide-react";
 import RoleNavigation from "../context/RoleNavigation";
-import { apiAdminGetComplaints, apiAdminResolveComplaint, apiAdminRejectComplaint } from "../utils/api";
+import {
+  apiAdminGetComplaints,
+  apiAdminResolveComplaint,
+  apiAdminRejectComplaint,
+  apiAdminWarnUser,
+  apiAdminSuspendUser,
+} from "../utils/api";
 import { toast } from "../components/Toast";
 import { CLAY_BASE, CLAY_ADMIN, injectClay } from "../styles/claystyles";
 
@@ -97,6 +103,34 @@ export default function AdminHandleComplaints() {
     }
   };
 
+  const handleWarnOwner = async (ownerId) => {
+    if (!ownerId) return toast.error("Owner information unavailable.");
+    setActionId(ownerId + "w");
+    try {
+      await apiAdminWarnUser(ownerId, { message: "Please address the pending complaint in your PG listing immediately." });
+      toast.success("Warning sent to owner.");
+      await fetchComplaints();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setActionId("");
+    }
+  };
+
+  const handleSuspendOwner = async (ownerId) => {
+    if (!ownerId) return toast.error("Owner information unavailable.");
+    setActionId(ownerId + "s");
+    try {
+      await apiAdminSuspendUser(ownerId);
+      toast.error("Owner account suspended.");
+      await fetchComplaints();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setActionId("");
+    }
+  };
+
   const pending  = complaints.filter((c) => c.status === "pending").length;
   const resolved = complaints.filter((c) => c.status === "resolved").length;
   const total    = complaints.length;
@@ -152,24 +186,42 @@ export default function AdminHandleComplaints() {
                       </span>
 
                       {c.status === "pending" && (
-                        <div className="action-btns">
-                          <button
-                            className="clay-btn btn-resolve"
-                            onClick={() => handleResolve(c._id)}
-                            disabled={!!actionId}
-                          >
-                            <CheckCircle size={14} />
-                            {actionId === c._id + "r" ? "Resolving…" : "Resolve"}
-                          </button>
-                          <button
-                            className="clay-btn btn-reject"
-                            onClick={() => handleReject(c._id)}
-                            disabled={!!actionId}
-                          >
-                            <XCircle size={14} />
-                            {actionId === c._id + "x" ? "Rejecting…" : "Reject"}
-                          </button>
-                        </div>
+                        <>
+                          <div className="action-btns">
+                            <button
+                              className="clay-btn btn-resolve"
+                              onClick={() => handleResolve(c._id)}
+                              disabled={!!actionId}
+                            >
+                              <CheckCircle size={14} />
+                              {actionId === c._id + "r" ? "Resolving…" : "Resolve"}
+                            </button>
+                            <button
+                              className="clay-btn btn-reject"
+                              onClick={() => handleReject(c._id)}
+                              disabled={!!actionId}
+                            >
+                              <XCircle size={14} />
+                              {actionId === c._id + "x" ? "Rejecting…" : "Reject"}
+                            </button>
+                          </div>
+                          <div className="action-btns" style={{ marginTop: 10 }}>
+                            <button
+                              className="clay-btn btn-resolve"
+                              onClick={() => handleWarnOwner(c.pgStay?.owner?._id)}
+                              disabled={!!actionId || !c.pgStay?.owner?._id}
+                            >
+                              <Bell size={14} /> Warn Owner
+                            </button>
+                            <button
+                              className="clay-btn btn-reject"
+                              onClick={() => handleSuspendOwner(c.pgStay?.owner?._id)}
+                              disabled={!!actionId || !c.pgStay?.owner?._id}
+                            >
+                              <ShieldAlert size={14} /> Suspend Owner
+                            </button>
+                          </div>
+                        </>
                       )}
                       {c.status === "resolved" && (
                         <div className="resolved-note"><CheckCircle size={14} /> Issue resolved</div>

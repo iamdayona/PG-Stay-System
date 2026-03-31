@@ -155,6 +155,10 @@ exports.getOwnerPGs = async (req, res) => {
 // POST /api/pgs
 exports.createPG = async (req, res) => {
   try {
+    if (req.user.role === "owner" && req.user.verificationStatus !== "verified") {
+      return res.status(403).json({ message: "Owner account must be verified by admin before creating PG listings." });
+    }
+
     const { name, location, rent, amenities, description } = req.body;
 
     if (!name || !location || !rent)

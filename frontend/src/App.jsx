@@ -29,6 +29,8 @@ import TenantFindPGs       from "./pages/TenantFindPGs";
 import TenantApplications  from "./pages/TenantApplications";
 import TenantNotifications from "./pages/TenantNotifications";
 import TenantProfile       from "./pages/TenantProfile";
+import TenantPGManagement  from "./pages/TenantPGManagement";
+import OwnerComplaints     from "./pages/OwnerComplaints";
 
 // Route guards
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -60,13 +62,15 @@ export default function App() {
         <Route path="/owner/dashboard"     element={<ProtectedRoute role="owner" isDashboard><OwnerDashboard /></ProtectedRoute>} />
         <Route path="/owner/pgsmanagement" element={<ProtectedRoute role="owner"><OwnerPGSManagement /></ProtectedRoute>} />
         <Route path="/owner/applications"  element={<ProtectedRoute role="owner"><OwnerApplications /></ProtectedRoute>} />
+        <Route path="/owner/complaints"    element={<ProtectedRoute role="owner"><OwnerComplaints /></ProtectedRoute>} />
         <Route path="/owner/notifications" element={<ProtectedRoute role="owner"><OwnerNotifications /></ProtectedRoute>} />
         <Route path="/owner/profile"       element={<ProtectedRoute role="owner"><OwnerProfile /></ProtectedRoute>} />
 
         {/* ── Tenant ─────────────────────────────────────────────────── */}
         <Route path="/tenant/dashboard"     element={<ProtectedRoute role="tenant" isDashboard><TenantDashboard /></ProtectedRoute>} />
         <Route path="/tenant/findpgs"       element={<ProtectedRoute role="tenant"><TenantFindPGs /></ProtectedRoute>} />
-        <Route path="/tenant/applications"  element={<ProtectedRoute role="tenant"><TenantApplications /></ProtectedRoute>} />
+        <Route path="/tenant/applications"   element={<ProtectedRoute role="tenant"><TenantApplications /></ProtectedRoute>} />
+        <Route path="/tenant/pgmanagement"   element={<ProtectedRoute role="tenant"><TenantPGManagement /></ProtectedRoute>} />
         <Route path="/tenant/notifications" element={<ProtectedRoute role="tenant"><TenantNotifications /></ProtectedRoute>} />
         <Route path="/tenant/profile"       element={<ProtectedRoute role="tenant"><TenantProfile /></ProtectedRoute>} />
 

@@ -14,6 +14,10 @@ exports.getRoomsByPG = async (req, res) => {
 // POST /api/rooms/:pgId
 exports.addRoom = async (req, res) => {
   try {
+    if (req.user.verificationStatus !== "verified") {
+      return res.status(403).json({ message: "Owner account must be verified by admin before managing rooms." });
+    }
+
     const pg = await PGStay.findById(req.params.pgId);
     if (!pg) return res.status(404).json({ message: "PG not found" });
 
@@ -46,6 +50,10 @@ exports.addRoom = async (req, res) => {
 // PUT /api/rooms/:roomId
 exports.updateRoom = async (req, res) => {
   try {
+    if (req.user.verificationStatus !== "verified") {
+      return res.status(403).json({ message: "Owner account must be verified by admin before managing rooms." });
+    }
+
     const room = await Room.findById(req.params.roomId).populate("pgStay");
     if (!room) return res.status(404).json({ message: "Room not found" });
 
@@ -76,6 +84,10 @@ exports.updateRoom = async (req, res) => {
 // DELETE /api/rooms/:roomId
 exports.deleteRoom = async (req, res) => {
   try {
+    if (req.user.verificationStatus !== "verified") {
+      return res.status(403).json({ message: "Owner account must be verified by admin before managing rooms." });
+    }
+
     const room = await Room.findById(req.params.roomId).populate("pgStay");
     if (!room) return res.status(404).json({ message: "Room not found" });
 

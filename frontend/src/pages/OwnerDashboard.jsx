@@ -63,9 +63,10 @@ export default function OwnerDashboard() {
   const pendingCount = recentApps.filter((a) => a.status === "Pending").length;
 
   const menuItems = [
-    { emoji: "👤", title: "Profile & Verification", desc: "Manage your owner profile and documents",  path: "/owner/profile" },
+    { emoji: "👤", title: "Profile", desc: "Manage your owner profile and documents",  path: "/owner/profile" },
     { emoji: "🏢", title: "Manage PG Stays",        desc: "Add and manage your PG properties",         path: "/owner/pgsmanagement" },
     { emoji: "📋", title: "Requests Received",      desc: "Review and approve tenant applications",     path: "/owner/applications" },
+    { emoji: "⚠️", title: "Handle Complaints",      desc: "Respond to tenant complaints for your PGs",  path: "/owner/complaints" },
     { emoji: "🔔", title: "Notifications",          desc: "View updates and messages",                  path: "/owner/notifications" },
   ];
 

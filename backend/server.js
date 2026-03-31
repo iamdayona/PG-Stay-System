@@ -3,6 +3,7 @@ const dotenv     = require("dotenv");
 const cors       = require("cors");
 const rateLimit  = require("express-rate-limit");
 const connectDB  = require("./config/db");
+const { checkDuePayments } = require("./utils/paymentReminder");
 
 dotenv.config();
 connectDB();
@@ -36,6 +37,7 @@ app.use("/api/applications",  require("./routes/applications"));
 app.use("/api/feedback",      require("./routes/feedback"));
 app.use("/api/notifications", require("./routes/notifications"));
 app.use("/api/complaints",    require("./routes/complaints"));
+app.use("/api/bookings",      require("./routes/bookings"));
 app.use("/api/admin",         require("./routes/admin"));
 app.use("/api/verify",        require("./routes/verify"));  // ← NEW
 
@@ -56,4 +58,8 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  checkDuePayments();
+  setInterval(checkDuePayments, 24 * 60 * 60 * 1000);
+});

@@ -26,9 +26,12 @@ const request = async (endpoint, options = {}) => {
   const data = await res.json();
 
   if (res.status === 401) {
-    clearAuth();
-    window.location.href = "/login";
-    return;
+    const errorMessage = data?.message || "Unauthorized";
+    if (endpoint !== "/auth/login") {
+      clearAuth();
+      window.location.href = "/login";
+    }
+    throw new Error(errorMessage);
   }
 
   if (!res.ok) throw new Error(data.message || "Request failed");
@@ -118,6 +121,24 @@ export const apiGetOwnerApplications = ()     => request("/applications/owner");
 export const apiApproveApplication   = (id)  => request(`/applications/${id}/approve`, { method: "PUT" });
 export const apiRejectApplication    = (id)  => request(`/applications/${id}/reject`,  { method: "PUT" });
 
+// ── Bookings ──────────────────────────────────────────
+export const apiGetMyBookings        = ()     => request("/bookings/my");
+export const apiCreateBooking        = (body) => request("/bookings", { method: "POST", body: JSON.stringify(body) });
+export const apiDeclineBooking       = (body) => request("/bookings/decline", { method: "POST", body: JSON.stringify(body) });
+export const apiUploadBookingAgreement = (bookingId, formData) => {
+  const token = getToken();
+  return fetch(`${BASE_URL}/bookings/${bookingId}/agreement`, {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  }).then(async (res) => {
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Agreement upload failed");
+    return data;
+  });
+};
+export const apiPayBooking          = (bookingId) => request(`/bookings/${bookingId}/pay`, { method: "PUT" });
+
 // ── Feedback ──────────────────────────────────────────
 export const apiSubmitFeedback = (body)  => request("/feedback",       { method: "POST", body: JSON.stringify(body) });
 export const apiGetMyFeedback  = ()      => request("/feedback/my");
@@ -129,8 +150,10 @@ export const apiMarkRead         = (id) => request(`/notifications/${id}/read`, 
 export const apiMarkAllRead      = ()   => request("/notifications/read-all",   { method: "PUT" });
 
 // ── Complaints ────────────────────────────────────────
-export const apiSubmitComplaint  = (body) => request("/complaints",    { method: "POST", body: JSON.stringify(body) });
-export const apiGetMyComplaints  = ()     => request("/complaints/my");
+export const apiSubmitComplaint   = (body) => request("/complaints",    { method: "POST", body: JSON.stringify(body) });
+export const apiGetMyComplaints   = ()     => request("/complaints/my");
+export const apiGetOwnerComplaints = ()     => request("/complaints/owner");
+export const apiOwnerUpdateComplaint = (id, body) => request(`/complaints/${id}/owner`, { method: "PUT", body: JSON.stringify(body) });
 
 // ── Admin ─────────────────────────────────────────────
 export const apiAdminStats       = ()     => request("/admin/stats");
@@ -142,6 +165,7 @@ export const apiAdminGetUsers    = ()     => request("/admin/users");
 export const apiAdminTrustScores = ()     => request("/admin/trustscores");
 export const apiAdminSuspendUser = (id)   => request(`/admin/users/${id}/suspend`,   { method: "PUT" });
 export const apiAdminVerifyUser  = (id)   => request(`/admin/users/${id}/verify`,    { method: "PUT" });
+export const apiAdminDeleteUser  = (id)   => request(`/admin/users/${id}`,           { method: "DELETE" });
 export const apiAdminWarnUser    = (id, body) => request(`/admin/users/${id}/warn`,    { method: "PUT", body: JSON.stringify(body) });
 export const apiAdminSystemStats = ()     => request("/admin/system");
 export const apiAdminGetComplaints    = ()   => request("/admin/complaints");

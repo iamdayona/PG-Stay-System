@@ -2,9 +2,9 @@ import { useEffect, useState, useRef } from "react";
 import RoleNavigation from "../context/RoleNavigation";
 import Modal from "../components/Modal";
 import { toast } from "../components/Toast";
-import { apiGetOwnerPGs, apiCreatePG, apiUpdatePG, apiGetRooms, apiAddRoom, apiUpdateRoom } from "../utils/api";
+import { getUser, apiGetOwnerPGs, apiCreatePG, apiUpdatePG, apiDeletePG, apiGetRooms, apiAddRoom, apiUpdateRoom, apiDeleteRoom } from "../utils/api";
 import { CLAY_BASE, CLAY_OWNER, injectClay } from "../styles/claystyles";
-import { Plus, Trash2, ImagePlus, ChevronDown, X } from "lucide-react";
+import { Plus, Trash2, ImagePlus, ChevronDown, X, Edit3 } from "lucide-react";
 import { apiUploadPGImages, apiDeletePGImage } from "../utils/api";
 
 /* ─── Predefined amenities list ─── */
@@ -52,6 +52,11 @@ const PAGE_CSS = `
   .update-btn { width:100%; margin-top:18px; padding:14px 22px; border:none; border-radius:16px; font-family:'Poppins',sans-serif; font-size:.92rem; font-weight:700; cursor:pointer; justify-content:center; background:linear-gradient(135deg,#ffa726,#fb8c00); color:white; box-shadow:0 5px 0 #e65100,0 8px 20px rgba(255,167,38,.35),inset 0 1px 0 rgba(255,255,255,.3); transition:transform .15s,box-shadow .15s,filter .15s; }
   .update-btn:hover:not(:disabled) { filter:brightness(1.06); transform:translateY(-2px); }
   .update-btn:disabled { opacity:.6; cursor:not-allowed; }
+  .delete-pg-btn { width:auto; padding:12px 18px; margin-left:12px; background:linear-gradient(135deg,#ef5350,#d32f2f); box-shadow:0 5px 0 #b71c1c,0 8px 20px rgba(239,83,80,.35),inset 0 1px 0 rgba(255,255,255,.2); }
+  .delete-pg-btn:hover:not(:disabled) { filter:brightness(1.05); transform:translateY(-2px); }
+  .room-action-btn { width:auto; padding:10px 14px; margin-top:10px; border:none; border-radius:12px; font-size:.82rem; font-weight:700; cursor:pointer; color:white; transition:filter .15s,transform .15s; }
+  .room-edit-btn { background:linear-gradient(135deg,#42a5f5,#1e88e5); }
+  .room-delete-btn { background:linear-gradient(135deg,#ef5350,#c62828); margin-left:8px; }
   .add-room-btn { padding:10px 20px; border:none; border-radius:14px; font-family:'Poppins',sans-serif; font-size:.85rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:7px; background:linear-gradient(135deg,#66bb6a,#43a047); color:white; box-shadow:0 5px 0 #2e7d32,0 8px 18px rgba(102,187,106,.3),inset 0 1px 0 rgba(255,255,255,.3); transition:transform .15s,box-shadow .15s,filter .15s; }
   .add-room-btn:hover { filter:brightness(1.06); transform:translateY(-2px); }
   .rooms-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
@@ -208,6 +213,9 @@ export default function OwnerPGManagement() {
   const [showRoomModal, setShowRoomModal] = useState(false);
   const [roomForm, setRoomForm]           = useState({ roomType:"", rent:"", capacity:"2" });
   const [addingRoom, setAddingRoom]       = useState(false);
+  const [selectedRoom, setSelectedRoom]   = useState(null);
+  const [isEditingRoom, setIsEditingRoom] = useState(false);
+  const [ownerVerified, setOwnerVerified] = useState(false);
 
   // License document state (only required when creating new PG)
   const [licenseFile, setLicenseFile]   = useState(null);
@@ -225,6 +233,8 @@ export default function OwnerPGManagement() {
     setSelectedPG(pg);
     setPgForm({ name: pg.name, location: pg.location, rent: pg.rent, amenities: pg.amenities || [] });
     setPgImages(pg.images || []);
+    setSelectedRoom(null);
+    setIsEditingRoom(false);
     fetchRooms(pg._id);
   };
 
@@ -235,9 +245,17 @@ export default function OwnerPGManagement() {
     } catch (err) { toast.error(err.message); }
   };
 
-  useEffect(() => { fetchPGs(); }, []);
+  useEffect(() => {
+    const user = getUser();
+    setOwnerVerified(user?.verificationStatus === "verified");
+    fetchPGs();
+  }, []);
 
   const handleSavePG = async () => {
+    if (!ownerVerified && !selectedPG) {
+      toast.warning("Your owner account must be verified by admin before creating PG stays.");
+      return;
+    }
     if (!pgForm.name || !pgForm.location || !pgForm.rent) {
       toast.warning("Name, location and rent are required");
       return;
@@ -259,7 +277,6 @@ export default function OwnerPGManagement() {
         await apiUpdatePG(selectedPG._id, payload);
         toast.success("PG details updated successfully!");
       } else {
-        // Build multipart FormData for new PG creation (license required)
         const fd = new FormData();
         fd.append("name",      pgForm.name);
         fd.append("location",  pgForm.location);
@@ -270,7 +287,7 @@ export default function OwnerPGManagement() {
         setSelectedPG(res.data);
         setLicenseFile(null);
         setLicenseError("");
-        toast.success("PG Stay created successfully!");
+        toast.success("PG Stay created successfully! It will be visible once admin verifies it.");
       }
       await fetchPGs();
     } catch (err) { toast.error(err.message); }
@@ -285,7 +302,32 @@ export default function OwnerPGManagement() {
     } catch (err) { toast.error(err.message); }
   };
 
-  const handleAddRoom = async () => {
+  const openRoomModal = (room = null) => {
+    if (!ownerVerified) {
+      toast.warning("Your owner account must be verified by admin before managing rooms.");
+      return;
+    }
+    if (!selectedPG) { toast.warning("Save PG details first."); return; }
+    if (room) {
+      setRoomForm({ roomType: room.roomType, rent: String(room.rent), capacity: String(room.capacity || 1) });
+      setSelectedRoom(room);
+      setIsEditingRoom(true);
+    } else {
+      setRoomForm({ roomType:"", rent:"", capacity:"2" });
+      setSelectedRoom(null);
+      setIsEditingRoom(false);
+    }
+    setShowRoomModal(true);
+  };
+
+  const closeRoomModal = () => {
+    setShowRoomModal(false);
+    setSelectedRoom(null);
+    setIsEditingRoom(false);
+    setRoomForm({ roomType:"", rent:"", capacity:"2" });
+  };
+
+  const handleAddOrUpdateRoom = async () => {
     if (!selectedPG) { toast.warning("Save PG details first."); return; }
     if (!roomForm.roomType || !roomForm.rent) {
       toast.warning("Room type and rent are required");
@@ -296,16 +338,45 @@ export default function OwnerPGManagement() {
       const payload = {
         roomType:     roomForm.roomType,
         rent:         Number(roomForm.rent),
-        availability: true,
         capacity:     roomForm.roomType === "Shared" ? (Number(roomForm.capacity) || 2) : 1,
       };
-      await apiAddRoom(selectedPG._id, payload);
-      toast.success("Room added successfully!");
-      setShowRoomModal(false);
-      setRoomForm({ roomType:"", rent:"", capacity:"2" });
+      if (isEditingRoom && selectedRoom) {
+        await apiUpdateRoom(selectedRoom._id, payload);
+        toast.success("Room updated successfully!");
+      } else {
+        payload.availability = true;
+        await apiAddRoom(selectedPG._id, payload);
+        toast.success("Room added successfully!");
+      }
+      closeRoomModal();
       fetchRooms(selectedPG._id);
     } catch (err) { toast.error(err.message); }
     finally { setAddingRoom(false); }
+  };
+
+  const handleDeleteRoom = async (room) => {
+    if (!window.confirm(`Delete room "${room.roomType}"? This cannot be undone.`)) return;
+    try {
+      await apiDeleteRoom(room._id);
+      toast.success("Room deleted successfully.");
+      fetchRooms(selectedPG._id);
+    } catch (err) { toast.error(err.message); }
+  };
+
+  const handleDeletePG = async () => {
+    if (!selectedPG) return;
+    if (!window.confirm(`Delete PG "${selectedPG.name}" and all associated rooms? This cannot be undone.`)) return;
+    setSaving(true);
+    try {
+      await apiDeletePG(selectedPG._id);
+      toast.success("PG deleted successfully.");
+      setSelectedPG(null);
+      setPgForm({ name:"", location:"", rent:"", amenities:[] });
+      setRooms([]);
+      setPgImages([]);
+      await fetchPGs();
+    } catch (err) { toast.error(err.message); }
+    finally { setSaving(false); }
   };
 
   const handleNewPG = () => {
@@ -353,11 +424,11 @@ export default function OwnerPGManagement() {
         {/* ─── Add Room Modal ─── */}
         {showRoomModal && (
           <Modal
-            title="➕ Add New Room"
+            title={isEditingRoom ? "✏️ Edit Room" : "➕ Add New Room"}
             subtitle="Enter room details below"
-            onClose={() => { setShowRoomModal(false); setRoomForm({ roomType:"", rent:"", capacity:"2" }); }}
-            onConfirm={handleAddRoom}
-            confirmLabel="Add Room"
+            onClose={closeRoomModal}
+            onConfirm={handleAddOrUpdateRoom}
+            confirmLabel={isEditingRoom ? "Update Room" : "Add Room"}
             loading={addingRoom}
             fields={
               <div>
@@ -434,7 +505,17 @@ export default function OwnerPGManagement() {
             <div className="pg-card card-orange">
               <div className="pg-section-title">
                 📝 {selectedPG ? "Edit PG Details" : "Create New PG Stay"}
+                {selectedPG && (
+                  <button className="clay-btn clay-btn-red" type="button" onClick={handleDeletePG} disabled={saving}>
+                    <Trash2 size={14} /> Delete PG
+                  </button>
+                )}
               </div>
+            { !ownerVerified && (
+              <div className="pg-alert pg-alert-info" style={{ marginTop: 0 }}>
+                Your owner account is pending admin verification. You can save draft PG details, but new listings will not become live until verified.
+              </div>
+            )}
               <div className="form-grid">
                 {/* PG Name — auto capitalise */}
                 <div className="form-group">
@@ -479,6 +560,17 @@ export default function OwnerPGManagement() {
                   />
                 </div>
               </div>
+
+              {selectedPG && (
+                <div className={`pg-alert ${selectedPG.verificationStatus === "verified" ? "pg-alert-success" : "pg-alert-info"}`}>
+                  {selectedPG.verificationStatus === "verified"
+                    ? "Your PG is verified and live for tenants to find."
+                    : selectedPG.verificationStatus === "restricted"
+                      ? "This PG has been restricted by admin and is not visible to tenants."
+                      : "This PG is pending admin verification. It will be listed once approved."
+                  }
+                </div>
+              )}
 
               {/* License Document — required only for new PG creation */}
               {!selectedPG && (
@@ -529,7 +621,7 @@ export default function OwnerPGManagement() {
             <div className="pg-card card-amber">
               <div className="pg-section-title">
                 <span>🚪 Room Management</span>
-                <button className="add-room-btn" onClick={() => setShowRoomModal(true)}>
+                <button className="add-room-btn" onClick={() => openRoomModal(null)} disabled={!ownerVerified}>
                   <Plus size={15} /> Add Room
                 </button>
               </div>
@@ -599,6 +691,14 @@ export default function OwnerPGManagement() {
                           <input type="checkbox" checked={room.availability} onChange={() => handleToggleRoom(room)} />
                           <span className="toggle-slider" />
                         </label>
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: 12 }}>
+                        <button className="room-action-btn room-edit-btn" type="button" onClick={() => openRoomModal(room)}>
+                          <Edit3 size={14} /> Edit
+                        </button>
+                        <button className="room-action-btn room-delete-btn" type="button" onClick={() => handleDeleteRoom(room)}>
+                          <Trash2 size={14} /> Delete
+                        </button>
                       </div>
                     </div>
                   ))}

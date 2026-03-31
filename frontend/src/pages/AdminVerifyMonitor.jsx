@@ -3,7 +3,7 @@ import { CheckCircle2, XCircle, Trash2, Eye, FileText, User, Home, Building2 } f
 import RoleNavigation from "../context/RoleNavigation";
 import {
   apiAdminGetPGs, apiAdminVerifyPG, apiAdminRestrictPG, apiAdminDeletePG,
-  apiAdminStats, apiAdminGetUsers, apiAdminVerifyUser, apiAdminSuspendUser,
+  apiAdminStats, apiAdminGetUsers, apiAdminVerifyUser, apiAdminSuspendUser, apiAdminDeleteUser,
 } from "../utils/api";
 import { toast } from "../components/Toast";
 import { CLAY_BASE, CLAY_ADMIN, injectClay } from "../styles/claystyles";
@@ -165,6 +165,13 @@ export default function AdminVerifyMonitor() {
     catch (err) { toast.error(err.message); }
     finally { setActionLoading(""); }
   };
+  const handleDeleteUser = async (id, name) => {
+    if (!window.confirm(`Delete ${name}? This will remove their account permanently.`)) return;
+    setActionLoading(id + "ud");
+    try { await apiAdminDeleteUser(id); toast.success(`${name} has been deleted.`); await fetchData(); }
+    catch (err) { toast.error(err.message); }
+    finally { setActionLoading(""); }
+  };
 
   // ── Helpers ─────────────────────────────────────────────────────────
   const chipPG = (s) => s === "verified" ? "chip-v" : s === "pending" ? "chip-p" : "chip-r";
@@ -259,9 +266,17 @@ export default function AdminVerifyMonitor() {
             <button className="act-btn btn-warn" onClick={() => handleSuspendUser(u._id, u.name)} disabled={!!actionLoading}>
               ⛔ Suspend
             </button>
+            <button className="act-btn btn-delete" onClick={() => handleDeleteUser(u._id, u.name)} disabled={!!actionLoading}>
+              <Trash2 size={12}/> Delete
+            </button>
           </>
         ) : (
-          <span style={{fontSize:".72rem",color:"#c62828",fontWeight:700}}>Suspended</span>
+          <>
+            <span style={{fontSize:".72rem",color:"#c62828",fontWeight:700}}>Suspended</span>
+            <button className="act-btn btn-delete" onClick={() => handleDeleteUser(u._id, u.name)} disabled={!!actionLoading}>
+              <Trash2 size={12}/> Delete
+            </button>
+          </>
         )}
       </div>
     </div>

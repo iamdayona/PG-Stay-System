@@ -22,6 +22,35 @@ const ComplaintSchema = new mongoose.Schema(
       enum: ["pending", "resolved", "rejected"],
       default: "pending",
     },
+    ownerAction: {
+      type: String,
+      enum: ["pending", "willResolve", "resolved"],
+      default: "pending",
+    },
+    ownerResponse: {
+      type: String,
+      default: "",
+    },
+    messages: {
+      type: [
+        {
+          sender: {
+            type: String,
+            enum: ["owner", "tenant", "admin"],
+            required: true,
+          },
+          text: {
+            type: String,
+            required: true,
+          },
+          createdAt: {
+            type: Date,
+            default: Date.now,
+          },
+        },
+      ],
+      default: [],
+    },
     resolvedAt: {
       type: Date,
     },

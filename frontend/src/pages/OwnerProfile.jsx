@@ -51,7 +51,9 @@ const PAGE_CSS = `
   .upload-zone-sub { font-size:.75rem; color:#9a9ab0; }
   .upload-zone-uploading { border-color:rgba(66,165,245,.8); background:rgba(227,242,253,.7); }
   /* ── Aadhaar preview ── */
-  .doc-preview-box { background:rgba(227,242,253,.6); border:2px solid rgba(144,202,249,.5); border-radius:16px; padding:16px; margin-bottom:14px; display:flex; align-items:center; gap:14px; }
+  .doc-preview-box { position:relative; background:rgba(227,242,253,.6); border:2px solid rgba(144,202,249,.5); border-radius:16px; padding:16px; margin-bottom:14px; display:flex; align-items:center; gap:14px; }
+  .doc-preview-replace { position:absolute; top:12px; right:12px; padding:6px 12px; border-radius:14px; border:1px solid rgba(66,165,245,.4); background:rgba(66,165,245,.14); color:#1565c0; font-size:.72rem; font-weight:700; cursor:pointer; transition:background .15s; }
+  .doc-preview-replace:hover { background:rgba(66,165,245,.22); }
   .doc-preview-img { width:80px; height:60px; object-fit:cover; border-radius:10px; border:2px solid rgba(255,255,255,.9); box-shadow:0 3px 10px rgba(0,0,0,.1); }
   .doc-preview-pdf { width:80px; height:60px; border-radius:10px; border:2px solid rgba(255,255,255,.9); background:linear-gradient(135deg,#ef5350,#e53935); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:white; font-size:.65rem; font-weight:700; }
   .doc-preview-info { flex:1; }
@@ -219,7 +221,7 @@ export default function TenantProfile() {
         <RoleNavigation role="tenant" />
         <main className="clay-main">
           <div className="clay-container">
-            <h2 className="clay-page-title">👤 Profile & Verification</h2>
+            <h2 className="clay-page-title">👤 Profile</h2>
             <p className="clay-page-sub">Manage your identity and track your trust score.</p>
 
             <div className="profile-grid">
@@ -239,7 +241,7 @@ export default function TenantProfile() {
                 </div>
                 <div style={{fontSize:".7rem",color:"#9a9ab0",marginBottom:12}}>Tap photo to change</div>
                 <div className="avatar-name">{user?.name}</div>
-                <span className="avatar-role-badge">🏠 Tenant</span>
+                <span className="avatar-role-badge">🏠 Owner</span>
                 <ScoreRing value={user?.trustScore || 0} />
               </div>
 
@@ -248,8 +250,7 @@ export default function TenantProfile() {
                 <div className="details-header">
                   <div className="tab-row">
                     <button className={`tab-btn ${activeTab==="details"?"active":""}`}     onClick={() => setActiveTab("details")}>📋 Details</button>
-                    <button className={`tab-btn ${activeTab==="preferences"?"active":""}`} onClick={() => setActiveTab("preferences")}>🎛️ Preferences</button>
-                    <button className={`tab-btn ${activeTab==="verification"?"active":""}`}onClick={() => setActiveTab("verification")}>🔐 Verification</button>
+                    <button className={`tab-btn ${activeTab==="verification"?"active":""}`}onClick={() => setActiveTab("verification")}>🔐 Documents</button>
                   </div>
                   {!isEditing && (
                     <button className="edit-btn" onClick={() => setIsEditing(true)}>Update Profile</button>
@@ -266,10 +267,6 @@ export default function TenantProfile() {
                         <input className="clay-input" value={form.name} onChange={(e) => setForm({...form, name:e.target.value})} placeholder="Your full name" disabled={!isEditing} />
                       </div>
                       <div className="form-group">
-                        <label className="clay-label">Phone Number</label>
-                        <PhoneInput value={form.phone} onChange={(val) => setForm({...form, phone:val})} disabled={!isEditing} />
-                      </div>
-                      <div className="form-group">
                         <label className="clay-label">Email Address</label>
                         <input className="clay-input" value={user?.email || ""} disabled style={{opacity:.6}} />
                       </div>
@@ -282,42 +279,11 @@ export default function TenantProfile() {
                           <option value="other">Other</option>
                         </select>
                       </div>
-                    </div>
-                    {isEditing && (
-                      <button className="save-btn" onClick={handleSave} disabled={saving}>
-                        <Save size={16}/> {saving?"Saving…":"Save Changes"}
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {/* ── Preferences tab ── */}
-                {activeTab === "preferences" && (
-                  <div>
-                    <div className="clay-section-title">🎛️ PG Search Preferences</div>
-                    <div className="form-grid2">
                       <div className="form-group">
-                        <label className="clay-label">Min Budget (₹/month)</label>
-                        <input className="clay-input" type="number" value={form.prefBudgetMin} onChange={(e) => setForm({...form, prefBudgetMin:e.target.value})} placeholder="e.g. 5000" disabled={!isEditing} />
+                        <label className="clay-label">Phone Number</label>
+                        <PhoneInput value={form.phone} onChange={(val) => setForm({...form, phone:val})} disabled={!isEditing} />
                       </div>
-                      <div className="form-group">
-                        <label className="clay-label">Max Budget (₹/month)</label>
-                        <input className="clay-input" type="number" value={form.prefBudgetMax} onChange={(e) => setForm({...form, prefBudgetMax:e.target.value})} placeholder="e.g. 15000" disabled={!isEditing} />
-                      </div>
-                    </div>
-                    <p style={{fontSize:".8rem",color:"#9a9ab0",marginBottom:16}}>💡 These preferences personalise PG recommendations for you.</p>
-                    {isEditing && (
-                      <button className="save-btn" onClick={handleSave} disabled={saving}>
-                        <Save size={16}/> {saving?"Saving…":"Save Preferences"}
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {/* ── Verification tab ── */}
-                {activeTab === "verification" && (
-                  <div>
-                    <div className="clay-section-title">📱 Mobile Verification</div>
+                      <div className="clay-section-title">📱 Mobile Verification Status</div>
                     <p style={{fontSize:".82rem",color:"#7a7a9a",marginBottom:16}}>
                       Verify your mobile number to increase your trust score.
                     </p>
@@ -340,16 +306,37 @@ export default function TenantProfile() {
                         <Save size={16}/> {saving?"Saving…":"Save Verified Number"}
                       </button>
                     )}
+                    </div>
+                    {isEditing && (
+                      <button className="save-btn" onClick={handleSave} disabled={saving}>
+                        <Save size={16}/> {saving?"Saving…":"Save Changes"}
+                      </button>
+                    )}
+                  </div>
+                )}
 
+                {/* ── Verification tab ── */}
+                {activeTab === "verification" && (
+                  <div>
                     <div className="clay-divider" />
                     <div className="clay-section-title">🪪 Aadhaar / Identity Verification</div>
                     <p style={{fontSize:".82rem",color:"#7a7a9a",marginBottom:14}}>
                       Upload your Aadhaar card or Student ID for identity verification. Once uploaded, admin will review and verify your account.
                     </p>
 
+                    <input id="tenant-doc-upload" type="file" accept=".jpg,.jpeg,.png,.pdf"
+                      style={{display:"none"}} onChange={handleDocChange} ref={docInputRef} disabled={uploadingDoc}/>
+
                     {/* Show existing document preview */}
                     {user?.documentUrl && (
                       <div className="doc-preview-box">
+                        <button
+                          type="button"
+                          className="doc-preview-replace"
+                          onClick={() => docInputRef.current?.click()}
+                        >
+                          Replace Document
+                        </button>
                         {user.documentFileType === "pdf"
                           ? <div className="doc-preview-pdf"><FileText size={22}/><span>PDF</span></div>
                           : <img className="doc-preview-img" src={user.documentUrl} alt="Aadhaar" />}
@@ -364,19 +351,19 @@ export default function TenantProfile() {
                     )}
 
                     {/* Upload zone */}
-                    <label
-                      className={`upload-zone ${uploadingDoc ? "upload-zone-uploading" : ""}`}
-                      htmlFor="tenant-doc-upload"
-                      style={{cursor: uploadingDoc ? "not-allowed" : "pointer"}}
-                    >
-                      <input id="tenant-doc-upload" type="file" accept=".jpg,.jpeg,.png,.pdf"
-                        style={{display:"none"}} onChange={handleDocChange} ref={docInputRef} disabled={uploadingDoc}/>
-                      <div className="upload-zone-icon">{uploadingDoc ? "⏳" : "🪪"}</div>
-                      <div className="upload-zone-title">
-                        {uploadingDoc ? "Uploading…" : user?.documentUrl ? "Replace Document" : "Upload Aadhaar / ID"}
-                      </div>
-                      <div className="upload-zone-sub">JPG · PNG · PDF &nbsp;·&nbsp; Max 15MB</div>
-                    </label>
+                    {!user?.documentUrl && (
+                      <label
+                        className={`upload-zone ${uploadingDoc ? "upload-zone-uploading" : ""}`}
+                        htmlFor="tenant-doc-upload"
+                        style={{cursor: uploadingDoc ? "not-allowed" : "pointer"}}
+                      >
+                        <div className="upload-zone-icon">{uploadingDoc ? "⏳" : "🪪"}</div>
+                        <div className="upload-zone-title">
+                          {uploadingDoc ? "Uploading…" : "Upload Aadhaar / ID"}
+                        </div>
+                        <div className="upload-zone-sub">JPG · PNG · PDF &nbsp;·&nbsp; Max 15MB</div>
+                      </label>
+                    )}
 
                     <div className="clay-divider" />
 

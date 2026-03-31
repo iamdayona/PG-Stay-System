@@ -2,6 +2,7 @@ const User = require("../models/User");
 const PGStay = require("../models/PGStay");
 const Room = require("../models/Room");
 const Application = require("../models/Application");
+const Booking = require("../models/Booking");
 const Feedback = require("../models/Feedback");
 const Complaint = require("../models/Complaint");
 const Notification = require("../models/Notification");
@@ -207,6 +208,36 @@ exports.warnUser = async (req, res) => {
   }
 };
 
+// DELETE /api/admin/users/:id
+exports.deleteUserAdmin = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.role === "admin") {
+      return res.status(400).json({ message: "Cannot delete an admin account." });
+    }
+
+    if (user.role === "owner") {
+      const ownedPGs = await PGStay.find({ owner: user._id }).select("_id");
+      const ownedPGIds = ownedPGs.map((pg) => pg._id);
+      await Room.deleteMany({ pgStay: { $in: ownedPGIds } });
+      await PGStay.deleteMany({ owner: user._id });
+      await Application.updateMany({ pgStay: { $in: ownedPGIds }, status: "Pending" }, { status: "Rejected" });
+      await Booking.updateMany({ pgStay: { $in: ownedPGIds }, status: "Active" }, { status: "Cancelled" });
+    }
+
+    if (user.role === "tenant") {
+      await Application.updateMany({ tenant: user._id, status: "Pending" }, { status: "Rejected" });
+      await Booking.updateMany({ tenant: user._id, status: "Active" }, { status: "Cancelled" });
+    }
+
+    await user.deleteOne();
+    res.json({ message: "User deleted" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // GET /api/admin/system
 exports.getSystemStats = async (req, res) => {
   try {
@@ -216,7 +247,7 @@ exports.getSystemStats = async (req, res) => {
     const [totalUsers, totalPGs, totalBookings, totalFeedback] = await Promise.all([
       User.countDocuments(),
       PGStay.countDocuments(),
-      Application.countDocuments({ status: "Approved" }),
+      Booking.countDocuments({ status: "Active" }),
       Feedback.countDocuments(),
     ]);
 
@@ -240,7 +271,11 @@ exports.getComplaints = async (req, res) => {
   try {
     const complaints = await Complaint.find()
       .populate("reportedBy", "name email")
-      .populate("pgStay", "name")
+      .populate({
+        path: "pgStay",
+        select: "name owner",
+        populate: { path: "owner", select: "name email" },
+      })
       .sort({ createdAt: -1 });
     res.json({ data: complaints });
   } catch (err) {

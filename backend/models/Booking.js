@@ -2,6 +2,12 @@ const mongoose = require("mongoose");
 
 const BookingSchema = new mongoose.Schema(
   {
+    application: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Application",
+      required: true,
+      unique: true,
+    },
     tenant: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -19,16 +25,12 @@ const BookingSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["Pending", "Under Review", "Approved", "Rejected"],
-      default: "Pending",
-    },
-    appliedDate: {
-      type: Date,
-      default: Date.now,
+      enum: ["Active", "Cancelled"],
+      default: "Active",
     },
     allocationDate: {
       type: Date,
-      default: null,
+      default: Date.now,
     },
     rentAmount: {
       type: Number,
@@ -41,7 +43,22 @@ const BookingSchema = new mongoose.Schema(
     },
     lastPaymentDate: {
       type: Date,
+      default: Date.now,
+    },
+    lastReminderSent: {
+      type: Date,
       default: null,
+    },
+    agreementStartDate: {
+      type: Date,
+    },
+    agreementEndDate: {
+      type: Date,
+    },
+    agreementDocument: {
+      url: { type: String, default: "" },
+      publicId: { type: String, default: "" },
+      fileType: { type: String, default: "" },
     },
   },
   { timestamps: true }
