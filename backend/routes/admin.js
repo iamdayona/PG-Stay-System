@@ -10,6 +10,7 @@ const {
   getTrustScores,
   suspendUser,
   verifyUser,
+  warnUser,
   getSystemStats,
   getComplaints,
   resolveComplaint,
@@ -29,6 +30,7 @@ router.get("/users", getAllUsers);
 router.get("/trustscores", getTrustScores);
 router.put("/users/:id/suspend", suspendUser);
 router.put("/users/:id/verify", verifyUser);
+router.put("/users/:id/warn", warnUser);
 router.get("/system", getSystemStats);
 
 // Complaint routes (new)

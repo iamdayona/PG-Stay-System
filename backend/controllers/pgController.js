@@ -35,11 +35,21 @@ exports.getRecommendations = async (req, res) => {
           matchScore = Math.min(100, matchScore + matched * 5);
         }
 
-        // Location match: +10 if location contains preference
+        // Location match: strong preference for preferred location
+        let locationMatch = 0;
         if (prefs.location && pg.location) {
-          const prefLoc = prefs.location.toLowerCase();
-          if (pg.location.toLowerCase().includes(prefLoc)) {
-            matchScore = Math.min(100, matchScore + 10);
+          const normalize = (text) => text.toLowerCase().trim().replace(/[^a-z0-9\s]/g, " ");
+          const prefText = normalize(prefs.location);
+          const pgText   = normalize(pg.location);
+          const prefWords = prefText.split(/\s+/).filter(Boolean);
+          const pgWords   = pgText.split(/\s+/).filter(Boolean);
+
+          const exactMatch = pgText.includes(prefText);
+          const wordMatch = prefWords.every((word) => pgWords.some((pgWord) => pgWord.includes(word)));
+
+          if (exactMatch || (prefWords.length > 0 && wordMatch)) {
+            matchScore = Math.min(100, matchScore + 50);
+            locationMatch = 1;
           }
         }
 
@@ -50,12 +60,15 @@ exports.getRecommendations = async (req, res) => {
           }
         }
 
-        return { ...pg.toObject(), availableRoomCount, matchScore };
+        return { ...pg.toObject(), availableRoomCount, matchScore, locationMatch };
       })
     );
 
-    // Sort by matchScore descending
-    results.sort((a, b) => b.matchScore - a.matchScore);
+    // Sort by location match first, then matchScore descending
+    results.sort((a, b) => {
+      if (b.locationMatch !== a.locationMatch) return b.locationMatch - a.locationMatch;
+      return b.matchScore - a.matchScore;
+    });
 
     res.json({ data: results });
   } catch (err) {

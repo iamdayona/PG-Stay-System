@@ -29,17 +29,22 @@ const PAGE_CSS = `
   .sec-tab-count { display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 6px; border-radius:50px; font-size:.68rem; font-weight:800; background:rgba(255,255,255,.25); }
   .sec-tab:not(.active) .sec-tab-count { background:rgba(239,83,80,.15); color:#c62828; }
   /* ── Column headers ── */
-  .col-header-pg   { display:grid; grid-template-columns:1.8fr 1fr 100px 90px 80px 70px auto; gap:12px; padding:8px 18px; margin-bottom:6px; }
-  .col-header-user { display:grid; grid-template-columns:1.6fr 1.2fr 100px 80px auto; gap:12px; padding:8px 18px; margin-bottom:6px; }
+  .col-header-pg   { display:grid; grid-template-columns:1.8fr minmax(220px,1.3fr) 100px 100px 90px 90px 170px; gap:14px; padding:10px 18px; margin-bottom:8px; }
+  .col-header-user { display:grid; grid-template-columns:minmax(260px,1fr) minmax(260px,1.4fr) 120px 120px 160px; gap:14px; padding:10px 18px; margin-bottom:8px; }
   .col-head { font-size:.67rem; font-weight:700; color:#9a9ab0; text-transform:uppercase; letter-spacing:.5px; }
+  .col-header-pg, .col-header-user { justify-items:start; }
+  .col-header-user span:nth-child(3), .col-header-user span:nth-child(4), .user-row > div:nth-child(3), .user-row > .doc-slot { justify-self:center; }
+  .search-bar { display:flex; justify-content:flex-end; margin-bottom:22px; }
+  .search-input { width:100%; max-width:420px; background:rgba(255,255,255,.92); border:1px solid rgba(160,160,190,.4); border-radius:999px; padding:12px 16px; font-size:.95rem; color:#2d2d4e; outline:none; transition:border-color .18s,box-shadow .18s; }
+  .search-input:focus { border-color:#4f7cff; box-shadow:0 0 0 4px rgba(79,124,255,.12); }
   /* ── PG row ── */
-  .pg-row { display:grid; grid-template-columns:1.8fr 1fr 100px 90px 80px 70px auto; align-items:center; gap:12px; padding:14px 18px; background:rgba(255,255,255,.55); border:1.5px solid rgba(255,255,255,.8); border-radius:16px; margin-bottom:10px; transition:transform .15s,box-shadow .15s; position:relative; overflow:hidden; }
+  .pg-row { display:grid; grid-template-columns:1.8fr minmax(220px,1.3fr) 100px 100px 90px 90px 170px; align-items:center; gap:14px; padding:14px 18px; min-height:72px; background:rgba(255,255,255,.55); border:1.5px solid rgba(255,255,255,.8); border-radius:16px; margin-bottom:10px; transition:transform .15s,box-shadow .15s; position:relative; overflow:hidden; justify-items:start; }
   .pg-row::before { content:''; position:absolute; top:0; left:0; bottom:0; width:4px; border-radius:16px 0 0 16px; }
   .pg-row-verified::before  { background:linear-gradient(180deg,#66bb6a,#a5d6a7); }
   .pg-row-pending::before   { background:linear-gradient(180deg,#ffe082,#ffd54f); }
   .pg-row-restricted::before{ background:linear-gradient(180deg,#ef9a9a,#e53935); }
   /* ── User row ── */
-  .user-row { display:grid; grid-template-columns:1.6fr 1.2fr 100px 80px auto; align-items:center; gap:12px; padding:14px 18px; background:rgba(255,255,255,.55); border:1.5px solid rgba(255,255,255,.8); border-radius:16px; margin-bottom:10px; transition:transform .15s,box-shadow .15s; position:relative; overflow:hidden; }
+  .user-row { display:grid; grid-template-columns:minmax(260px,1fr) minmax(260px,1.4fr) 120px 120px 160px; align-items:center; gap:14px; padding:14px 18px; min-height:72px; background:rgba(255,255,255,.55); border:1.5px solid rgba(255,255,255,.8); border-radius:16px; margin-bottom:10px; transition:transform .15s,box-shadow .15s; position:relative; overflow:hidden; }
   .user-row::before { content:''; position:absolute; top:0; left:0; bottom:0; width:4px; border-radius:16px 0 0 16px; }
   .user-row-verified::before  { background:linear-gradient(180deg,#66bb6a,#a5d6a7); }
   .user-row-pending::before   { background:linear-gradient(180deg,#ffe082,#ffd54f); }
@@ -49,9 +54,16 @@ const PAGE_CSS = `
   @media(max-width:900px){ .pg-row,.col-header-pg,.user-row,.col-header-user{grid-template-columns:1fr; gap:6px;} }
   /* ── Cell styles ── */
   .cell-name  { font-family:'Nunito',sans-serif; font-size:.95rem; font-weight:800; color:#2d2d4e; }
-  .cell-sub   { font-size:.8rem; color:#7a7a9a; margin-top:2px; }
+  .cell-sub   { font-size:.8rem; color:#7a7a9a; margin-top:4px; }
   .cell-email { font-size:.82rem; color:#7a7a9a; }
   .trust-cell { font-family:'Nunito',sans-serif; font-size:1rem; font-weight:800; }
+  .user-name-wrap { display:flex; align-items:center; gap:14px; }
+  .user-name-wrap > div { min-width:0; }
+  .user-avatar { width:44px; height:44px; }
+  .doc-slot { display:flex; align-items:center; justify-content:center; min-width:78px; min-height:48px; }
+  .doc-slot .doc-thumb, .doc-thumb-pdf, .doc-slot .no-doc { width:78px; height:48px; border-radius:14px; }
+  .doc-slot .no-doc { display:inline-flex; align-items:center; justify-content:center; background:rgba(242,242,250,.85); color:#9a9ab0; font-size:.78rem; font-weight:700; }
+  .doc-slot .doc-thumb img { width:100%; height:100%; object-fit:cover; border-radius:14px; }
   .complaints-cell { font-size:.88rem; font-weight:700; }
   .c-ok { color:#2e7d32; } .c-warn { color:#c62828; }
   /* ── Status chips ── */
@@ -62,17 +74,19 @@ const PAGE_CSS = `
   .chip-u  { background:rgba(236,239,241,.9); color:#607d8b; border-color:rgba(176,190,197,.6); }
   .chip-s  { background:rgba(255,235,238,.9); color:#c62828; border-color:rgba(239,154,154,.6); }
   /* ── Action buttons ── */
-  .act-group { display:flex; gap:6px; flex-wrap:wrap; }
-  .act-btn { padding:7px 11px; border:none; border-radius:10px; font-family:'Poppins',sans-serif; font-size:.72rem; font-weight:700; cursor:pointer; transition:transform .12s,filter .12s; display:inline-flex; align-items:center; gap:4px; }
+  .act-group { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-start; align-items:center; }
+  .act-btn { min-width:110px; padding:10px 16px; height:40px; border:none; border-radius:12px; font-family:'Poppins',sans-serif; font-size:.82rem; font-weight:700; cursor:pointer; transition:transform .12s,filter .12s; display:inline-flex; align-items:center; justify-content:center; gap:8px; white-space:nowrap; }
   .act-btn:hover:not(:disabled) { transform:translateY(-1px); filter:brightness(1.07); }
   .act-btn:disabled { opacity:.55; cursor:not-allowed; }
   .btn-verify   { background:linear-gradient(135deg,#66bb6a,#43a047); color:white; box-shadow:0 3px 0 #2e7d32; }
+  .btn-warn     { background:linear-gradient(135deg,#ef9a9a,#e53935); color:white; box-shadow:0 3px 0 #b71c1c; }
   .btn-restrict { background:linear-gradient(135deg,#ef9a9a,#e53935); color:white; box-shadow:0 3px 0 #b71c1c; }
   .btn-delete   { background:rgba(255,235,238,.9); border:1.5px solid rgba(239,154,154,.5); color:#c62828; }
   .btn-warn     { background:rgba(255,249,196,.9); border:1.5px solid rgba(255,224,130,.5); color:#f57f17; }
   .btn-view-doc { background:rgba(227,242,253,.9); border:1.5px solid rgba(144,202,249,.5); color:#1565c0; }
   /* ── Doc thumb ── */
   .doc-thumb { width:36px; height:36px; border-radius:8px; overflow:hidden; border:1.5px solid rgba(200,200,220,.5); box-shadow:0 2px 6px rgba(0,0,0,.1); flex-shrink:0; display:block; }
+  .owner-warning { display:inline-flex; align-items:center; padding:8px 12px; border-radius:999px; background:rgba(255,242,205,.95); color:#b86900; font-size:.73rem; font-weight:700; border:1px solid rgba(255,214,10,.4); }
   .doc-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
   .doc-thumb-pdf { width:36px; height:36px; border-radius:8px; background:linear-gradient(135deg,#ef5350,#e53935); display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 2px 6px rgba(239,83,80,.3); }
   .license-cell { display:flex; align-items:center; justify-content:center; }
@@ -92,6 +106,7 @@ export default function AdminVerifyMonitor() {
   const [stats, setStats]             = useState({});
   const [loading, setLoading]         = useState(true);
   const [activeSection, setActiveSection] = useState("pgs");
+  const [searchQuery, setSearchQuery] = useState("");
   const [actionLoading, setActionLoading] = useState("");
 
   const fetchData = async () => {
@@ -183,6 +198,23 @@ export default function AdminVerifyMonitor() {
   const pgPending      = pgListings.filter((p) => p.verificationStatus === "pending").length;
   const tenantPending  = tenants.filter((u) => u.verificationStatus === "pending" && u.isActive).length;
   const ownerPending   = owners.filter((u) => u.verificationStatus === "pending" && u.isActive).length;
+  const searchLower    = searchQuery.trim().toLowerCase();
+
+  const filteredPGs = pgListings.filter((pg) => {
+    if (!searchLower) return true;
+    return [pg.name, pg.owner?.name, pg.owner?.email, pg.location, pg.description]
+      .some((value) => value?.toLowerCase().includes(searchLower));
+  });
+
+  const filteredTenants = tenants.filter((u) => {
+    if (!searchLower) return true;
+    return [u.name, u.email, u.role].some((value) => value?.toLowerCase().includes(searchLower));
+  });
+
+  const filteredOwners = owners.filter((u) => {
+    if (!searchLower) return true;
+    return [u.name, u.email, u.role].some((value) => value?.toLowerCase().includes(searchLower));
+  });
 
   // ── Render user row (shared by tenants & owners) ─────────────────────
   const renderUserRow = (u) => (
@@ -204,7 +236,7 @@ export default function AdminVerifyMonitor() {
       {/* Status chip */}
       <div><span className={`status-chip ${chipUser(u)}`}>{chipUserLabel(u)}</span></div>
       {/* Document */}
-      <div>
+      <div className="doc-slot">
         {u.documentUrl ? (
           u.documentFileType === "pdf"
             ? <a href={u.documentUrl} target="_blank" rel="noreferrer" title="View PDF">
@@ -217,23 +249,19 @@ export default function AdminVerifyMonitor() {
       </div>
       {/* Actions */}
       <div className="act-group">
-        {u.verificationStatus !== "verified" && u.isActive && (
-          <button className="act-btn btn-verify" onClick={() => handleVerifyUser(u._id, u.name)} disabled={!!actionLoading}>
-            <CheckCircle2 size={12}/> Verify
-          </button>
-        )}
-        {u.verificationStatus === "verified" && u.isActive && (
-          <button className="act-btn btn-warn" onClick={() => handleSuspendUser(u._id, u.name)} disabled={!!actionLoading}>
-            ⛔ Suspend
-          </button>
-        )}
-        {!u.isActive && (
+        {u.isActive ? (
+          <>
+            {u.verificationStatus !== "verified" && (
+              <button className="act-btn btn-verify" onClick={() => handleVerifyUser(u._id, u.name)} disabled={!!actionLoading}>
+                <CheckCircle2 size={12}/> Verify
+              </button>
+            )}
+            <button className="act-btn btn-warn" onClick={() => handleSuspendUser(u._id, u.name)} disabled={!!actionLoading}>
+              ⛔ Suspend
+            </button>
+          </>
+        ) : (
           <span style={{fontSize:".72rem",color:"#c62828",fontWeight:700}}>Suspended</span>
-        )}
-        {u.documentUrl && (
-          <a className="act-btn btn-view-doc" href={u.documentUrl} target="_blank" rel="noreferrer">
-            <Eye size={12}/> Doc
-          </a>
         )}
       </div>
     </div>
@@ -279,6 +307,14 @@ export default function AdminVerifyMonitor() {
                 <Building2 size={15}/> Owners <span className="sec-tab-count">{owners.length}</span>
               </button>
             </div>
+            <div className="search-bar">
+              <input
+                className="search-input"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search PG, owner, tenant or email..."
+              />
+            </div>
 
             {/* ══════════ PG STAYS section ══════════ */}
             {activeSection === "pgs" && (
@@ -288,6 +324,8 @@ export default function AdminVerifyMonitor() {
                   <div className="clay-empty"><span className="clay-empty-emoji">⏳</span>Loading…</div>
                 ) : pgListings.length === 0 ? (
                   <div className="clay-empty"><span className="clay-empty-emoji">📭</span>No PG listings found.</div>
+                ) : filteredPGs.length === 0 ? (
+                  <div className="clay-empty"><span className="clay-empty-emoji">🔍</span>No PG listings match your search.</div>
                 ) : (
                   <>
                     <div className="col-header-pg">
@@ -299,13 +337,13 @@ export default function AdminVerifyMonitor() {
                       <span className="col-head">License</span>
                       <span className="col-head">Actions</span>
                     </div>
-                    {pgListings.map((pg) => (
+                    {filteredPGs.map((pg) => (
                       <div key={pg._id} className={`pg-row row-hover ${rowClassPG(pg.verificationStatus)}`}>
                         <div>
                           <div className="cell-name">{pg.name}</div>
                           <div className="cell-sub">{pg.address?.city || ""}</div>
                         </div>
-                        <div className="cell-email">{pg.owner?.name || "—"}</div>
+                        <div className="cell-email">{pg.owner?.name || pg.owner?.email || "—"}</div>
                         <div><span className={`status-chip ${chipPG(pg.verificationStatus)}`}>{chipPGLabel(pg.verificationStatus)}</span></div>
                         <div className="trust-cell" style={{ color: tsColor(pg.trustScore) }}>{pg.trustScore}/100</div>
                         <div className={`complaints-cell ${pg.complaints > 0 ? "c-warn" : "c-ok"}`}>
@@ -328,9 +366,14 @@ export default function AdminVerifyMonitor() {
                         <div className="act-group">
                           {pg.verificationStatus === "pending" && (
                             <>
-                              <button className="act-btn btn-verify"   onClick={() => handleVerifyPG(pg._id)}  disabled={!!actionLoading}><CheckCircle2 size={12}/>Verify</button>
+                              <button className="act-btn btn-verify" onClick={() => handleVerifyPG(pg._id)} disabled={!!actionLoading || pg.owner?.verificationStatus !== "verified"} title={pg.owner?.verificationStatus !== "verified" ? "Verify the owner before approving this PG." : ""}>
+                                <CheckCircle2 size={12}/>Verify
+                              </button>
                               <button className="act-btn btn-restrict" onClick={() => handleRestrictPG(pg._id)} disabled={!!actionLoading}><XCircle size={12}/>Reject</button>
                             </>
+                          )}
+                          {pg.verificationStatus === "pending" && pg.owner?.verificationStatus !== "verified" && (
+                            <span className="owner-warning">Owner must be verified before approval.</span>
                           )}
                           {pg.verificationStatus === "verified" && (
                             <button className="act-btn btn-warn" onClick={() => handleRestrictPG(pg._id)} disabled={!!actionLoading}>⛔ Restrict</button>
@@ -353,7 +396,7 @@ export default function AdminVerifyMonitor() {
                 </p>
                 {loading ? (
                   <div className="clay-empty"><span className="clay-empty-emoji">⏳</span>Loading tenants…</div>
-                ) : tenants.length === 0 ? (
+                ) : filteredTenants.length === 0 ? (
                   <div className="clay-empty"><span className="clay-empty-emoji">📭</span>No tenants registered yet.</div>
                 ) : (
                   <>
@@ -364,7 +407,7 @@ export default function AdminVerifyMonitor() {
                       <span className="col-head">Document</span>
                       <span className="col-head">Actions</span>
                     </div>
-                    {tenants.map(renderUserRow)}
+                    {filteredTenants.map(renderUserRow)}
                   </>
                 )}
               </div>
@@ -379,7 +422,7 @@ export default function AdminVerifyMonitor() {
                 </p>
                 {loading ? (
                   <div className="clay-empty"><span className="clay-empty-emoji">⏳</span>Loading owners…</div>
-                ) : owners.length === 0 ? (
+                ) : filteredOwners.length === 0 ? (
                   <div className="clay-empty"><span className="clay-empty-emoji">📭</span>No owners registered yet.</div>
                 ) : (
                   <>
@@ -390,7 +433,7 @@ export default function AdminVerifyMonitor() {
                       <span className="col-head">Document</span>
                       <span className="col-head">Actions</span>
                     </div>
-                    {owners.map(renderUserRow)}
+                    {filteredOwners.map(renderUserRow)}
                   </>
                 )}
               </div>

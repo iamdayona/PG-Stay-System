@@ -44,7 +44,9 @@ const MODAL_CSS = `
   .modal-btn-confirm:disabled { opacity: .6; cursor: not-allowed; }
 `;
 
-export default function Modal({ title, subtitle, fields, onConfirm, onClose, confirmLabel = "Confirm", loading = false }) {
+export default function Modal({ title, subtitle, fields, children, onConfirm, onClose, confirmLabel = "Confirm", loading = false }) {
+  const bodyContent = children || fields;
+
   return (
     <>
       <style>{MODAL_CSS}</style>
@@ -52,11 +54,11 @@ export default function Modal({ title, subtitle, fields, onConfirm, onClose, con
         <div className="modal-box">
           <div className="modal-title">{title}</div>
           {subtitle && <div className="modal-sub">{subtitle}</div>}
-          {fields}
+          {bodyContent}
           <div className="modal-footer">
             <button className="modal-btn-cancel" onClick={onClose}>Cancel</button>
             <button className="modal-btn-confirm" onClick={onConfirm} disabled={loading}>
-              {loading ? "⏳ Saving…" : confirmLabel}
+              {loading ? "⏳ Sending…" : confirmLabel}
             </button>
           </div>
         </div>

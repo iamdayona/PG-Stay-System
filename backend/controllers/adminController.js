@@ -6,6 +6,7 @@ const Feedback = require("../models/Feedback");
 const Complaint = require("../models/Complaint");
 const Notification = require("../models/Notification");
 const createNotification = require("../utils/createNotification");
+const sendEmail = require("../utils/sendEmail");
 const mongoose = require("mongoose");
 
 // GET /api/admin/stats
@@ -35,7 +36,7 @@ exports.getDashboardStats = async (req, res) => {
 exports.getAllPGsAdmin = async (req, res) => {
   try {
     const pgs = await PGStay.find()
-      .populate("owner", "name email")
+      .populate("owner", "name email verificationStatus")
       .sort({ createdAt: -1 });
 
     const results = await Promise.all(
@@ -57,8 +58,11 @@ exports.getAllPGsAdmin = async (req, res) => {
 // PUT /api/admin/pgs/:id/verify
 exports.verifyPG = async (req, res) => {
   try {
-    const pg = await PGStay.findById(req.params.id).populate("owner", "name _id");
+    const pg = await PGStay.findById(req.params.id).populate("owner", "name _id verificationStatus");
     if (!pg) return res.status(404).json({ message: "PG not found" });
+    if (!pg.owner || pg.owner.verificationStatus !== "verified") {
+      return res.status(400).json({ message: "Cannot verify PG until the owner is verified." });
+    }
 
     pg.verificationStatus = "verified";
     await pg.save();
@@ -170,6 +174,34 @@ exports.verifyUser = async (req, res) => {
     );
 
     res.json({ data: user });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// PUT /api/admin/users/:id/warn
+exports.warnUser = async (req, res) => {
+  try {
+    const { message } = req.body;
+    if (!message || !message.trim()) {
+      return res.status(400).json({ message: "Warning message is required." });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.role === "admin") {
+      return res.status(400).json({ message: "Cannot warn an admin account." });
+    }
+
+    await createNotification(user._id, message.trim(), "alert");
+    await sendEmail({
+      to: user.email,
+      subject: "PGStay Admin Warning",
+      text: message.trim(),
+      html: `<p>${message.trim()}</p><p>This warning was sent by the PGStay admin team.</p>`,
+    });
+
+    res.json({ message: "Warning sent.", data: user });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

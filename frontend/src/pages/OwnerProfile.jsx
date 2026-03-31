@@ -30,8 +30,11 @@ const PAGE_CSS = `
   .score-value { font-family:'Nunito',sans-serif; font-size:1.5rem; font-weight:900; color:#1565c0; z-index:1; }
   .score-label { font-size:.65rem; font-weight:700; color:#9a9ab0; text-transform:uppercase; letter-spacing:.5px; text-align:center; margin-top:6px; }
   /* ── Details card ── */
-  .details-card { background:rgba(255,255,255,.65); backdrop-filter:blur(18px); border:2.5px solid rgba(255,255,255,.85); border-radius:28px; padding:32px; box-shadow:0 8px 28px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.95); animation:fadeUp .7s ease both; }
-  .tab-row { display:flex; gap:8px; margin-bottom:24px; flex-wrap:wrap; }
+  .details-card { position:relative; background:rgba(255,255,255,.65); backdrop-filter:blur(18px); border:2.5px solid rgba(255,255,255,.85); border-radius:28px; padding:32px; box-shadow:0 8px 28px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.95); animation:fadeUp .7s ease both; }
+  .details-header { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:24px; flex-wrap:wrap; }
+  .edit-btn { padding:10px 18px; border-radius:16px; border:none; font-family:'Poppins',sans-serif; font-size:.9rem; font-weight:700; cursor:pointer; background:linear-gradient(135deg,#ffb74d,#ff9800); color:#312b24; box-shadow:0 4px 0 #f57c00,0 6px 16px rgba(255,167,38,.25); transition:transform .15s,filter .15s; }
+  .edit-btn:hover { transform:translateY(-1px); filter:brightness(1.05); }
+  .tab-row { display:flex; gap:8px; margin-bottom:0; flex-wrap:wrap; }
   .tab-btn { padding:8px 20px; border-radius:50px; border:2px solid rgba(255,255,255,.85); background:rgba(255,255,255,.6); font-family:'Poppins',sans-serif; font-size:.82rem; font-weight:700; cursor:pointer; color:#5a5a7a; transition:all .18s; }
   .tab-btn.active { background:linear-gradient(135deg,#42a5f5,#1e88e5); color:white; border-color:transparent; box-shadow:0 4px 0 #1565c0,0 6px 14px rgba(66,165,245,.35); }
   .form-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
@@ -93,6 +96,7 @@ export default function TenantProfile() {
   const [loading, setLoading]       = useState(true);
   const [saving, setSaving]         = useState(false);
   const [activeTab, setActiveTab]   = useState("details");
+  const [isEditing, setIsEditing]   = useState(false);
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingDoc, setUploadingDoc]     = useState(false);
@@ -136,6 +140,7 @@ export default function TenantProfile() {
       setUser(res.user);
       localStorage.setItem("user", JSON.stringify(res.user));
       toast.success("Profile updated successfully!");
+      setIsEditing(false);
     } catch (err) {
       toast.error(err.message);
     } finally { setSaving(false); }
@@ -240,10 +245,15 @@ export default function TenantProfile() {
 
               {/* ── Right: details card ── */}
               <div className="details-card">
-                <div className="tab-row">
-                  <button className={`tab-btn ${activeTab==="details"?"active":""}`}     onClick={() => setActiveTab("details")}>📋 Details</button>
-                  <button className={`tab-btn ${activeTab==="preferences"?"active":""}`} onClick={() => setActiveTab("preferences")}>🎛️ Preferences</button>
-                  <button className={`tab-btn ${activeTab==="verification"?"active":""}`}onClick={() => setActiveTab("verification")}>🔐 Verification</button>
+                <div className="details-header">
+                  <div className="tab-row">
+                    <button className={`tab-btn ${activeTab==="details"?"active":""}`}     onClick={() => setActiveTab("details")}>📋 Details</button>
+                    <button className={`tab-btn ${activeTab==="preferences"?"active":""}`} onClick={() => setActiveTab("preferences")}>🎛️ Preferences</button>
+                    <button className={`tab-btn ${activeTab==="verification"?"active":""}`}onClick={() => setActiveTab("verification")}>🔐 Verification</button>
+                  </div>
+                  {!isEditing && (
+                    <button className="edit-btn" onClick={() => setIsEditing(true)}>Update Profile</button>
+                  )}
                 </div>
 
                 {/* ── Details tab ── */}
@@ -253,11 +263,11 @@ export default function TenantProfile() {
                     <div className="form-grid2">
                       <div className="form-group">
                         <label className="clay-label">Full Name</label>
-                        <input className="clay-input" value={form.name} onChange={(e) => setForm({...form, name:e.target.value})} placeholder="Your full name" />
+                        <input className="clay-input" value={form.name} onChange={(e) => setForm({...form, name:e.target.value})} placeholder="Your full name" disabled={!isEditing} />
                       </div>
                       <div className="form-group">
                         <label className="clay-label">Phone Number</label>
-                        <PhoneInput value={form.phone} onChange={(val) => setForm({...form, phone:val})} />
+                        <PhoneInput value={form.phone} onChange={(val) => setForm({...form, phone:val})} disabled={!isEditing} />
                       </div>
                       <div className="form-group">
                         <label className="clay-label">Email Address</label>
@@ -265,7 +275,7 @@ export default function TenantProfile() {
                       </div>
                       <div className="form-group">
                         <label className="clay-label">Gender</label>
-                        <select className="clay-input" value={form.gender} onChange={(e) => setForm({...form, gender:e.target.value})}>
+                        <select className="clay-input" value={form.gender} onChange={(e) => setForm({...form, gender:e.target.value})} disabled={!isEditing}>
                           <option value="">Prefer not to say</option>
                           <option value="male">Male</option>
                           <option value="female">Female</option>
@@ -273,9 +283,11 @@ export default function TenantProfile() {
                         </select>
                       </div>
                     </div>
-                    <button className="save-btn" onClick={handleSave} disabled={saving}>
-                      <Save size={16}/> {saving?"Saving…":"Save Changes"}
-                    </button>
+                    {isEditing && (
+                      <button className="save-btn" onClick={handleSave} disabled={saving}>
+                        <Save size={16}/> {saving?"Saving…":"Save Changes"}
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -286,17 +298,19 @@ export default function TenantProfile() {
                     <div className="form-grid2">
                       <div className="form-group">
                         <label className="clay-label">Min Budget (₹/month)</label>
-                        <input className="clay-input" type="number" value={form.prefBudgetMin} onChange={(e) => setForm({...form, prefBudgetMin:e.target.value})} placeholder="e.g. 5000" />
+                        <input className="clay-input" type="number" value={form.prefBudgetMin} onChange={(e) => setForm({...form, prefBudgetMin:e.target.value})} placeholder="e.g. 5000" disabled={!isEditing} />
                       </div>
                       <div className="form-group">
                         <label className="clay-label">Max Budget (₹/month)</label>
-                        <input className="clay-input" type="number" value={form.prefBudgetMax} onChange={(e) => setForm({...form, prefBudgetMax:e.target.value})} placeholder="e.g. 15000" />
+                        <input className="clay-input" type="number" value={form.prefBudgetMax} onChange={(e) => setForm({...form, prefBudgetMax:e.target.value})} placeholder="e.g. 15000" disabled={!isEditing} />
                       </div>
                     </div>
                     <p style={{fontSize:".8rem",color:"#9a9ab0",marginBottom:16}}>💡 These preferences personalise PG recommendations for you.</p>
-                    <button className="save-btn" onClick={handleSave} disabled={saving}>
-                      <Save size={16}/> {saving?"Saving…":"Save Preferences"}
-                    </button>
+                    {isEditing && (
+                      <button className="save-btn" onClick={handleSave} disabled={saving}>
+                        <Save size={16}/> {saving?"Saving…":"Save Preferences"}
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -307,15 +321,21 @@ export default function TenantProfile() {
                     <p style={{fontSize:".82rem",color:"#7a7a9a",marginBottom:16}}>
                       Verify your mobile number to increase your trust score.
                     </p>
-                    <OtpField
-                      type="phone"
-                      value={form.phone}
-                      onChange={(val) => { setForm({...form, phone:val}); setPhoneVerified(false); }}
-                      onVerified={() => { setPhoneVerified(true); toast.success("Mobile verified! Save your profile to update."); }}
-                      accent="#42a5f5"
-                      accentDark="#1565c0"
-                    />
-                    {phoneVerified && (
+                    {isEditing ? (
+                      <OtpField
+                        type="phone"
+                        value={form.phone}
+                        onChange={(val) => { setForm({...form, phone:val}); setPhoneVerified(false); }}
+                        onVerified={() => { setPhoneVerified(true); toast.success("Mobile verified! Save your profile to update."); }}
+                        accent="#42a5f5"
+                        accentDark="#1565c0"
+                      />
+                    ) : (
+                      <div style={{marginBottom:20, fontSize:'.88rem', color:'#5a5a7a'}}>
+                        {phoneVerified ? "Mobile number is verified." : "Click Update Profile to verify your phone."}
+                      </div>
+                    )}
+                    {isEditing && phoneVerified && (
                       <button className="save-btn" onClick={handleSave} disabled={saving} style={{marginBottom:20}}>
                         <Save size={16}/> {saving?"Saving…":"Save Verified Number"}
                       </button>

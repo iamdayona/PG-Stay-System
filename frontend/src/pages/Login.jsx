@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Link } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import { useRole } from "../context/useRole";
 import { apiLogin, saveAuth } from "../utils/api";
 import { CLAY_BASE, CLAY_AUTH, injectClay } from "../styles/claystyles";
@@ -30,6 +31,11 @@ const PAGE_CSS = `
 
   .clay-error { background:rgba(255,235,238,.85); border:2px solid rgba(239,154,154,.6); border-radius:14px; padding:12px 16px; margin-bottom:20px; color:#c62828; font-size:.85rem; font-weight:500; animation:shake .4s ease,fadeIn .3s ease; display:flex; align-items:center; gap:8px; }
 
+  .password-field { position:relative; }
+  .password-toggle { position:absolute; right:16px; top:50%; transform:translateY(-50%); padding:0; border:none; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#7a7a9a; }
+  .password-toggle:hover { color:#42a5f5; }
+  .password-toggle:focus { outline:none; box-shadow:none; border-radius:0; }
+
   .clay-btn-primary { width:100%; padding:15px 24px; border:none; border-radius:16px; font-family:'Poppins',sans-serif; font-size:1rem; font-weight:700; cursor:pointer; transition:transform .15s,box-shadow .15s,filter .15s; background:linear-gradient(135deg,#42a5f5,#1e88e5); color:white; box-shadow:0 6px 0 #1565c0,0 10px 24px rgba(66,165,245,.4),inset 0 1px 0 rgba(255,255,255,.3); margin-top:8px; }
   .clay-btn-primary:hover:not(:disabled) { filter:brightness(1.06); transform:translateY(-2px); box-shadow:0 8px 0 #1565c0,0 14px 32px rgba(66,165,245,.5); }
   .clay-btn-primary:active { transform:scale(.97) translateY(2px) !important; }
@@ -57,6 +63,7 @@ export default function Login() {
 
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState("");
 
@@ -118,14 +125,24 @@ export default function Login() {
 
               <div className="form-group">
                 <label className="clay-label">Password</label>
-                <input
-                  className="clay-input"
-                  type="password"
-                  placeholder="Enter your password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+                <div className="password-field">
+                  <input
+                    className="clay-input"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
               <button

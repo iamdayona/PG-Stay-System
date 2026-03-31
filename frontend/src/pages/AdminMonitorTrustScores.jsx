@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { ShieldCheck, ShieldAlert, ShieldX } from "lucide-react";
 import RoleNavigation from "../context/RoleNavigation";
-import { apiAdminTrustScores, apiAdminSuspendUser } from "../utils/api";
+import Modal from "../components/Modal";
+import { toast } from "../components/Toast";
+import { apiAdminTrustScores, apiAdminSuspendUser, apiAdminWarnUser } from "../utils/api";
 import { CLAY_BASE, CLAY_ADMIN, injectClay } from "../styles/claystyles";
 
 const PAGE_CSS = `
@@ -58,6 +60,10 @@ const css = injectClay(CLAY_BASE, CLAY_ADMIN, PAGE_CSS);
 export default function AdminMonitorTrustScores() {
   const [data, setData]     = useState({ pgs:[], users:[] });
   const [loading, setLoading] = useState(true);
+  const [warningOpen, setWarningOpen] = useState(false);
+  const [warningTarget, setWarningTarget] = useState(null);
+  const [warningMessage, setWarningMessage] = useState("");
+  const [warningLoading, setWarningLoading] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -74,12 +80,34 @@ export default function AdminMonitorTrustScores() {
     try {
       await apiAdminSuspendUser(userId);
       await fetchData();
-    } catch (err) { alert(err.message); }
+      toast.success("User suspended successfully.");
+    } catch (err) { toast.error(err.message); }
+  };
+
+  const openWarnModal = (item) => {
+    setWarningTarget(item);
+    setWarningMessage("");
+    setWarningOpen(true);
+  };
+
+  const handleSendWarning = async () => {
+    if (!warningTarget || !warningMessage.trim()) return;
+    setWarningLoading(true);
+    try {
+      await apiAdminWarnUser(warningTarget.warnTargetId, { message: warningMessage.trim() });
+      toast.success("Warning sent successfully.");
+      setWarningOpen(false);
+      await fetchData();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setWarningLoading(false);
+    }
   };
 
   const allItems = [
-    ...data.pgs.map((p)  => ({ name:p.name, type:"PG",    owner:p.owner?.name||"—", score:p.trustScore, _id:p._id, isUser:false })),
-    ...data.users.map((u) => ({ name:u.name, type:u.role,  owner:"—",               score:u.trustScore, _id:u._id, isUser:true  })),
+    ...data.pgs.map((p)  => ({ name:p.name, type:"PG",    owner:p.owner?.name||"—", score:p.trustScore, _id:p._id, isUser:false, warnTargetId:p.owner?._id })),
+    ...data.users.map((u) => ({ name:u.name, type:u.role,  owner:"—",               score:u.trustScore, _id:u._id, isUser:true, warnTargetId:u._id })),
   ];
 
   const high   = allItems.filter((i) => i.score >= 80).length;
@@ -171,7 +199,12 @@ export default function AdminMonitorTrustScores() {
                               {item.isUser && item.score < 60 ? (
                                 <button className="act-btn btn-suspend" onClick={() => handleSuspend(item._id)}>🚫 Suspend</button>
                               ) : (
-                                <button className="act-btn btn-warn">⚠️ Warn</button>
+                                <button
+                                  className="act-btn btn-warn"
+                                  onClick={() => openWarnModal(item)}
+                                  disabled={!item.warnTargetId}
+                                  title={!item.warnTargetId ? "No warning target available." : ""}
+                                >⚠️ Warn</button>
                               )}
                             </div>
                           </td>
@@ -182,6 +215,36 @@ export default function AdminMonitorTrustScores() {
                 </div>
               )}
             </div>
+
+            {warningOpen && (
+              <Modal
+                title="Send Warning"
+                subtitle={warningTarget?.isUser ? "Warn this user directly." : "Warn the owner of this PG."}
+                onClose={() => setWarningOpen(false)}
+                onConfirm={handleSendWarning}
+                confirmLabel={warningLoading ? "Sending…" : "Send Warning"}
+                loading={warningLoading}
+              >
+                <div style={{ padding: 0, minWidth: 320 }}>
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ display: "block", marginBottom: 6, fontWeight: 700 }}>Target</label>
+                    <div style={{ padding: 12, borderRadius: 14, background: "#f8f8fb", border: "1px solid #d8d8e8" }}>
+                      {warningTarget ? `${warningTarget.name} (${warningTarget.type})` : "No target selected."}
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: 18 }}>
+                    <label style={{ display: "block", marginBottom: 6, fontWeight: 700 }}>Message</label>
+                    <textarea
+                      value={warningMessage}
+                      onChange={(e) => setWarningMessage(e.target.value)}
+                      rows={5}
+                      style={{ width: "100%", padding: 12, borderRadius: 14, border: "1px solid #d8d8e8", resize: "vertical" }}
+                      placeholder="Enter the warning message to send by email and notification"
+                    />
+                  </div>
+                </div>
+              </Modal>
+            )}
 
           </div>
         </main>

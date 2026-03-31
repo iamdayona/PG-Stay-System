@@ -72,15 +72,19 @@ export default function TenantDashboard() {
 
         // Only fetch recommendations if user has preferences set
         const prefs = meRes.user?.preferences;
-        const hasPrefs = prefs?.location || (prefs?.amenities?.length > 0) ||
-          (prefs?.budgetMax && prefs.budgetMax !== 50000);
+        const hasPrefs = Boolean(
+          prefs?.location ||
+          (prefs?.amenities?.length > 0) ||
+          (prefs?.budgetMin && prefs.budgetMin > 0) ||
+          (prefs?.budgetMax && prefs.budgetMax !== 50000)
+        );
         if (hasPrefs) {
           return apiGetRecommendations();
         }
         return null;
       })
       .then((recRes) => {
-        if (recRes?.data) setRecs(recRes.data.slice(0, 3));
+        if (recRes?.data) setRecs(recRes.data.slice(0, 1));
       })
       .catch(console.error)
       .finally(() => setLoading(false));

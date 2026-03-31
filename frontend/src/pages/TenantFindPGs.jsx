@@ -108,7 +108,7 @@ export default function FindPGs() {
   });
 
   useEffect(() => {
-    Promise.all([apiGetRecommendations(), apiGetMe()])
+    Promise.all([apiGetAllPGs(), apiGetMe()])
       .then(([pgRes, meRes]) => {
         setPgListings(pgRes.data);
         setUser(meRes.user);
@@ -193,7 +193,7 @@ export default function FindPGs() {
     setRoomTypeFilter("");
     setCapacityFilter("");
     setLoading(true);
-    apiGetRecommendations()
+    apiGetAllPGs()
       .then((res) => setPgListings(res.data))
       .catch((err) => toast.error(err.message))
       .finally(() => setLoading(false));

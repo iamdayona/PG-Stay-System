@@ -142,6 +142,7 @@ export const apiAdminGetUsers    = ()     => request("/admin/users");
 export const apiAdminTrustScores = ()     => request("/admin/trustscores");
 export const apiAdminSuspendUser = (id)   => request(`/admin/users/${id}/suspend`,   { method: "PUT" });
 export const apiAdminVerifyUser  = (id)   => request(`/admin/users/${id}/verify`,    { method: "PUT" });
+export const apiAdminWarnUser    = (id, body) => request(`/admin/users/${id}/warn`,    { method: "PUT", body: JSON.stringify(body) });
 export const apiAdminSystemStats = ()     => request("/admin/system");
 export const apiAdminGetComplaints    = ()   => request("/admin/complaints");
 export const apiAdminResolveComplaint = (id) => request(`/admin/complaints/${id}/resolve`, { method: "PUT" });
