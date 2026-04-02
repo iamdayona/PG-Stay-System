@@ -277,3 +277,115 @@ exports.ownerCancelBooking = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+// PUT /api/bookings/:id/occupancy-dates
+exports.updateOccupancyDates = async (req, res) => {
+  try {
+    const booking = await Booking.findOne({ _id: req.params.id, tenant: req.user._id, status: "Active" }).populate("pgStay", "name owner");
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+
+    const { occupancyStartDate, occupancyEndDate } = req.body;
+    if (!occupancyStartDate || !occupancyEndDate)
+      return res.status(400).json({ message: "Both occupancy start and end dates are required" });
+
+    if (new Date(occupancyStartDate) >= new Date(occupancyEndDate))
+      return res.status(400).json({ message: "Start date must be before end date" });
+
+    booking.occupancyStartDate = new Date(occupancyStartDate);
+    booking.occupancyEndDate = new Date(occupancyEndDate);
+    await booking.save();
+
+    await createNotification(
+      req.user._id,
+      `Occupancy dates for ${booking.pgStay.name} have been updated.`,
+      "success"
+    );
+
+    await createNotification(
+      booking.pgStay.owner,
+      `Occupancy dates for the booking at ${booking.pgStay.name} have been updated by the tenant.`,
+      "info"
+    );
+
+    res.json({ data: booking });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// POST /api/bookings/:id/payment-proof
+exports.uploadPaymentProof = async (req, res) => {
+  try {
+    const booking = await Booking.findOne({ _id: req.params.id, tenant: req.user._id, status: "Active" }).populate("pgStay", "name owner");
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+
+    if (!req.file) return res.status(400).json({ message: "Payment proof file is required" });
+
+    booking.paymentProof = {
+      url: req.file.path,
+      publicId: req.file.filename,
+      uploadedAt: new Date(),
+      verificationStatus: "pending",
+      verifiedBy: null,
+      verifiedAt: null,
+    };
+    await booking.save();
+
+    await createNotification(
+      booking.pgStay.owner,
+      `Payment proof uploaded for ${booking.pgStay.name}. Please verify and update payment status.`,
+      "alert"
+    );
+
+    res.json({ data: booking, message: "Payment proof uploaded. Waiting for owner verification." });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// PUT /api/bookings/:id/verify-payment (owner only)
+exports.verifyPayment = async (req, res) => {
+  try {
+    const { verified } = req.body; // true = verified, false = rejected
+    if (typeof verified !== "boolean") return res.status(400).json({ message: "Verification status is required" });
+
+    const booking = await Booking.findById(req.params.id)
+      .populate("pgStay", "name owner")
+      .populate("tenant", "name");
+
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+
+    // Verify owner is verifying their own PG's booking
+    if (booking.pgStay.owner.toString() !== req.user._id.toString())
+      return res.status(403).json({ message: "Only the PG owner can verify payments" });
+
+    if (!booking.paymentProof.url) return res.status(400).json({ message: "No payment proof found" });
+
+    booking.paymentProof.verificationStatus = verified ? "verified" : "rejected";
+    booking.paymentProof.verifiedBy = req.user._id;
+    booking.paymentProof.verifiedAt = new Date();
+
+    if (verified) {
+      booking.paymentStatus = "paid";
+      booking.lastPaymentDate = new Date();
+    }
+
+    await booking.save();
+
+    const message = verified
+      ? `Payment verified for ${booking.pgStay.name}. Thank you!`
+      : `Payment rejected for ${booking.pgStay.name}. Please upload valid proof.`;
+
+    await createNotification(booking.tenant._id, message, verified ? "success" : "alert");
+
+    await createNotification(
+      req.user._id,
+      `Payment ${verified ? "verified" : "rejected"} for ${booking.tenant.name} at ${booking.pgStay.name}.`,
+      "info"
+    );
+
+    res.json({ data: booking });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

@@ -55,6 +55,14 @@ const BookingSchema = new mongoose.Schema(
     agreementEndDate: {
       type: Date,
     },
+    paymentProof: {
+      url: { type: String, default: "" },
+      publicId: { type: String, default: "" },
+      uploadedAt: { type: Date, default: null },
+      verificationStatus: { type: String, enum: ["pending", "verified", "rejected"], default: "pending" },
+      verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+      verifiedAt: { type: Date, default: null },
+    },
     agreementDocument: {
       url: { type: String, default: "" },
       publicId: { type: String, default: "" },

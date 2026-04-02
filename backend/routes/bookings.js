@@ -7,7 +7,9 @@ const {
   getMyBookings,
   declineBooking,
   updateBookingAgreement,
-  payBooking,
+  updateOccupancyDates,
+  uploadPaymentProof,
+  verifyPayment,
   ownerCancelBooking,
   getOwnerBookings,
 } = require("../controllers/bookingController");
@@ -18,9 +20,11 @@ router.post("/", authorize("tenant"), createBooking);
 router.post("/decline", authorize("tenant"), declineBooking);
 router.get("/my", authorize("tenant"), getMyBookings);
 router.put("/:id/agreement", authorize("tenant"), uploadAadhaar.single("agreement"), updateBookingAgreement);
-router.put("/:id/pay", authorize("tenant"), payBooking);
+router.put("/:id/occupancy-dates", authorize("tenant"), updateOccupancyDates);
+router.post("/:id/payment-proof", authorize("tenant"), uploadAadhaar.single("proof"), uploadPaymentProof);
 
-// Owner routes - to cancel bookings
+// Owner routes
+router.put("/:id/verify-payment", authorize("owner"), verifyPayment);
 router.get("/owner", authorize("owner"), getOwnerBookings);
 router.put("/:id/cancel-by-owner", authorize("owner"), ownerCancelBooking);
 

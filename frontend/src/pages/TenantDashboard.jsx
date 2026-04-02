@@ -18,8 +18,10 @@ const PAGE_CSS = `
   .stat-purple-v { color:#7b1fa2; }
   .stat-icon { position:absolute; top:18px; right:18px; width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.15rem; background:rgba(255,255,255,.7); box-shadow:0 3px 10px rgba(0,0,0,.08); }
 
-  .menu-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:18px; margin-bottom:28px; }
-  @media(max-width:640px){ .menu-grid{grid-template-columns:1fr;} }
+  .menu-grid { display:flex; flex-wrap:wrap; gap:18px; margin-bottom:28px; justify-content: space-between; }
+  .menu-grid > .menu-card { flex: 0 1 calc(50% - 9px); }
+  .menu-grid > .menu-card:last-child { flex: 0 1 calc(50% - 9px); margin: 0 auto; }
+  @media(max-width:640px){ .menu-grid{ justify-content: center; } .menu-grid > .menu-card { flex: 0 1 100%; } .menu-grid > .menu-card:last-child { margin: 0; } }
   .menu-card { background:rgba(255,255,255,.65); backdrop-filter:blur(18px); border:2.5px solid rgba(255,255,255,.85); border-radius:22px; padding:24px; box-shadow:0 6px 24px rgba(0,0,0,.07),inset 0 1px 0 rgba(255,255,255,.95); cursor:pointer; transition:transform .2s,box-shadow .2s,border-color .2s; display:flex; gap:16px; align-items:flex-start; animation:fadeUp .7s ease both; position:relative; overflow:hidden; }
   .menu-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:22px 22px 0 0; background:linear-gradient(90deg,#42a5f5,#e040fb); opacity:0; transition:opacity .2s; }
   .menu-card:hover { transform:translateY(-5px); box-shadow:0 16px 40px rgba(0,0,0,.12); border-color:rgba(66,165,245,.3); }

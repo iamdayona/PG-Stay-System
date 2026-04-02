@@ -1,16 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle2, AlertTriangle, FileText, UploadCloud, Send, ArrowRight } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Send, Calendar } from "lucide-react";
 import RoleNavigation from "../context/RoleNavigation";
 import {
   apiGetMyApplications,
   apiGetMyBookings,
   apiCreateBooking,
   apiDeclineBooking,
-  apiUploadBookingAgreement,
-  apiPayBooking,
   apiSubmitComplaint,
   apiGetMyComplaints,
+  apiUploadPaymentProof,
 } from "../utils/api";
 import { toast } from "../components/Toast";
 import { CLAY_BASE, CLAY_TENANT, injectClay } from "../styles/claystyles";
@@ -46,6 +45,8 @@ const PAGE_CSS = `
   .ticket-meta { font-size:.78rem; color:#7a7a9a; margin-top:10px; }
 `; 
 
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
 const css = injectClay(CLAY_BASE, CLAY_TENANT, PAGE_CSS);
 
 export default function TenantPGManagement() {
@@ -56,9 +57,7 @@ export default function TenantPGManagement() {
   const [loading, setLoading] = useState(true);
   const [selectedApplicationId, setSelectedApplicationId] = useState("");
   const [complaintText, setComplaintText] = useState("");
-  const [agreementFile, setAgreementFile] = useState(null);
-  const [agreementStart, setAgreementStart] = useState("");
-  const [agreementEnd, setAgreementEnd] = useState("");
+  const [paymentProofFile, setPaymentProofFile] = useState(null);
   const [actionLoading, setActionLoading] = useState("");
 
   const fetchData = async () => {
@@ -115,30 +114,23 @@ export default function TenantPGManagement() {
   };
 
   const handleAgreementUpload = async () => {
-    if (!activeBooking) return toast.error("No active booking to update.");
-    setActionLoading("agreement");
-    try {
-      const formData = new FormData();
-      if (agreementStart) formData.append("agreementStartDate", agreementStart);
-      if (agreementEnd)   formData.append("agreementEndDate", agreementEnd);
-      if (agreementFile)  formData.append("agreement", agreementFile);
-      await apiUploadBookingAgreement(activeBooking._id, formData);
-      toast.success("Agreement details updated successfully.");
-      await fetchData();
-      setAgreementFile(null);
-    } catch (err) {
-      toast.error(err.message);
-    } finally {
-      setActionLoading("");
-    }
+    // Removed - Agreement upload functionality removed
   };
 
   const handlePay = async () => {
+    // Removed - Manual payment marking removed
+  };
+
+  const handleUploadPaymentProof = async () => {
     if (!activeBooking) return toast.error("No active booking found.");
-    setActionLoading("pay");
+    if (!paymentProofFile) return toast.error("Please select a payment proof file.");
+    setActionLoading("paymentProof");
     try {
-      await apiPayBooking(activeBooking._id);
-      toast.success("Payment recorded. Next reminder will be sent in 30 days.");
+      const formData = new FormData();
+      formData.append("proof", paymentProofFile);
+      await apiUploadPaymentProof(activeBooking._id, formData);
+      toast.success("Payment proof uploaded. Waiting for owner verification.");
+      setPaymentProofFile(null);
       await fetchData();
     } catch (err) {
       toast.error(err.message);
@@ -227,9 +219,6 @@ export default function TenantPGManagement() {
                           </div>
                         </div>
                         <div className="btn-row">
-                          <button className="btn-action btn-pay" onClick={handlePay} disabled={actionLoading === "pay"}>
-                            <UploadCloud size={16} /> {actionLoading === "pay" ? "Recording…" : "Mark Payment Paid"}
-                          </button>
                         </div>
                       </div>
                     ) : (
@@ -264,42 +253,36 @@ export default function TenantPGManagement() {
                       </div>
                     )}
 
-                    <div className="grid-two">
-                      <div className="book-card">
-                        <div className="section-title">📄 Agreement Details</div>
-                        <div className="info-row">
-                          <div className="info-card">
-                            <div className="info-label">Start Date</div>
-                            <input
-                              type="date"
-                              className="clay-input"
-                              value={agreementStart}
-                              onChange={(e) => setAgreementStart(e.target.value)}
-                            />
-                          </div>
-                          <div className="info-card">
-                            <div className="info-label">End Date</div>
-                            <input
-                              type="date"
-                              className="clay-input"
-                              value={agreementEnd}
-                              onChange={(e) => setAgreementEnd(e.target.value)}
-                            />
-                          </div>
+                    <div className="book-card">
+                      <div className="section-title">📋 Agreement Time Period</div>
+                      <p className="card-note">View your agreement period details below.</p>
+                      <div className="info-row">
+                        <div className="info-card">
+                          <div className="info-label">Start Date</div>
+                          <div className="info-value">{activeBooking?.agreementStartDate ? new Date(activeBooking.agreementStartDate).toLocaleDateString() : "Not set"}</div>
                         </div>
-                        <div className="file-row">
-                          <div className="file-label">Upload agreement document</div>
-                          <input type="file" accept=".pdf,image/*" onChange={(e) => setAgreementFile(e.target.files?.[0] ?? null)} />
+                        <div className="info-card">
+                          <div className="info-label">End Date</div>
+                          <div className="info-value">{activeBooking?.agreementEndDate ? new Date(activeBooking.agreementEndDate).toLocaleDateString() : "Not set"}</div>
                         </div>
-                        <div className="btn-row">
-                          <button className="btn-action btn-upload" disabled={actionLoading === "agreement"} onClick={handleAgreementUpload}>
-                            <UploadCloud size={16} /> {actionLoading === "agreement" ? "Updating…" : "Save Agreement"}
-                          </button>
-                        </div>
-                        <div className="card-note">Upload your signed agreement and set the permitted stay period.</div>
                       </div>
+                    </div>
 
-                      <div className="book-card">
+                    <div className="book-card">
+                      <div className="section-title">💳 Payment Proof</div>
+                      <p className="card-note">Upload payment proof (screenshot/receipt). Owner will verify and update payment status.</p>
+                      <div className="file-row">
+                        <div className="file-label">Upload payment proof</div>
+                        <input type="file" accept="image/*,.pdf" onChange={(e) => setPaymentProofFile(e.target.files?.[0] ?? null)} />
+                      </div>
+                      <div className="btn-row">
+                        <button className="btn-action btn-upload" disabled={actionLoading === "paymentProof"} onClick={handleUploadPaymentProof}>
+                          <Calendar size={16} /> {actionLoading === "paymentProof" ? "Uploading…" : "Upload Proof"}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="book-card">
                         <div className="section-title">🛠️ Complaint & Support</div>
                         <p className="card-note">File a complaint about your PG stay. The owner and admin will be notified.</p>
                         <textarea
@@ -313,7 +296,6 @@ export default function TenantPGManagement() {
                             <Send size={16} /> {actionLoading === "complaint" ? "Submitting…" : "Submit Complaint"}
                           </button>
                         </div>
-                      </div>
                     </div>
 
                     {complaints.length > 0 && (

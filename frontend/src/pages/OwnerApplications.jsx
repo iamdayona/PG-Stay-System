@@ -183,7 +183,7 @@ export default function OwnerApplications() {
 
                     {app.status === "Approved" && (
                       <div className="approved-notice">
-                        <CheckCircle2 size={16} /> Room allocated to {app.tenant?.name}
+                        <CheckCircle2 size={16} /> The application of the tenant {app.tenant?.name} is approved.
                       </div>
                     )}
                   </div>

@@ -140,6 +140,19 @@ export const apiUploadBookingAgreement = (bookingId, formData) => {
   });
 };
 export const apiPayBooking          = (bookingId) => request(`/bookings/${bookingId}/pay`, { method: "PUT" });
+export const apiUploadPaymentProof  = (bookingId, formData) => {
+  const token = getToken();
+  return fetch(`${BASE_URL}/bookings/${bookingId}/payment-proof`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  }).then(async (res) => {
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Payment proof upload failed");
+    return data;
+  });
+};
+export const apiVerifyPayment       = (bookingId, body) => request(`/bookings/${bookingId}/verify-payment`, { method: "PUT", body: JSON.stringify(body) });
 
 // ── Feedback ──────────────────────────────────────────
 export const apiSubmitFeedback = (body)  => request("/feedback",       { method: "POST", body: JSON.stringify(body) });
