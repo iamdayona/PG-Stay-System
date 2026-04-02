@@ -64,7 +64,7 @@ export default function OwnerApplications() {
     setActionLoading(id + "approve");
     try {
       await apiApproveApplication(id);
-      toast.success(`Application approved for ${tenantName}! Room has been allocated.`);
+      toast.success(`Application approved for ${tenantName}!.`);
       await fetchApps();
     } catch (err) {
       toast.error(err.message);

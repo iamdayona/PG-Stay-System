@@ -301,11 +301,6 @@ export default function TenantProfile() {
                         {phoneVerified ? "Mobile number is verified." : "Click Update Profile to verify your phone."}
                       </div>
                     )}
-                    {isEditing && phoneVerified && (
-                      <button className="save-btn" onClick={handleSave} disabled={saving} style={{marginBottom:20}}>
-                        <Save size={16}/> {saving?"Saving…":"Save Verified Number"}
-                      </button>
-                    )}
                     </div>
                     {isEditing && (
                       <button className="save-btn" onClick={handleSave} disabled={saving}>
