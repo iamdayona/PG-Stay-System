@@ -101,6 +101,31 @@ exports.restrictPG = async (req, res) => {
   }
 };
 
+// PUT /api/admin/pgs/:id/unrestrict
+exports.unrestrictPG = async (req, res) => {
+  try {
+    const pg = await PGStay.findById(req.params.id).populate("owner", "name _id");
+    if (!pg) return res.status(404).json({ message: "PG not found" });
+
+    if (pg.verificationStatus !== "restricted") {
+      return res.status(400).json({ message: "Only restricted PGs can be unrestricted." });
+    }
+
+    pg.verificationStatus = "verified";
+    await pg.save();
+
+    await createNotification(
+      pg.owner._id,
+      `Your PG "${pg.name}" has been un-restricted and is now active again.`,
+      "success"
+    );
+
+    res.json({ data: pg });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // DELETE /api/admin/pgs/:id
 exports.deletePGAdmin = async (req, res) => {
   try {
@@ -147,11 +172,46 @@ exports.suspendUser = async (req, res) => {
     if (user.role === "admin")
       return res.status(400).json({ message: "Cannot suspend an admin" });
 
+    if (!user.isActive)
+      return res.status(400).json({ message: "User is already suspended" });
+
     user.isActive = false;
     user.trustScore = Math.max(0, user.trustScore - 20);
     await user.save();
 
+    await createNotification(
+      user._id,
+      `Your account has been suspended by admin. Please contact support for more information.`,
+      "alert"
+    );
+
     res.json({ data: user, message: "User suspended" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// PUT /api/admin/users/:id/unsuspend
+exports.unsuspendUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.role === "admin")
+      return res.status(400).json({ message: "Cannot unsuspend an admin" });
+
+    if (user.isActive)
+      return res.status(400).json({ message: "User is not suspended" });
+
+    user.isActive = true;
+    await user.save();
+
+    await createNotification(
+      user._id,
+      `Your account suspension has been lifted. You can now access the platform again.`,
+      "success"
+    );
+
+    res.json({ data: user, message: "User suspension lifted" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

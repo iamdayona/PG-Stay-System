@@ -17,6 +17,11 @@ const PGStaySchema = new mongoose.Schema(
       required: [true, "Location is required"],
       trim: true,
     },
+    address: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     rent: {
       type: Number,
       required: [true, "Rent is required"],
@@ -51,6 +56,10 @@ const PGStaySchema = new mongoose.Schema(
     description: {
       type: String,
       default: "",
+    },
+    rules: {
+      type: [String],
+      default: [],
     },
     images: {
       type: [

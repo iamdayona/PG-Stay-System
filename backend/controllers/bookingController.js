@@ -42,6 +42,16 @@ exports.createBooking = async (req, res) => {
       status: "Active",
     });
 
+    // Mark room as unavailable (occupied by active booking)
+    await Room.findByIdAndUpdate(application.room._id, { availability: false });
+
+    // Sync availableRooms count on PG
+    const availableRooms = await Room.countDocuments({
+      pgStay: application.pgStay._id,
+      availability: true,
+    });
+    await PGStay.findByIdAndUpdate(application.pgStay._id, { availableRooms });
+
     await createNotification(
       req.user._id,
       `Your booking for ${application.pgStay.name} is confirmed. Manage your stay from the PG management page.`,
@@ -73,6 +83,41 @@ exports.getMyBookings = async (req, res) => {
   }
 };
 
+// GET /api/bookings/owner (owner only)
+exports.getOwnerBookings = async (req, res) => {
+  try {
+    // Get all PGs owned by this user
+    const ownerPGs = await PGStay.find({ owner: req.user._id }).select("_id");
+    const pgIds = ownerPGs.map((pg) => pg._id);
+
+    const bookings = await Booking.find({ pgStay: { $in: pgIds }, status: "Active" })
+      .populate("tenant", "name email trustScore")
+      .populate("pgStay", "name location")
+      .populate("room", "roomType rent")
+      .populate("application", "appliedDate")
+      .sort({ createdAt: -1 });
+
+    // Calculate days remaining until cancellation is allowed
+    const bookingsWithDays = bookings.map((booking) => {
+      const joinDate = booking.agreementStartDate || booking.allocationDate;
+      const daysElapsed = Math.floor((Date.now() - new Date(joinDate).getTime()) / (1000 * 60 * 60 * 24));
+      const canCancel = daysElapsed >= 2;
+      const daysRemaining = Math.max(0, 2 - daysElapsed);
+
+      return {
+        ...booking.toObject(),
+        daysElapsed,
+        canCancel,
+        daysRemaining,
+      };
+    });
+
+    res.json({ data: bookingsWithDays });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // POST /api/bookings/decline
 exports.declineBooking = async (req, res) => {
   try {
@@ -93,6 +138,7 @@ exports.declineBooking = async (req, res) => {
     application.status = "Rejected";
     await application.save();
 
+    // Mark room as available (no active booking)
     await Room.findByIdAndUpdate(application.room, { availability: true });
     const availableRooms = await Room.countDocuments({ pgStay: application.pgStay, availability: true });
     await PGStay.findByIdAndUpdate(application.pgStay, { availableRooms });
@@ -165,6 +211,68 @@ exports.payBooking = async (req, res) => {
     );
 
     res.json({ data: booking });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// PUT /api/bookings/:id/cancel-by-owner (owner only)
+exports.ownerCancelBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id)
+      .populate("pgStay", "name owner")
+      .populate("tenant", "name email")
+      .populate("room", "roomType");
+
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+
+    // Verify owner is cancelling their own PG's booking
+    if (booking.pgStay.owner.toString() !== req.user._id.toString())
+      return res.status(403).json({ message: "Only the PG owner can cancel this booking" });
+
+    if (booking.status === "Cancelled")
+      return res.status(400).json({ message: "This booking is already cancelled" });
+
+    // Check if 2 days have passed since agreementStartDate
+    const joinDate = booking.agreementStartDate || booking.allocationDate;
+    const daysElapsed = Math.floor((Date.now() - new Date(joinDate).getTime()) / (1000 * 60 * 60 * 24));
+
+    if (daysElapsed < 2) {
+      const daysRemaining = 2 - daysElapsed;
+      return res.status(400).json({
+        message: `You can only cancel this booking after 2 days from the tenant's join date. ${daysRemaining} day(s) remaining.`,
+        daysRemaining,
+      });
+    }
+
+    // Cancel the booking
+    booking.status = "Cancelled";
+    await booking.save();
+
+    // Mark room as available again
+    await Room.findByIdAndUpdate(booking.room, { availability: true });
+
+    // Sync availableRooms on PG
+    const availableRooms = await Room.countDocuments({
+      pgStay: booking.pgStay._id,
+      availability: true,
+    });
+    await PGStay.findByIdAndUpdate(booking.pgStay._id, { availableRooms });
+
+    // Notify both parties
+    await createNotification(
+      req.user._id,
+      `You cancelled the booking for ${booking.tenant.name} at ${booking.pgStay.name}.`,
+      "alert"
+    );
+
+    await createNotification(
+      booking.tenant._id,
+      `Your booking for ${booking.pgStay.name} has been cancelled by the owner. Please search for another PG.`,
+      "alert"
+    );
+
+    res.json({ data: booking, message: "Booking cancelled successfully" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

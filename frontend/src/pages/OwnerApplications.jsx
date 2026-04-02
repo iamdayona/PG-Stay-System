@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, XCircle, Trash2 } from "lucide-react";
 import RoleNavigation from "../context/RoleNavigation";
-import { apiGetOwnerApplications, apiApproveApplication, apiRejectApplication } from "../utils/api";
+import { apiGetOwnerApplications, apiApproveApplication, apiRejectApplication, apiGetOwnerBookings, apiOwnerCancelBooking } from "../utils/api";
 import { toast } from "../components/Toast";
 import { CLAY_BASE, CLAY_OWNER, injectClay } from "../styles/claystyles";
 
@@ -12,6 +12,7 @@ const PAGE_CSS = `
   .app-card.card-pending::before  { background:linear-gradient(180deg,#ffe082,#ffd54f); }
   .app-card.card-approved::before { background:linear-gradient(180deg,#66bb6a,#a5d6a7); }
   .app-card.card-rejected::before { background:linear-gradient(180deg,#ef9a9a,#e57373); }
+  .app-card.card-booked::before   { background:linear-gradient(180deg,#42a5f5,#1e88e5); }
 
   .app-header  { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:16px; }
   .tenant-name { font-family:'Nunito',sans-serif; font-size:1.3rem; font-weight:900; color:#2d2d4e; margin-bottom:4px; }
@@ -28,6 +29,7 @@ const PAGE_CSS = `
   .chip-pending  { background:rgba(255,249,196,.9); color:#f57f17; border-color:rgba(255,224,130,.6); }
   .chip-approved { background:rgba(232,245,233,.9); color:#2e7d32; border-color:rgba(165,214,167,.6); }
   .chip-rejected { background:rgba(255,235,238,.9); color:#c62828; border-color:rgba(239,154,154,.6); }
+  .chip-booked   { background:rgba(227,242,253,.9); color:#1565c0; border-color:rgba(144,202,249,.6); }
 
   .action-btns { display:flex; gap:10px; }
   .btn-approve { background:linear-gradient(135deg,#66bb6a,#43a047); color:white; padding:11px 22px; border:none; border-radius:14px; font-family:'Poppins',sans-serif; font-size:.85rem; font-weight:700; cursor:pointer; box-shadow:0 5px 0 #2e7d32,0 8px 18px rgba(102,187,106,.35); transition:transform .15s,filter .15s; display:inline-flex; align-items:center; gap:7px; }
@@ -37,20 +39,33 @@ const PAGE_CSS = `
   .btn-reject:hover:not(:disabled) { filter:brightness(1.06); transform:translateY(-2px); }
   .btn-reject:disabled { opacity:.6; cursor:not-allowed; }
 
+  .btn-cancel { background:linear-gradient(135deg,#ef9a9a,#e53935); color:white; padding:10px 18px; border:none; border-radius:12px; font-family:'Poppins',sans-serif; font-size:.80rem; font-weight:700; cursor:pointer; box-shadow:0 5px 0 #b71c1c,0 8px 14px rgba(239,83,80,.3); transition:transform .15s,filter .15s,opacity .15s; display:inline-flex; align-items:center; gap:6px; }
+  .btn-cancel:hover:not(:disabled) { filter:brightness(1.06); transform:translateY(-2px); }
+  .btn-cancel:disabled { opacity:.5; cursor:not-allowed; }
+
+  .cancel-info { display:flex; align-items:center; gap:8px; padding:10px 14px; background:rgba(255,235,238,.75); border:1.5px solid rgba(239,154,154,.4); border-radius:12px; font-size:.78rem; color:#c62828; font-weight:600; }
+
   .approved-notice { display:flex; align-items:center; gap:8px; padding:12px 16px; background:rgba(232,245,233,.85); border:2px solid rgba(165,214,167,.5); border-radius:14px; font-size:.83rem; color:#2e7d32; font-weight:600; }
+
+  .section-title { font-family:'Nunito',sans-serif; font-size:1.2rem; font-weight:800; color:#2d2d4e; margin-top:32px; margin-bottom:16px; }
 `;
 
 const css = injectClay(CLAY_BASE, CLAY_OWNER, PAGE_CSS);
 
 export default function OwnerApplications() {
   const [applications, setApplications] = useState([]);
+  const [bookings, setBookings]         = useState([]);
   const [loading, setLoading]           = useState(true);
   const [actionLoading, setActionLoading] = useState("");
 
-  const fetchApps = async () => {
+  const fetchData = async () => {
     try {
-      const res = await apiGetOwnerApplications();
-      setApplications(res.data);
+      const [appsRes, bookingsRes] = await Promise.all([
+        apiGetOwnerApplications(),
+        apiGetOwnerBookings()
+      ]);
+      setApplications(appsRes.data);
+      setBookings(bookingsRes.data);
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -58,14 +73,14 @@ export default function OwnerApplications() {
     }
   };
 
-  useEffect(() => { fetchApps(); }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const handleApprove = async (id, tenantName) => {
     setActionLoading(id + "approve");
     try {
       await apiApproveApplication(id);
       toast.success(`Application approved for ${tenantName}!.`);
-      await fetchApps();
+      await fetchData();
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -78,7 +93,20 @@ export default function OwnerApplications() {
     try {
       await apiRejectApplication(id);
       toast.info(`Application from ${tenantName} has been rejected.`);
-      await fetchApps();
+      await fetchData();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  const handleCancelBooking = async (bookingId, tenantName) => {
+    setActionLoading(bookingId + "cancel");
+    try {
+      await apiOwnerCancelBooking(bookingId);
+      toast.success(`Booking for ${tenantName} has been cancelled.`);
+      await fetchData();
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -101,7 +129,7 @@ export default function OwnerApplications() {
             <p className="clay-page-sub">Review tenant applications and approve or reject them.</p>
 
             {loading ? (
-              <div className="clay-empty"><span className="clay-empty-emoji">⏳</span>Loading applications…</div>
+              <div className="clay-empty"><span className="clay-empty-emoji">⏳</span>Loading…</div>
             ) : applications.length === 0 ? (
               <div className="clay-empty">
                 <span className="clay-empty-emoji">📭</span>
@@ -161,6 +189,66 @@ export default function OwnerApplications() {
                   </div>
                 </div>
               ))
+            )}
+
+            {/* Bookings Section */}
+            {bookings.length > 0 && (
+              <>
+                <div style={{ marginTop: "40px" }}>
+                  <h3 className="section-title">🏠 Active Bookings</h3>
+                  <p style={{ color: "#7a7a9a", fontSize: ".9rem", marginBottom: "20px" }}>
+                    Manage active tenant bookings. You can cancel a booking after 2 days from the tenant's join date.
+                  </p>
+
+                  {bookings.map((booking, i) => (
+                    <div key={booking._id} className="app-card card-booked" style={{ animationDelay: `${i * .08}s` }}>
+                      <div className="app-header">
+                        <div>
+                          <div className="tenant-name">👤 {booking.tenant?.name}</div>
+                          <div className="app-detail">🏠 {booking.pgStay?.name} — {booking.room?.roomType}</div>
+                          <div className="app-detail">📅 Join Date: {new Date(booking.agreementStartDate || booking.allocationDate).toLocaleDateString()}</div>
+                          <div className="app-detail">💰 Rent: ₹{booking.rentAmount}/month</div>
+                          <div className="app-detail" style={{ marginTop: "6px" }}>
+                            {booking.canCancel ? (
+                              <span style={{ color: "#2e7d32", fontWeight: 600 }}>✓ Can be cancelled (2+ days elapsed)</span>
+                            ) : (
+                              <span style={{ color: "#f57f17", fontWeight: 600 }}>⏳ Can cancel in {booking.daysRemaining} day(s)</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="trust-score">
+                          <div className="trust-label">Trust Score</div>
+                          <div className={`trust-value ${getTrustClass(booking.tenant?.trustScore)}`}>
+                            {booking.tenant?.trustScore ?? "—"}
+                          </div>
+                          <div style={{ fontSize: ".65rem", color: "#bbb", marginTop: 2 }}>/100</div>
+                        </div>
+                      </div>
+
+                      <div className="app-footer">
+                        <span className="status-chip chip-booked">
+                          ✓ Active Booking
+                        </span>
+
+                        {booking.canCancel ? (
+                          <button
+                            className="btn-cancel"
+                            onClick={() => handleCancelBooking(booking._id, booking.tenant?.name)}
+                            disabled={actionLoading === booking._id + "cancel"}
+                          >
+                            <Trash2 size={14} />
+                            {actionLoading === booking._id + "cancel" ? "Cancelling…" : "Cancel Booking"}
+                          </button>
+                        ) : (
+                          <div className="cancel-info">
+                            ⏳ Can cancel after {booking.daysRemaining} days (Policy: 2 days from join date)
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </main>

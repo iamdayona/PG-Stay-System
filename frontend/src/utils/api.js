@@ -125,6 +125,8 @@ export const apiRejectApplication    = (id)  => request(`/applications/${id}/rej
 export const apiGetMyBookings        = ()     => request("/bookings/my");
 export const apiCreateBooking        = (body) => request("/bookings", { method: "POST", body: JSON.stringify(body) });
 export const apiDeclineBooking       = (body) => request("/bookings/decline", { method: "POST", body: JSON.stringify(body) });
+export const apiGetOwnerBookings     = ()     => request("/bookings/owner");
+export const apiOwnerCancelBooking   = (id)   => request(`/bookings/${id}/cancel-by-owner`, { method: "PUT" });
 export const apiUploadBookingAgreement = (bookingId, formData) => {
   const token = getToken();
   return fetch(`${BASE_URL}/bookings/${bookingId}/agreement`, {
@@ -160,10 +162,12 @@ export const apiAdminStats       = ()     => request("/admin/stats");
 export const apiAdminGetPGs      = ()     => request("/admin/pgs");
 export const apiAdminVerifyPG    = (id)   => request(`/admin/pgs/${id}/verify`,      { method: "PUT" });
 export const apiAdminRestrictPG  = (id)   => request(`/admin/pgs/${id}/restrict`,    { method: "PUT" });
+export const apiAdminUnrestrictPG = (id)   => request(`/admin/pgs/${id}/unrestrict`,  { method: "PUT" });
 export const apiAdminDeletePG    = (id)   => request(`/admin/pgs/${id}`,             { method: "DELETE" });
 export const apiAdminGetUsers    = ()     => request("/admin/users");
 export const apiAdminTrustScores = ()     => request("/admin/trustscores");
 export const apiAdminSuspendUser = (id)   => request(`/admin/users/${id}/suspend`,   { method: "PUT" });
+export const apiAdminUnsuspendUser = (id) => request(`/admin/users/${id}/unsuspend`, { method: "PUT" });
 export const apiAdminVerifyUser  = (id)   => request(`/admin/users/${id}/verify`,    { method: "PUT" });
 export const apiAdminDeleteUser  = (id)   => request(`/admin/users/${id}`,           { method: "DELETE" });
 export const apiAdminWarnUser    = (id, body) => request(`/admin/users/${id}/warn`,    { method: "PUT", body: JSON.stringify(body) });

@@ -6,6 +6,7 @@ import { toast } from "../components/Toast";
 import { CLAY_BASE, injectClay, CLAY_TENANT } from "../styles/claystyles";
 import OtpField from "../components/OtpField";
 import PhoneInput from "../components/PhoneInput";
+import { toTitleCase } from "../utils/capitalization";
 
 const PAGE_CSS = `
   .profile-grid { display:grid; grid-template-columns:260px 1fr; gap:24px; }
@@ -108,17 +109,45 @@ export default function TenantProfile() {
 
   const [form, setForm] = useState({
     name:"", phone:"", gender:"",
+    houseName:"", street:"", postOffice:"", placeOfResidence:"", district:"", pinNumber:"",
     prefBudgetMin:"", prefBudgetMax:"",
   });
+
+  // Helper: parse formatted address string into individual fields
+  const parseAddress = (addressStr) => {
+    if (!addressStr) return { houseName:"", street:"", postOffice:"", placeOfResidence:"", district:"", pinNumber:"" };
+    const parts = addressStr.split("\n").reduce((acc, line) => {
+      if (line.includes("House name/house number:")) acc.houseName = line.split(":")[1]?.trim() || "";
+      else if (line.includes("Street name/locality:")) acc.street = line.split(":")[1]?.trim() || "";
+      else if (line.includes("Post office name:")) acc.postOffice = line.split(":")[1]?.trim() || "";
+      else if (line.includes("Place of residence:")) acc.placeOfResidence = line.split(":")[1]?.trim() || "";
+      else if (line.includes("District:")) acc.district = line.split(":")[1]?.trim() || "";
+      else if (line.includes("Pin number:")) acc.pinNumber = line.split(":")[1]?.trim() || "";
+      return acc;
+    }, { houseName:"", street:"", postOffice:"", placeOfResidence:"", district:"", pinNumber:"" });
+    return parts;
+  };
+
+  // Helper: format individual fields into address string
+  const formatAddress = () => {
+    return `House name/house number: ${form.houseName}\nStreet name/locality: ${form.street}\nPost office name: ${form.postOffice}\nPlace of residence: ${form.placeOfResidence}\nDistrict: ${form.district}\nPin number: ${form.pinNumber}`;
+  };
 
   useEffect(() => {
     apiGetMe()
       .then((res) => {
         setUser(res.user);
+        const addressParts = parseAddress(res.user.address || "");
         setForm({
           name:         res.user.name               || "",
           phone:        res.user.phone              || "",
           gender:       res.user.gender             || "",
+          houseName:    addressParts.houseName     || "",
+          street:       addressParts.street         || "",
+          postOffice:   addressParts.postOffice     || "",
+          placeOfResidence: addressParts.placeOfResidence || "",
+          district:     addressParts.district       || "",
+          pinNumber:    addressParts.pinNumber      || "",
           prefBudgetMin:res.user.preferences?.budgetMin || "",
           prefBudgetMax:res.user.preferences?.budgetMax || "",
         });
@@ -133,7 +162,7 @@ export default function TenantProfile() {
     setSaving(true);
     try {
       const res = await apiUpdateProfile({
-        name: form.name, phone: form.phone, gender: form.gender,
+        name: form.name, phone: form.phone, gender: form.gender, address: formatAddress(),
         preferences: {
           budgetMin: Number(form.prefBudgetMin) || 0,
           budgetMax: Number(form.prefBudgetMax) || 50000,
@@ -264,7 +293,7 @@ export default function TenantProfile() {
                     <div className="form-grid2">
                       <div className="form-group">
                         <label className="clay-label">Full Name</label>
-                        <input className="clay-input" value={form.name} onChange={(e) => setForm({...form, name:e.target.value})} placeholder="Your full name" disabled={!isEditing} />
+                        <input className="clay-input" value={form.name} onChange={(e) => setForm({...form, name: toTitleCase(e.target.value)})} placeholder="Your full name" disabled={!isEditing} />
                       </div>
                       <div className="form-group">
                         <label className="clay-label">Email Address</label>
@@ -282,6 +311,33 @@ export default function TenantProfile() {
                       <div className="form-group">
                         <label className="clay-label">Phone Number</label>
                         <PhoneInput value={form.phone} onChange={(val) => setForm({...form, phone:val})} disabled={!isEditing} />
+                      </div>
+                      <div className="form-group" style={{gridColumn:"1 / -1"}}>
+                        <label className="clay-label">📍 Address Details</label>
+                      </div>
+                      <div className="form-group">
+                        <label className="clay-label">House Name / Number</label>
+                        <input className="clay-input" value={form.houseName} onChange={(e) => setForm({...form, houseName: toTitleCase(e.target.value)})} placeholder="House name or number" disabled={!isEditing} />
+                      </div>
+                      <div className="form-group">
+                        <label className="clay-label">Street / Locality</label>
+                        <input className="clay-input" value={form.street} onChange={(e) => setForm({...form, street: toTitleCase(e.target.value)})} placeholder="Street name or locality" disabled={!isEditing} />
+                      </div>
+                      <div className="form-group">
+                        <label className="clay-label">Post Office</label>
+                        <input className="clay-input" value={form.postOffice} onChange={(e) => setForm({...form, postOffice: toTitleCase(e.target.value)})} placeholder="Post office name" disabled={!isEditing} />
+                      </div>
+                      <div className="form-group">
+                        <label className="clay-label">Place of Residence</label>
+                        <input className="clay-input" value={form.placeOfResidence} onChange={(e) => setForm({...form, placeOfResidence: toTitleCase(e.target.value)})} placeholder="City or town" disabled={!isEditing} />
+                      </div>
+                      <div className="form-group">
+                        <label className="clay-label">District</label>
+                        <input className="clay-input" value={form.district} onChange={(e) => setForm({...form, district: toTitleCase(e.target.value)})} placeholder="District" disabled={!isEditing} />
+                      </div>
+                      <div className="form-group">
+                        <label className="clay-label">Pin Number</label>
+                        <input className="clay-input" value={form.pinNumber} onChange={(e) => setForm({...form, pinNumber: e.target.value})} placeholder="Postal code" disabled={!isEditing} maxLength="6" />
                       </div>
                       <div className="clay-section-title">📱 Mobile Verification Status</div>
                     <p style={{fontSize:".82rem",color:"#7a7a9a",marginBottom:16}}>

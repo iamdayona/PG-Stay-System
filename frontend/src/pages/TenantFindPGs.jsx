@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { MapPin, IndianRupee, ShieldAlert } from "lucide-react";
 import RoleNavigation from "../context/RoleNavigation";
 import { toast } from "../components/Toast";
+import PGDetailsModal from "../components/PGDetailsModal";
 import { apiGetRecommendations, apiGetAllPGs, apiApply, apiGetRooms, apiGetMe } from "../utils/api";
 import { CLAY_BASE, CLAY_TENANT, injectClay } from "../styles/claystyles";
+import { toTitleCase } from "../utils/capitalization";
 
 // ── Master amenity list (mirrors OwnerPGSManagement) ──────────────────────
 const ALL_AMENITIES = [
@@ -77,6 +79,8 @@ const PAGE_CSS = `
   .apply-btn:hover:not(:disabled) { filter:brightness(1.06); transform:translateY(-2px); }
   .apply-btn:disabled { opacity:.6; cursor:not-allowed; }
   .apply-btn-locked { background:linear-gradient(135deg,#b0bec5,#90a4ae); box-shadow:0 5px 0 #607d8b,0 8px 18px rgba(144,164,174,.3),inset 0 1px 0 rgba(255,255,255,.3); }
+  .apply-btn-applied { background:linear-gradient(135deg,#66bb6a,#43a047); box-shadow:0 5px 0 #2e7d32,0 8px 18px rgba(102,187,106,.35),inset 0 1px 0 rgba(255,255,255,.3); cursor:default; }
+  .apply-btn-applied:hover { filter:none; transform:none; }
 
   /* ── Verification gate banner ── */
   .verify-gate { background:rgba(255,235,238,.85); border:2px solid rgba(239,154,154,.5); border-radius:18px; padding:18px 20px; margin-bottom:24px; display:flex; align-items:flex-start; gap:14px; }
@@ -101,11 +105,28 @@ export default function FindPGs() {
   const [user, setUser]             = useState(null);
   const [loading, setLoading]       = useState(true);
   const [applying, setApplying]     = useState("");
+  const [appliedPGs, setAppliedPGs] = useState([]);
+  const [selectedPGDetails, setSelectedPGDetails] = useState(null);
   const [roomTypeFilter, setRoomTypeFilter] = useState(""); // "Single" | "Shared"
   const [capacityFilter, setCapacityFilter] = useState("");
   const [filters, setFilters] = useState({
     location: "", budgetMin: "", budgetMax: "", amenities: [],
   });
+
+  // Helper: parse formatted address string into individual fields
+  const parseAddress = (addressStr) => {
+    if (!addressStr) return { pgName:"", street:"", postOffice:"", placeOfResidence:"", district:"", pinNumber:"" };
+    const parts = addressStr.split("\n").reduce((acc, line) => {
+      if (line.includes("Name of Pg:")) acc.pgName = line.split(":")[1]?.trim() || "";
+      else if (line.includes("Street name/locality:")) acc.street = line.split(":")[1]?.trim() || "";
+      else if (line.includes("Post office name:")) acc.postOffice = line.split(":")[1]?.trim() || "";
+      else if (line.includes("Place of residence:")) acc.placeOfResidence = line.split(":")[1]?.trim() || "";
+      else if (line.includes("District:")) acc.district = line.split(":")[1]?.trim() || "";
+      else if (line.includes("Pin number:")) acc.pinNumber = line.split(":")[1]?.trim() || "";
+      return acc;
+    }, { pgName:"", street:"", postOffice:"", placeOfResidence:"", district:"", pinNumber:"" });
+    return parts;
+  };
 
   useEffect(() => {
     Promise.all([apiGetAllPGs(), apiGetMe()])
@@ -171,6 +192,7 @@ export default function FindPGs() {
         return;
       }
       await apiApply({ pgStayId: pg._id, roomId: available[0]._id });
+      setAppliedPGs((prev) => [...prev, pg._id]);
       toast.success(`Application submitted for ${pg.name}! 🎉`);
     } catch (err) {
       toast.error(err.message);
@@ -204,6 +226,12 @@ export default function FindPGs() {
       <style>{css}</style>
       <div className="clay-page">
         <RoleNavigation role="tenant" />
+        
+        {/* PG Details Modal */}
+        {selectedPGDetails && (
+          <PGDetailsModal pg={selectedPGDetails} onClose={() => setSelectedPGDetails(null)} parseAddress={parseAddress} />
+        )}
+        
         <main className="clay-main">
           <div className="clay-container">
             <h2 className="clay-page-title">🔍 Search PG Accommodations</h2>
@@ -240,7 +268,7 @@ export default function FindPGs() {
                 <div className="filter-group">
                   <label className="clay-label">Location</label>
                   <input className="clay-input" type="text" placeholder="Enter city or area"
-                    value={filters.location} onChange={(e) => setFilters({ ...filters, location: e.target.value })} />
+                    value={filters.location} onChange={(e) => setFilters({ ...filters, location: toTitleCase(e.target.value) })} />
                 </div>
 
                 {/* Budget */}
@@ -357,19 +385,47 @@ export default function FindPGs() {
                           </div>
                         </div>
 
-                        {/* Apply button */}
+                        {/* View Details & Apply buttons */}
                         <div style={{ flexShrink: 0, display:"flex", flexDirection:"column", alignItems:"flex-end", gap:6 }}>
                           <button
-                            className={`apply-btn${!isVerified ? " apply-btn-locked" : ""}`}
-                            onClick={() => handleApply(pg)}
+                            style={{
+                              padding:"10px 16px",
+                              background:"rgba(66,165,245,.15)",
+                              border:"2px solid rgba(66,165,245,.4)",
+                              borderRadius:"12px",
+                              color:"#1565c0",
+                              fontFamily:"Poppins,sans-serif",
+                              fontSize:".82rem",
+                              fontWeight:700,
+                              cursor:"pointer",
+                              transition:"all .15s",
+                              whiteSpace:"nowrap"
+                            }}
+                            onClick={() => setSelectedPGDetails(pg)}
+                            onMouseEnter={(e) => {
+                              e.target.style.background = "rgba(66,165,245,.25)";
+                              e.target.style.borderColor = "rgba(66,165,245,.7)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.background = "rgba(66,165,245,.15)";
+                              e.target.style.borderColor = "rgba(66,165,245,.4)";
+                            }}
+                          >
+                            👁️ View Details
+                          </button>
+                          <button
+                            className={`apply-btn${!isVerified ? " apply-btn-locked" : ""}${appliedPGs.includes(pg._id) ? " apply-btn-applied" : ""}`}
+                            onClick={() => !appliedPGs.includes(pg._id) && handleApply(pg)}
                             disabled={applying === pg._id}
-                            title={!isVerified ? "Verify your Aadhaar to apply" : ""}
+                            title={!isVerified ? "Verify your Aadhaar to apply" : appliedPGs.includes(pg._id) ? "Already applied" : ""}
                           >
                             {applying === pg._id
                               ? "⏳ Applying…"
-                              : !isVerified
-                                ? "🔒 Apply"
-                                : "Apply →"}
+                              : appliedPGs.includes(pg._id)
+                                ? "✓ Applied"
+                                : !isVerified
+                                  ? "🔒 Apply"
+                                  : "Apply →"}
                           </button>
                           {!isVerified && (
                             <span style={{ fontSize:".68rem", color:"#9a9ab0", textAlign:"right", maxWidth:90 }}>

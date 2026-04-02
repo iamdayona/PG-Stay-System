@@ -2,10 +2,12 @@ import { useEffect, useState, useRef } from "react";
 import RoleNavigation from "../context/RoleNavigation";
 import Modal from "../components/Modal";
 import { toast } from "../components/Toast";
+import ConfirmationModal from "../components/ConfirmationModal";
 import { getUser, apiGetOwnerPGs, apiCreatePG, apiUpdatePG, apiDeletePG, apiGetRooms, apiAddRoom, apiUpdateRoom, apiDeleteRoom } from "../utils/api";
 import { CLAY_BASE, CLAY_OWNER, injectClay } from "../styles/claystyles";
 import { Plus, Trash2, ImagePlus, ChevronDown, X, Edit3 } from "lucide-react";
 import { apiUploadPGImages, apiDeletePGImage } from "../utils/api";
+import { toSentenceCase } from "../utils/capitalization";
 
 /* ─── Predefined amenities list ─── */
 const AMENITY_OPTIONS = [
@@ -207,7 +209,7 @@ export default function OwnerPGManagement() {
   const [rooms, setRooms]           = useState([]);
   const [selectedPG, setSelectedPG] = useState(null);
   const [saving, setSaving]         = useState(false);
-  const [pgForm, setPgForm]         = useState({ name:"", location:"", rent:"", amenities:[] });
+  const [pgForm, setPgForm]         = useState({ name:"", location:"", pgName:"", street:"", postOffice:"", placeOfResidence:"", district:"", pinNumber:"", rent:"", amenities:[], rules:[] });
   const [uploading, setUploading]   = useState(false);
   const [pgImages, setPgImages]     = useState([]);
   const [showRoomModal, setShowRoomModal] = useState(false);
@@ -216,10 +218,37 @@ export default function OwnerPGManagement() {
   const [selectedRoom, setSelectedRoom]   = useState(null);
   const [isEditingRoom, setIsEditingRoom] = useState(false);
   const [ownerVerified, setOwnerVerified] = useState(false);
+  const [confirmation, setConfirmation] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    operation: null,
+    pgData: null
+  });
 
   // License document state (only required when creating new PG)
   const [licenseFile, setLicenseFile]   = useState(null);
   const [licenseError, setLicenseError] = useState("");
+
+  // Helper: parse formatted PG address string into individual fields
+  const parsePGAddress = (addressStr) => {
+    if (!addressStr) return { pgName:"", street:"", postOffice:"", placeOfResidence:"", district:"", pinNumber:"" };
+    const parts = addressStr.split("\n").reduce((acc, line) => {
+      if (line.includes("Name of Pg:")) acc.pgName = line.split(":")[1]?.trim() || "";
+      else if (line.includes("Street name/locality:")) acc.street = line.split(":")[1]?.trim() || "";
+      else if (line.includes("Post office name:")) acc.postOffice = line.split(":")[1]?.trim() || "";
+      else if (line.includes("Place of residence:")) acc.placeOfResidence = line.split(":")[1]?.trim() || "";
+      else if (line.includes("District:")) acc.district = line.split(":")[1]?.trim() || "";
+      else if (line.includes("Pin number:")) acc.pinNumber = line.split(":")[1]?.trim() || "";
+      return acc;
+    }, { pgName:"", street:"", postOffice:"", placeOfResidence:"", district:"", pinNumber:"" });
+    return parts;
+  };
+
+  // Helper: format individual PG address fields into address string
+  const formatPGAddress = () => {
+    return `Name of Pg: ${pgForm.pgName}\nStreet name/locality: ${pgForm.street}\nPost office name: ${pgForm.postOffice}\nPlace of residence: ${pgForm.placeOfResidence}\nDistrict: ${pgForm.district}\nPin number: ${pgForm.pinNumber}`;
+  };
 
   const fetchPGs = async () => {
     try {
@@ -231,7 +260,20 @@ export default function OwnerPGManagement() {
 
   const selectPG = (pg) => {
     setSelectedPG(pg);
-    setPgForm({ name: pg.name, location: pg.location, rent: pg.rent, amenities: pg.amenities || [] });
+    const addressParts = parsePGAddress(pg.address || "");
+    setPgForm({ 
+      name: pg.name, 
+      location: pg.location, 
+      pgName: addressParts.pgName || "",
+      street: addressParts.street || "",
+      postOffice: addressParts.postOffice || "",
+      placeOfResidence: addressParts.placeOfResidence || "",
+      district: addressParts.district || "",
+      pinNumber: addressParts.pinNumber || "",
+      rent: pg.rent, 
+      amenities: pg.amenities || [],
+      rules: pg.rules || []
+    });
     setPgImages(pg.images || []);
     setSelectedRoom(null);
     setIsEditingRoom(false);
@@ -271,8 +313,10 @@ export default function OwnerPGManagement() {
         const payload = {
           name:      pgForm.name,
           location:  pgForm.location,
+          address:   formatPGAddress(),
           rent:      Number(pgForm.rent),
           amenities: pgForm.amenities,
+          rules:     pgForm.rules,
         };
         await apiUpdatePG(selectedPG._id, payload);
         toast.success("PG details updated successfully!");
@@ -280,8 +324,10 @@ export default function OwnerPGManagement() {
         const fd = new FormData();
         fd.append("name",      pgForm.name);
         fd.append("location",  pgForm.location);
+        fd.append("address",   formatPGAddress());
         fd.append("rent",      String(pgForm.rent));
         fd.append("amenities", JSON.stringify(pgForm.amenities));
+        fd.append("rules",     JSON.stringify(pgForm.rules));
         fd.append("licenseDocument", licenseFile);
         const res = await apiCreatePG(fd);
         setSelectedPG(res.data);
@@ -300,6 +346,105 @@ export default function OwnerPGManagement() {
       toast.success(room.availability ? "Room marked as unavailable" : "Room marked as available");
       fetchRooms(selectedPG._id);
     } catch (err) { toast.error(err.message); }
+  };
+
+  // Confirmation handlers
+  const showSavePGConfirmation = () => {
+    // Run validations first
+    if (!ownerVerified && !selectedPG) {
+      toast.warning("Your owner account must be verified by admin before creating PG stays.");
+      return;
+    }
+    if (!pgForm.name || !pgForm.location || !pgForm.rent) {
+      toast.warning("Name, location and rent are required");
+      return;
+    }
+    // License document is mandatory only when creating a new PG
+    if (!selectedPG && !licenseFile) {
+      setLicenseError("Please upload the PG license document before submitting.");
+      return;
+    }
+    // If validation passes, show confirmation
+    const operation = selectedPG ? "Update PG Details" : "Create New PG";
+    setConfirmation({
+      isOpen: true,
+      title: operation,
+      message: `Are you sure you want to ${operation.toLowerCase()}?`,
+      operation: "savePG",
+      pgData: null
+    });
+  };
+
+  const actualSavePG = async () => {
+    setConfirmation({ isOpen: false });
+    setSaving(true);
+    try {
+      if (selectedPG) {
+        const payload = {
+          name:      pgForm.name,
+          location:  pgForm.location,
+          address:   formatPGAddress(),
+          rent:      Number(pgForm.rent),
+          amenities: pgForm.amenities,
+          rules:     pgForm.rules,
+        };
+        await apiUpdatePG(selectedPG._id, payload);
+        toast.success("PG details updated successfully!");
+      } else {
+        const fd = new FormData();
+        fd.append("name",      pgForm.name);
+        fd.append("location",  pgForm.location);
+        fd.append("address",   formatPGAddress());
+        fd.append("rent",      String(pgForm.rent));
+        fd.append("amenities", JSON.stringify(pgForm.amenities));
+        fd.append("rules",     JSON.stringify(pgForm.rules));
+        fd.append("licenseDocument", licenseFile);
+        const res = await apiCreatePG(fd);
+        setSelectedPG(res.data);
+        setLicenseFile(null);
+        setLicenseError("");
+        toast.success("PG Stay created successfully! It will be visible once admin verifies it.");
+      }
+      await fetchPGs();
+    } catch (err) { toast.error(err.message); }
+    finally { setSaving(false); }
+  };
+
+  const showDeletePGConfirmation = () => {
+    setConfirmation({
+      isOpen: true,
+      title: "Delete PG",
+      message: `Are you sure you want to delete PG "${selectedPG.name}" and all associated rooms? This cannot be undone.`,
+      operation: "deletePG",
+      pgData: null
+    });
+  };
+
+  const actualDeletePG = async () => {
+    setConfirmation({ isOpen: false });
+    if (!selectedPG) return;
+    setSaving(true);
+    try {
+      await apiDeletePG(selectedPG._id);
+      toast.success("PG deleted successfully.");
+      setSelectedPG(null);
+      setPgForm({ name:"", location:"", rent:"", amenities:[] });
+      setRooms([]);
+      setPgImages([]);
+      await fetchPGs();
+    } catch (err) { toast.error(err.message); }
+    finally { setSaving(false); }
+  };
+
+  const handleConfirmationYes = async () => {
+    const { operation } = confirmation;
+    if (operation === "savePG") actualSavePG();
+    else if (operation === "deletePG") actualDeletePG();
+    else if (typeof operation === "function") await operation();
+  };
+
+  const handleConfirmationNo = () => {
+    setConfirmation({ isOpen: false });
   };
 
   const openRoomModal = (room = null) => {
@@ -355,33 +500,28 @@ export default function OwnerPGManagement() {
   };
 
   const handleDeleteRoom = async (room) => {
-    if (!window.confirm(`Delete room "${room.roomType}"? This cannot be undone.`)) return;
-    try {
-      await apiDeleteRoom(room._id);
-      toast.success("Room deleted successfully.");
-      fetchRooms(selectedPG._id);
-    } catch (err) { toast.error(err.message); }
+    setConfirmation({
+      isOpen: true,
+      title: "Delete Room?",
+      message: `Delete room "${room.roomType}"? This cannot be undone.`,
+      operation: async () => {
+        try {
+          await apiDeleteRoom(room._id);
+          toast.success("Room deleted successfully.");
+          setConfirmation({ ...confirmation, isOpen: false });
+          fetchRooms(selectedPG._id);
+        } catch (err) { toast.error(err.message); }
+      }
+    });
   };
 
-  const handleDeletePG = async () => {
-    if (!selectedPG) return;
-    if (!window.confirm(`Delete PG "${selectedPG.name}" and all associated rooms? This cannot be undone.`)) return;
-    setSaving(true);
-    try {
-      await apiDeletePG(selectedPG._id);
-      toast.success("PG deleted successfully.");
-      setSelectedPG(null);
-      setPgForm({ name:"", location:"", rent:"", amenities:[] });
-      setRooms([]);
-      setPgImages([]);
-      await fetchPGs();
-    } catch (err) { toast.error(err.message); }
-    finally { setSaving(false); }
+  const handleDeletePG = () => {
+    showDeletePGConfirmation();
   };
 
   const handleNewPG = () => {
     setSelectedPG(null);
-    setPgForm({ name:"", location:"", rent:"", amenities:[] });
+    setPgForm({ name:"", location:"", pgName:"", street:"", postOffice:"", placeOfResidence:"", district:"", pinNumber:"", rent:"", amenities:[], rules:[] });
     setRooms([]);
     setLicenseFile(null);
     setLicenseError("");
@@ -481,6 +621,15 @@ export default function OwnerPGManagement() {
           />
         )}
 
+        {/* Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={confirmation.isOpen}
+          title={confirmation.title}
+          message={confirmation.message}
+          onYes={handleConfirmationYes}
+          onNo={handleConfirmationNo}
+        />
+
         <main className="clay-main">
           <div className="clay-container">
             <h2 className="clay-page-title">🏢 PG &amp; Room Management</h2>
@@ -539,6 +688,66 @@ export default function OwnerPGManagement() {
                   />
                 </div>
 
+                {/* Address — Auto capitalise with structured fields */}
+                <div className="form-group" style={{gridColumn:"1 / -1"}}>
+                  <label className="clay-label">📍 PG Address Details</label>
+                </div>
+                <div className="form-group">
+                  <label className="clay-label">PG Name</label>
+                  <input
+                    className="clay-input"
+                    placeholder="Name of the PG"
+                    value={pgForm.pgName}
+                    onChange={(e) => setPgForm({ ...pgForm, pgName: toTitleCase(e.target.value) })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="clay-label">Street / Locality</label>
+                  <input
+                    className="clay-input"
+                    placeholder="Street name or locality"
+                    value={pgForm.street}
+                    onChange={(e) => setPgForm({ ...pgForm, street: toTitleCase(e.target.value) })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="clay-label">Post Office</label>
+                  <input
+                    className="clay-input"
+                    placeholder="Post office name"
+                    value={pgForm.postOffice}
+                    onChange={(e) => setPgForm({ ...pgForm, postOffice: toTitleCase(e.target.value) })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="clay-label">Place of Residence</label>
+                  <input
+                    className="clay-input"
+                    placeholder="City or town"
+                    value={pgForm.placeOfResidence}
+                    onChange={(e) => setPgForm({ ...pgForm, placeOfResidence: toTitleCase(e.target.value) })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="clay-label">District</label>
+                  <input
+                    className="clay-input"
+                    placeholder="District"
+                    value={pgForm.district}
+                    onChange={(e) => setPgForm({ ...pgForm, district: toTitleCase(e.target.value) })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="clay-label">Pin Number</label>
+                  <input
+                    className="clay-input"
+                    placeholder="Postal code"
+                    value={pgForm.pinNumber}
+                    onChange={(e) => setPgForm({ ...pgForm, pinNumber: e.target.value })}
+                    maxLength="6"
+                  />
+                </div>
+
                 {/* Rent */}
                 <div className="form-group">
                   <label className="clay-label">Base Rent / Month (₹)</label>
@@ -558,6 +767,104 @@ export default function OwnerPGManagement() {
                     selected={pgForm.amenities}
                     onChange={(val) => setPgForm({ ...pgForm, amenities: val })}
                   />
+                </div>
+              </div>
+
+              {/* Rules & Regulations — Point-wise */}
+              <div style={{ marginTop: 24 }}>
+                <label className="clay-label" style={{ display:"flex", alignItems:"center", marginBottom:12 }}>
+                  📋 Rules & Regulations (Point-wise)
+                </label>
+                <p style={{fontSize:".82rem",color:"#7a7a9a",marginBottom:14}}>Add house rules and regulations that tenants must follow.</p>
+                
+                {/* Rules List */}
+                {pgForm.rules.length > 0 && (
+                  <div style={{ marginBottom: 16, display:"grid", gap:10 }}>
+                    {pgForm.rules.map((rule, idx) => (
+                      <div key={idx} style={{
+                        background:"rgba(255,255,255,.7)",
+                        border:"2px solid rgba(255,255,255,.85)",
+                        borderRadius:"14px",
+                        padding:"12px 16px",
+                        display:"flex",
+                        alignItems:"center",
+                        gap:10,
+                        boxShadow:"0 3px 12px rgba(0,0,0,.06)"
+                      }}>
+                        <span style={{fontSize:"1rem",fontWeight:700,color:"#ffa726",minWidth:"24px"}}>{idx+1}.</span>
+                        <span style={{flex:1,fontSize:".88rem",color:"#2d2d4e",wordBreak:"break-word"}}>{rule}</span>
+                        <button
+                          type="button"
+                          onClick={() => setPgForm({...pgForm, rules: pgForm.rules.filter((_, i) => i !== idx)})}
+                          style={{
+                            background:"rgba(239,83,80,.15)",
+                            border:"1px solid rgba(239,83,80,.3)",
+                            color:"#c62828",
+                            borderRadius:"8px",
+                            padding:"6px 12px",
+                            fontSize:".75rem",
+                            fontWeight:700,
+                            cursor:"pointer",
+                            transition:"all .15s"
+                          }}
+                          onMouseEnter={(e) => e.target.style.background = "rgba(239,83,80,.25)"}
+                          onMouseLeave={(e) => e.target.style.background = "rgba(239,83,80,.15)"}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Add New Rule Input */}
+                <div style={{ display:"flex", gap:10, marginBottom: 16 }}>
+                  <input
+                    className="clay-input"
+                    placeholder="Type a rule (e.g. No noise after 10 PM)"
+                    id="new-rule-input"
+                    style={{flex:1}}
+                    onChange={(e) => {
+                      const input = document.getElementById("new-rule-input");
+                      input.value = toSentenceCase(input.value);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const input = document.getElementById("new-rule-input");
+                        if (input.value.trim()) {
+                          setPgForm({...pgForm, rules: [...pgForm.rules, input.value.trim()]});
+                          input.value = "";
+                        }
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const input = document.getElementById("new-rule-input");
+                      if (input.value.trim()) {
+                        setPgForm({...pgForm, rules: [...pgForm.rules, input.value.trim()]});
+                        input.value = "";
+                      }
+                    }}
+                    style={{
+                      padding:"11px 20px",
+                      background:"linear-gradient(135deg,#66bb6a,#43a047)",
+                      color:"white",
+                      border:"none",
+                      borderRadius:"14px",
+                      fontWeight:700,
+                      fontSize:".88rem",
+                      cursor:"pointer",
+                      boxShadow:"0 4px 0 #2e7d32,0 6px 14px rgba(102,187,106,.3)",
+                      transition:"all .15s",
+                      whiteSpace:"nowrap"
+                    }}
+                    onMouseEnter={(e) => e.target.style.transform = "translateY(-2px)"}
+                    onMouseLeave={(e) => e.target.style.transform = "translateY(0)"}
+                  >
+                    ➕ Add Rule
+                  </button>
                 </div>
               </div>
 
@@ -612,7 +919,7 @@ export default function OwnerPGManagement() {
                 </div>
               )}
 
-              <button className="update-btn" onClick={handleSavePG} disabled={saving}>
+              <button className="update-btn" onClick={showSavePGConfirmation} disabled={saving}>
                 {saving ? "⏳ Saving…" : selectedPG ? "Update PG Details →" : "Create PG Stay →"}
               </button>
             </div>

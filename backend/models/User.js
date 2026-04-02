@@ -35,6 +35,7 @@ const UserSchema = new mongoose.Schema(
       required: true,
     },
     phone: { type: String, default: "" },
+    address: { type: String, default: "" },
     // Profile photo (Cloudinary URL)
     profilePhotoUrl: { type: String, default: "" },
     // Tenant-specific

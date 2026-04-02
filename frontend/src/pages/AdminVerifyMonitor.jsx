@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, XCircle, Trash2, Eye, FileText, User, Home, Building2 } from "lucide-react";
 import RoleNavigation from "../context/RoleNavigation";
+import ConfirmationModal from "../components/ConfirmationModal";
 import {
-  apiAdminGetPGs, apiAdminVerifyPG, apiAdminRestrictPG, apiAdminDeletePG,
-  apiAdminStats, apiAdminGetUsers, apiAdminVerifyUser, apiAdminSuspendUser, apiAdminDeleteUser,
+  apiAdminGetPGs, apiAdminVerifyPG, apiAdminRestrictPG, apiAdminUnrestrictPG, apiAdminDeletePG,
+  apiAdminStats, apiAdminGetUsers, apiAdminVerifyUser, apiAdminSuspendUser, apiAdminUnsuspendUser, apiAdminDeleteUser,
 } from "../utils/api";
 import { toast } from "../components/Toast";
 import { CLAY_BASE, CLAY_ADMIN, injectClay } from "../styles/claystyles";
@@ -108,6 +109,7 @@ export default function AdminVerifyMonitor() {
   const [activeSection, setActiveSection] = useState("pgs");
   const [searchQuery, setSearchQuery] = useState("");
   const [actionLoading, setActionLoading] = useState("");
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: "", message: "", callback: null });
 
   const fetchData = async () => {
     try {
@@ -143,12 +145,25 @@ export default function AdminVerifyMonitor() {
     catch (err) { toast.error(err.message); }
     finally { setActionLoading(""); }
   };
-  const handleDeletePG = async (id, name) => {
-    if (!window.confirm(`Delete "${name}" permanently? This cannot be undone.`)) return;
-    setActionLoading(id + "d");
-    try { await apiAdminDeletePG(id); toast.success("PG deleted."); await fetchData(); }
+  const handleUnrestrictPG = async (id) => {
+    setActionLoading(id + "u");
+    try { await apiAdminUnrestrictPG(id); toast.success("PG has been un-restricted and returned to verified status."); await fetchData(); }
     catch (err) { toast.error(err.message); }
     finally { setActionLoading(""); }
+  };
+  const handleDeletePG = async (id, name) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Delete PG Listing?",
+      message: `Delete "${name}" permanently? This cannot be undone.`,
+      callback: async () => {
+        setConfirmDialog({ ...confirmDialog, isOpen: false });
+        setActionLoading(id + "d");
+        try { await apiAdminDeletePG(id); toast.success("PG deleted."); await fetchData(); }
+        catch (err) { toast.error(err.message); }
+        finally { setActionLoading(""); }
+      }
+    });
   };
 
   // ── User actions ────────────────────────────────────────────────────
@@ -159,18 +174,46 @@ export default function AdminVerifyMonitor() {
     finally { setActionLoading(""); }
   };
   const handleSuspendUser = async (id, name) => {
-    if (!window.confirm(`Suspend ${name}? They will not be able to login.`)) return;
-    setActionLoading(id + "us");
-    try { await apiAdminSuspendUser(id); toast.warning(`${name} has been suspended.`); await fetchData(); }
-    catch (err) { toast.error(err.message); }
-    finally { setActionLoading(""); }
+    setConfirmDialog({
+      isOpen: true,
+      title: "Suspend User?",
+      message: `Suspend ${name}? They will not be able to login.`,
+      callback: async () => {
+        setConfirmDialog({ ...confirmDialog, isOpen: false });
+        setActionLoading(id + "us");
+        try { await apiAdminSuspendUser(id); toast.warning(`${name} has been suspended.`); await fetchData(); }
+        catch (err) { toast.error(err.message); }
+        finally { setActionLoading(""); }
+      }
+    });
+  };
+  const handleUnsuspendUser = async (id, name) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Lift Suspension?",
+      message: `Lift suspension for ${name}? They can login again.`,
+      callback: async () => {
+        setConfirmDialog({ ...confirmDialog, isOpen: false });
+        setActionLoading(id + "uu");
+        try { await apiAdminUnsuspendUser(id); toast.success(`${name}'s suspension has been lifted.`); await fetchData(); }
+        catch (err) { toast.error(err.message); }
+        finally { setActionLoading(""); }
+      }
+    });
   };
   const handleDeleteUser = async (id, name) => {
-    if (!window.confirm(`Delete ${name}? This will remove their account permanently.`)) return;
-    setActionLoading(id + "ud");
-    try { await apiAdminDeleteUser(id); toast.success(`${name} has been deleted.`); await fetchData(); }
-    catch (err) { toast.error(err.message); }
-    finally { setActionLoading(""); }
+    setConfirmDialog({
+      isOpen: true,
+      title: "Delete User?",
+      message: `Delete ${name}? This will remove their account permanently.`,
+      callback: async () => {
+        setConfirmDialog({ ...confirmDialog, isOpen: false });
+        setActionLoading(id + "ud");
+        try { await apiAdminDeleteUser(id); toast.success(`${name} has been deleted.`); await fetchData(); }
+        catch (err) { toast.error(err.message); }
+        finally { setActionLoading(""); }
+      }
+    });
   };
 
   // ── Helpers ─────────────────────────────────────────────────────────
@@ -272,7 +315,10 @@ export default function AdminVerifyMonitor() {
           </>
         ) : (
           <>
-            <span style={{fontSize:".72rem",color:"#c62828",fontWeight:700}}>Suspended</span>
+            <span style={{fontSize:".72rem",color:"#c62828",fontWeight:700}}>🔒 Suspended</span>
+            <button className="act-btn btn-verify" onClick={() => handleUnsuspendUser(u._id, u.name)} disabled={!!actionLoading}>
+              ✓ Lift Suspension
+            </button>
             <button className="act-btn btn-delete" onClick={() => handleDeleteUser(u._id, u.name)} disabled={!!actionLoading}>
               <Trash2 size={12}/> Delete
             </button>
@@ -285,6 +331,13 @@ export default function AdminVerifyMonitor() {
   return (
     <>
       <style>{css}</style>
+      <ConfirmationModal
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onYes={confirmDialog.callback || (() => {})}
+        onNo={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+      />
       <div className="clay-page">
         <RoleNavigation role="admin" />
         <main className="clay-main">
@@ -392,6 +445,9 @@ export default function AdminVerifyMonitor() {
                           )}
                           {pg.verificationStatus === "verified" && (
                             <button className="act-btn btn-warn" onClick={() => handleRestrictPG(pg._id)} disabled={!!actionLoading}>⛔ Restrict</button>
+                          )}
+                          {pg.verificationStatus === "restricted" && (
+                            <button className="act-btn btn-verify" onClick={() => handleUnrestrictPG(pg._id)} disabled={!!actionLoading}>✅ Unrestrict</button>
                           )}
                           <button className="act-btn btn-delete" onClick={() => handleDeletePG(pg._id, pg.name)} disabled={!!actionLoading}><Trash2 size={12}/></button>
                         </div>

@@ -15,7 +15,7 @@ exports.getRecommendations = async (req, res) => {
     // We score rather than hard-filter, so no DB-level location filter here
 
     const pgs = await PGStay.find(filter)
-      .populate("owner", "name email trustScore verificationStatus");
+      .populate("owner", "name email phone trustScore verificationStatus");
 
     const results = await Promise.all(
       pgs.map(async (pg) => {
@@ -93,7 +93,7 @@ exports.getAllPGs = async (req, res) => {
       filter.amenities = { $all: list };
     }
 
-    let pgs = await PGStay.find(filter).populate("owner", "name email");
+    let pgs = await PGStay.find(filter).populate("owner", "name email phone");
 
     // Room-type filter: only keep PGs that have at least one matching available room
     if (roomType) {
@@ -125,7 +125,7 @@ exports.getAllPGs = async (req, res) => {
 // GET /api/pgs/:id
 exports.getPGById = async (req, res) => {
   try {
-    const pg = await PGStay.findById(req.params.id).populate("owner", "name email trustScore");
+    const pg = await PGStay.findById(req.params.id).populate("owner", "name email phone trustScore");
     if (!pg) return res.status(404).json({ message: "PG not found" });
     res.json({ data: pg });
   } catch (err) {
@@ -159,7 +159,7 @@ exports.createPG = async (req, res) => {
       return res.status(403).json({ message: "Owner account must be verified by admin before creating PG listings." });
     }
 
-    const { name, location, rent, amenities, description } = req.body;
+    const { name, location, address, rent, amenities, description, rules } = req.body;
 
     if (!name || !location || !rent)
       return res.status(400).json({ message: "Name, location and rent are required" });
@@ -173,9 +173,11 @@ exports.createPG = async (req, res) => {
       owner: req.user._id,
       name,
       location,
+      address:      address || "",
       rent:        Number(rent),
       amenities:   amenities ? (Array.isArray(amenities) ? amenities : JSON.parse(amenities)) : [],
       description: description || "",
+      rules:       rules ? (Array.isArray(rules) ? rules : JSON.parse(rules)) : [],
       licenseDocument: {
         url:      req.file.path,
         publicId: req.file.filename,
@@ -198,12 +200,14 @@ exports.updatePG = async (req, res) => {
     if (req.user.role === "owner" && pg.owner.toString() !== req.user._id.toString())
       return res.status(403).json({ message: "Not authorized to update this PG" });
 
-    const { name, location, rent, amenities, description } = req.body;
+    const { name, location, address, rent, amenities, description, rules } = req.body;
     if (name)                 pg.name        = name;
     if (location)             pg.location    = location;
+    if (address !== undefined) pg.address    = address;
     if (rent)                 pg.rent        = Number(rent);
     if (amenities)            pg.amenities   = amenities;
     if (description !== undefined) pg.description = description;
+    if (rules !== undefined)  pg.rules       = rules;
 
     await pg.save();
     res.json({ data: pg });

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ShieldCheck, ShieldAlert, ShieldX } from "lucide-react";
 import RoleNavigation from "../context/RoleNavigation";
 import Modal from "../components/Modal";
+import ConfirmationModal from "../components/ConfirmationModal";
 import { toast } from "../components/Toast";
 import { apiAdminTrustScores, apiAdminSuspendUser, apiAdminWarnUser } from "../utils/api";
 import { CLAY_BASE, CLAY_ADMIN, injectClay } from "../styles/claystyles";
@@ -64,6 +65,7 @@ export default function AdminMonitorTrustScores() {
   const [warningTarget, setWarningTarget] = useState(null);
   const [warningMessage, setWarningMessage] = useState("");
   const [warningLoading, setWarningLoading] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: "", message: "", callback: null });
 
   const fetchData = async () => {
     try {
@@ -76,12 +78,19 @@ export default function AdminMonitorTrustScores() {
   useEffect(() => { fetchData(); }, []);
 
   const handleSuspend = async (userId) => {
-    if (!window.confirm("Suspend this user?")) return;
-    try {
-      await apiAdminSuspendUser(userId);
-      await fetchData();
-      toast.success("User suspended successfully.");
-    } catch (err) { toast.error(err.message); }
+    setConfirmDialog({
+      isOpen: true,
+      title: "Suspend User?",
+      message: "Are you sure you want to suspend this user?",
+      callback: async () => {
+        setConfirmDialog({ ...confirmDialog, isOpen: false });
+        try {
+          await apiAdminSuspendUser(userId);
+          await fetchData();
+          toast.success("User suspended successfully.");
+        } catch (err) { toast.error(err.message); }
+      }
+    });
   };
 
   const openWarnModal = (item) => {
@@ -123,6 +132,13 @@ export default function AdminMonitorTrustScores() {
   return (
     <>
       <style>{css}</style>
+      <ConfirmationModal
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onYes={confirmDialog.callback || (() => {})}
+        onNo={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+      />
       <div className="clay-page">
         <RoleNavigation role="admin" />
         <main className="clay-main">

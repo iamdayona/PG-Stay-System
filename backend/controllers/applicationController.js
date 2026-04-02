@@ -122,15 +122,8 @@ exports.approveApplication = async (req, res) => {
     app.status = "Approved";
     await app.save();
 
-    // Mark room as occupied
-    await Room.findByIdAndUpdate(app.room._id, { availability: false });
-
-    // Sync availableRooms on PG
-    const availableRooms = await Room.countDocuments({
-      pgStay: app.pgStay._id,
-      availability: true,
-    });
-    await PGStay.findByIdAndUpdate(app.pgStay._id, { availableRooms });
+    // Room availability is now managed by active bookings only
+    // Room will be marked unavailable when tenant creates a booking
 
     // Notify tenant
     await createNotification(

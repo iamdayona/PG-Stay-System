@@ -4,6 +4,7 @@ import RoleNavigation from "../context/RoleNavigation";
 import { apiGetOwnerComplaints, apiOwnerUpdateComplaint } from "../utils/api";
 import { toast } from "../components/Toast";
 import { CLAY_BASE, CLAY_OWNER, injectClay } from "../styles/claystyles";
+import { toSentenceCase } from "../utils/capitalization";
 
 const PAGE_CSS = `
   .complaint-row { display:grid; grid-template-columns:1fr; gap:18px; }
@@ -101,7 +102,7 @@ export default function OwnerComplaints() {
                           className="action-input"
                           placeholder="Enter a message to the tenant..."
                           value={selectedMessage[complaint._id] || ""}
-                          onChange={(e) => setSelectedMessage((prev) => ({ ...prev, [complaint._id]: e.target.value }))}
+                          onChange={(e) => setSelectedMessage((prev) => ({ ...prev, [complaint._id]: toSentenceCase(e.target.value) }))}
                         />
                         <div className="complaint-actions">
                           <button

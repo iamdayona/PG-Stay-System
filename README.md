@@ -70,6 +70,36 @@ Run these commands:
 npm install
 npm run dev
 
+▶️ Environment Configuration
+
+Replace localhost references with site configuration using environment variables.
+
+**Backend Setup** (`backend/.env`):
+```
+MONGO_URI=mongodb://localhost:27017/pgstay
+JWT_SECRET=your_jwt_secret_key_here
+PORT=5000
+CORS_ORIGINS=http://localhost:5173,http://localhost:5174
+```
+
+For production with site domain:
+```
+CORS_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+```
+
+**Frontend Setup** (`frontend/.env.local`):
+```
+VITE_API_URL=http://localhost:5000/api
+```
+
+For production:
+```
+VITE_API_URL=https://yourdomain.com/api
+```
+
+Copy `backend/.env.example` to `backend/.env` and update values.
+Copy `frontend/.env.example` to `frontend/.env.local` and update values.
+
 👥 Team Collaboration
 
 This project follows a branch-based workflow.
