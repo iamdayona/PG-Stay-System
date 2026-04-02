@@ -47,6 +47,21 @@ const PAGE_CSS = `
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
+const getToken = () => localStorage.getItem("token");
+
+const apiUpdateAgreementDates = (bookingId, body) => {
+  const token = getToken();
+  return fetch(`${BASE_URL}/bookings/${bookingId}/agreement`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  }).then(async (res) => {
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Update failed");
+    return data;
+  });
+};
+
 const css = injectClay(CLAY_BASE, CLAY_TENANT, PAGE_CSS);
 
 export default function TenantPGManagement() {
@@ -59,6 +74,8 @@ export default function TenantPGManagement() {
   const [complaintText, setComplaintText] = useState("");
   const [paymentProofFile, setPaymentProofFile] = useState(null);
   const [actionLoading, setActionLoading] = useState("");
+  const [agreementStart, setAgreementStart] = useState("");
+  const [agreementEnd, setAgreementEnd] = useState("");
 
   const fetchData = async () => {
     try {
@@ -72,6 +89,10 @@ export default function TenantPGManagement() {
       setComplaints(complaintsRes.data);
       const approvedApp = appsRes.data.find((app) => app.status === "Approved");
       setSelectedApplicationId(approvedApp?._id || "");
+      if (bookingsRes.data?.[0]) {
+        setAgreementStart(bookingsRes.data[0].agreementStartDate?.split('T')[0] || "");
+        setAgreementEnd(bookingsRes.data[0].agreementEndDate?.split('T')[0] || "");
+      }
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -131,6 +152,25 @@ export default function TenantPGManagement() {
       await apiUploadPaymentProof(activeBooking._id, formData);
       toast.success("Payment proof uploaded. Waiting for owner verification.");
       setPaymentProofFile(null);
+      await fetchData();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  const handleSaveAgreementDates = async () => {
+    if (!activeBooking) return toast.error("No active booking found.");
+    if (!agreementStart || !agreementEnd) return toast.error("Please enter both agreement start and end dates.");
+    if (new Date(agreementStart) >= new Date(agreementEnd)) return toast.error("Agreement start date must be before end date.");
+    setActionLoading("agreement");
+    try {
+      await apiUpdateAgreementDates(activeBooking._id, {
+        agreementStartDate: agreementStart,
+        agreementEndDate: agreementEnd,
+      });
+      toast.success("Agreement dates saved successfully.");
       await fetchData();
     } catch (err) {
       toast.error(err.message);
@@ -253,20 +293,39 @@ export default function TenantPGManagement() {
                       </div>
                     )}
 
-                    <div className="book-card">
-                      <div className="section-title">📋 Agreement Time Period</div>
-                      <p className="card-note">View your agreement period details below.</p>
-                      <div className="info-row">
-                        <div className="info-card">
-                          <div className="info-label">Start Date</div>
-                          <div className="info-value">{activeBooking?.agreementStartDate ? new Date(activeBooking.agreementStartDate).toLocaleDateString() : "Not set"}</div>
+                    
+
+                    {activeBooking && (
+                      <div className="book-card">
+                        <div className="section-title">�📋 Agreement Time Period</div>
+                        <p className="card-note">Set your agreement start and end dates.</p>
+                        <div className="info-row">
+                          <div className="info-card">
+                            <div className="info-label">Start Date</div>
+                            <input
+                              type="date"
+                              className="clay-input"
+                              value={agreementStart}
+                              onChange={(e) => setAgreementStart(e.target.value)}
+                            />
+                          </div>
+                          <div className="info-card">
+                            <div className="info-label">End Date</div>
+                            <input
+                              type="date"
+                              className="clay-input"
+                              value={agreementEnd}
+                              onChange={(e) => setAgreementEnd(e.target.value)}
+                            />
+                          </div>
                         </div>
-                        <div className="info-card">
-                          <div className="info-label">End Date</div>
-                          <div className="info-value">{activeBooking?.agreementEndDate ? new Date(activeBooking.agreementEndDate).toLocaleDateString() : "Not set"}</div>
+                        <div className="btn-row">
+                          <button className="btn-action btn-upload" disabled={actionLoading === "agreement"} onClick={handleSaveAgreementDates}>
+                            <Calendar size={16} /> {actionLoading === "agreement" ? "Saving…" : "Save Agreement Dates"}
+                          </button>
                         </div>
                       </div>
-                    </div>
+                    )}
 
                     <div className="book-card">
                       <div className="section-title">💳 Payment Proof</div>
