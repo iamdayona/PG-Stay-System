@@ -4,7 +4,7 @@ import RoleNavigation from "../context/RoleNavigation";
 import Modal from "../components/Modal";
 import {
   apiGetNotifications, apiMarkAllRead, apiSubmitFeedback,
-  apiGetMyFeedback, apiGetMyApplications, apiMarkRead,
+  apiGetMyFeedback, apiGetMyBookings, apiMarkRead,
 } from "../utils/api";
 import { CLAY_BASE, CLAY_TENANT, injectClay } from "../styles/claystyles";
 
@@ -66,16 +66,16 @@ export default function TenantNotifications() {
 
   const fetchAll = async () => {
     try {
-      const [notifRes, feedbackRes, appsRes] = await Promise.all([
-        apiGetNotifications(), apiGetMyFeedback(), apiGetMyApplications(),
+      const [notifRes, feedbackRes, bookingsRes] = await Promise.all([
+        apiGetNotifications(), apiGetMyFeedback(), apiGetMyBookings(),
       ]);
       // Only show real DB notifications — no dummy/static data
       setNotifications(notifRes.data || []);
       setMyFeedback(feedbackRes.data || []);
-      // Only approved applications can receive feedback
-      const approved = (appsRes.data || []).filter((a) => a.status === "Approved");
-      setAppliedPGs(approved);
-      if (approved.length > 0) setPgStayId(approved[0].pgStay?._id || "");
+      // Only active bookings can receive feedback
+      const activeBookings = (bookingsRes.data || []).filter((b) => b.status === "Active");
+      setAppliedPGs(activeBookings);
+      if (activeBookings.length > 0) setPgStayId(activeBookings[0].pgStay?._id || "");
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
