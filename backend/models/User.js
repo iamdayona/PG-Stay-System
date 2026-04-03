@@ -47,7 +47,7 @@ const UserSchema = new mongoose.Schema(
     preferences: {
       location:  { type: String, default: "" },
       budgetMin: { type: Number, default: 0 },
-      budgetMax: { type: Number, default: 50000 },
+      budgetMax: { type: Number },
       roomType:  { type: String, default: "" },
       amenities: { type: [String], default: [] },
     },

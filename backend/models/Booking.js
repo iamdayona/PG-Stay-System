@@ -25,7 +25,7 @@ const BookingSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["Active", "Cancelled"],
+      enum: ["Active", "Cancelled", "Completed"],
       default: "Active",
     },
     allocationDate: {
@@ -38,7 +38,7 @@ const BookingSchema = new mongoose.Schema(
     },
     paymentStatus: {
       type: String,
-      enum: ["unpaid", "paid", "overdue"],
+      enum: ["unpaid", "pending", "paid", "due", "overdue"],
       default: "unpaid",
     },
     lastPaymentDate: {

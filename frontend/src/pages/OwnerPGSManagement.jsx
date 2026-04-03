@@ -24,7 +24,7 @@ const AMENITY_OPTIONS = [
   "Refrigerator",
   "Induction or Microwave for Basic Cooking",
   "Common Lounge or Seating Area",
-  "Parking for Bikes",
+  "Parking for Vehicles",
   "AC",
   "CCTV",
   "Gym",
@@ -604,7 +604,7 @@ export default function OwnerPGManagement() {
                 {/* Capacity — only for Shared */}
                 {roomForm.roomType === "Shared" && (
                   <div className="form-group">
-                    <label className="clay-label">Room Capacity (persons)</label>
+                    <label className="clay-label">Capacity</label>
                     <input
                       className="clay-input"
                       type="number"
@@ -643,7 +643,11 @@ export default function OwnerPGManagement() {
                     className={`pg-tab${selectedPG?._id === pg._id ? " active" : ""}`}
                     onClick={() => selectPG(pg)}
                   >
-                    🏠 {pg.name}
+                    🏠 {pg.name} {pg.trustScore !== undefined && (
+                      <span style={{ fontSize: '0.7rem', color: pg.trustScore >= 70 ? '#2e7d32' : pg.trustScore >= 50 ? '#f57f17' : '#c62828', marginLeft: '4px' }}>
+                        ({pg.trustScore})
+                      </span>
+                    )}
                   </button>
                 ))}
                 <button className="new-pg-tab" onClick={handleNewPG}>+ Add New PG</button>
@@ -654,6 +658,13 @@ export default function OwnerPGManagement() {
             <div className="pg-card card-orange">
               <div className="pg-section-title">
                 📝 {selectedPG ? "Edit PG Details" : "Create New PG Stay"}
+                {selectedPG && selectedPG.trustScore !== undefined && (
+                  <span style={{ fontSize: '0.9rem', color: '#2d2d4e', fontWeight: '600', marginLeft: 'auto', marginRight: '16px' }}>
+                    Trust Score: <span style={{ color: selectedPG.trustScore >= 70 ? '#2e7d32' : selectedPG.trustScore >= 50 ? '#f57f17' : '#c62828' }}>
+                      {selectedPG.trustScore}/100
+                    </span>
+                  </span>
+                )}
                 {selectedPG && (
                   <button className="clay-btn clay-btn-red" type="button" onClick={handleDeletePG} disabled={saving}>
                     <Trash2 size={14} /> Delete PG

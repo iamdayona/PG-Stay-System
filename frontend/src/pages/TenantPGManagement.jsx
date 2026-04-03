@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle2, AlertTriangle, Send, Calendar } from "lucide-react";
 import RoleNavigation from "../context/RoleNavigation";
@@ -7,6 +7,7 @@ import {
   apiGetMyBookings,
   apiCreateBooking,
   apiDeclineBooking,
+  apiCancelBooking,
   apiSubmitComplaint,
   apiGetMyComplaints,
   apiUploadPaymentProof,
@@ -73,6 +74,7 @@ export default function TenantPGManagement() {
   const [selectedApplicationId, setSelectedApplicationId] = useState("");
   const [complaintText, setComplaintText] = useState("");
   const [paymentProofFile, setPaymentProofFile] = useState(null);
+  const paymentProofInputRef = useRef(null);
   const [actionLoading, setActionLoading] = useState("");
   const [agreementStart, setAgreementStart] = useState("");
   const [agreementEnd, setAgreementEnd] = useState("");
@@ -104,6 +106,13 @@ export default function TenantPGManagement() {
 
   const approvedApplications = applications.filter((app) => app.status === "Approved");
   const activeBooking = bookings[0] ?? null;
+
+  useEffect(() => {
+    if (activeBooking?.paymentStatus === "paid") {
+      setPaymentProofFile(null);
+      if (paymentProofInputRef.current) paymentProofInputRef.current.value = "";
+    }
+  }, [activeBooking?.paymentStatus]);
 
   const handleBook = async () => {
     if (!selectedApplicationId) return toast.error("Select an approved application to book.");
@@ -152,6 +161,21 @@ export default function TenantPGManagement() {
       await apiUploadPaymentProof(activeBooking._id, formData);
       toast.success("Payment proof uploaded. Waiting for owner verification.");
       setPaymentProofFile(null);
+      if (paymentProofInputRef.current) paymentProofInputRef.current.value = "";
+      await fetchData();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  const handleCancelBooking = async () => {
+    if (!activeBooking) return toast.error("No active booking found.");
+    setActionLoading("cancel");
+    try {
+      await apiCancelBooking(activeBooking._id);
+      toast.success("Booking cancelled successfully. You may book another PG.");
       await fetchData();
     } catch (err) {
       toast.error(err.message);
@@ -162,6 +186,9 @@ export default function TenantPGManagement() {
 
   const handleSaveAgreementDates = async () => {
     if (!activeBooking) return toast.error("No active booking found.");
+    if (activeBooking.agreementStartDate || activeBooking.agreementEndDate) {
+      return toast.info("Agreement dates are finalized and cannot be changed.");
+    }
     if (!agreementStart || !agreementEnd) return toast.error("Please enter both agreement start and end dates.");
     if (new Date(agreementStart) >= new Date(agreementEnd)) return toast.error("Agreement start date must be before end date.");
     setActionLoading("agreement");
@@ -197,8 +224,10 @@ export default function TenantPGManagement() {
 
   const statusLabel = (status) => {
     if (status === "paid") return "Paid";
+    if (status === "pending") return "Verification Pending";
+    if (status === "due") return "Due";
     if (status === "overdue") return "Overdue";
-    return "Due";
+    return "Unpaid";
   };
 
   return (
@@ -235,20 +264,18 @@ export default function TenantPGManagement() {
                             <div className="info-label">Room</div>
                             <div className="info-value">{activeBooking.room?.roomType}</div>
                           </div>
-                          <div className="info-card">
-                            <div className="info-label">Monthly Rent</div>
-                            <div className="info-value">₹{activeBooking.rentAmount}</div>
-                          </div>
+                        </div>
+                        <div className="info-row">
                           <div className="info-card">
                             <div className="info-label">Payment Status</div>
                             <div className={`info-value status-${activeBooking.paymentStatus}`}>{statusLabel(activeBooking.paymentStatus)}</div>
                           </div>
-                        </div>
-                        <div className="info-row">
                           <div className="info-card">
                             <div className="info-label">Booking Date</div>
                             <div className="info-value">{new Date(activeBooking.allocationDate).toLocaleDateString()}</div>
                           </div>
+                        </div>
+                        <div className="info-row">
                           <div className="info-card">
                             <div className="info-label">Agreement Start</div>
                             <div className="info-value">{activeBooking.agreementStartDate ? new Date(activeBooking.agreementStartDate).toLocaleDateString() : "Not set"}</div>
@@ -259,6 +286,13 @@ export default function TenantPGManagement() {
                           </div>
                         </div>
                         <div className="btn-row">
+                          <button
+                            className="btn-action btn-decline"
+                            disabled={actionLoading === "cancel"}
+                            onClick={handleCancelBooking}
+                          >
+                            <AlertTriangle size={16} /> {actionLoading === "cancel" ? "Cancelling…" : "Cancel Booking"}
+                          </button>
                         </div>
                       </div>
                     ) : (
@@ -307,6 +341,7 @@ export default function TenantPGManagement() {
                               className="clay-input"
                               value={agreementStart}
                               onChange={(e) => setAgreementStart(e.target.value)}
+                              disabled={!!(activeBooking?.agreementStartDate || activeBooking?.agreementEndDate)}
                             />
                           </div>
                           <div className="info-card">
@@ -316,6 +351,7 @@ export default function TenantPGManagement() {
                               className="clay-input"
                               value={agreementEnd}
                               onChange={(e) => setAgreementEnd(e.target.value)}
+                              disabled={!!(activeBooking?.agreementStartDate || activeBooking?.agreementEndDate)}
                             />
                           </div>
                         </div>
@@ -332,7 +368,7 @@ export default function TenantPGManagement() {
                       <p className="card-note">Upload payment proof (screenshot/receipt). Owner will verify and update payment status.</p>
                       <div className="file-row">
                         <div className="file-label">Upload payment proof</div>
-                        <input type="file" accept="image/*,.pdf" onChange={(e) => setPaymentProofFile(e.target.files?.[0] ?? null)} />
+                        <input ref={paymentProofInputRef} type="file" accept="image/*,.pdf" onChange={(e) => setPaymentProofFile(e.target.files?.[0] ?? null)} />
                       </div>
                       <div className="btn-row">
                         <button className="btn-action btn-upload" disabled={actionLoading === "paymentProof"} onClick={handleUploadPaymentProof}>

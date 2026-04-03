@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, XCircle, Trash2 } from "lucide-react";
 import RoleNavigation from "../context/RoleNavigation";
-import { apiGetOwnerApplications, apiApproveApplication, apiRejectApplication, apiGetOwnerBookings, apiOwnerCancelBooking } from "../utils/api";
+import { apiGetOwnerApplications, apiApproveApplication, apiRejectApplication, apiGetOwnerBookings, apiOwnerCancelBooking, apiVerifyPayment } from "../utils/api";
 import { toast } from "../components/Toast";
 import { CLAY_BASE, CLAY_OWNER, injectClay } from "../styles/claystyles";
 
@@ -106,6 +106,19 @@ export default function OwnerApplications() {
     try {
       await apiOwnerCancelBooking(bookingId);
       toast.success(`Booking for ${tenantName} has been cancelled.`);
+      await fetchData();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  const handleVerifyPayment = async (bookingId, tenantName, verified) => {
+    setActionLoading(bookingId + (verified ? "verify" : "reject"));
+    try {
+      await apiVerifyPayment(bookingId, { verified });
+      toast.success(`Payment ${verified ? "verified" : "rejected"} for ${tenantName}.`);
       await fetchData();
     } catch (err) {
       toast.error(err.message);
@@ -226,24 +239,60 @@ export default function OwnerApplications() {
                       </div>
 
                       <div className="app-footer">
-                        <span className="status-chip chip-booked">
-                          ✓ Active Booking
-                        </span>
+                        <div>
+                          <span className="status-chip chip-booked">✓ Active Booking</span>
+                          <span className="status-chip" style={{ marginLeft: 8 }}>
+                            {booking.paymentStatus === "paid" ? "Paid" : booking.paymentStatus === "pending" ? "Pending" : booking.paymentStatus === "due" ? "Due" : booking.paymentStatus === "overdue" ? "Overdue" : "Unpaid"}
+                          </span>
+                        </div>
 
-                        {booking.canCancel ? (
-                          <button
-                            className="btn-cancel"
-                            onClick={() => handleCancelBooking(booking._id, booking.tenant?.name)}
-                            disabled={actionLoading === booking._id + "cancel"}
-                          >
-                            <Trash2 size={14} />
-                            {actionLoading === booking._id + "cancel" ? "Cancelling…" : "Cancel Booking"}
-                          </button>
-                        ) : (
-                          <div className="cancel-info">
-                            ⏳ Can cancel after {booking.daysRemaining} days (Policy: 2 days from join date)
-                          </div>
-                        )}
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          {booking.paymentProof?.url && (
+                            <a
+                              href={booking.paymentProof.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn-approve"
+                              style={{ padding: "8px 14px", fontSize: ".78rem" }}
+                            >
+                              View Proof
+                            </a>
+                          )}
+
+                          {booking.paymentStatus === "pending" && (
+                            <>
+                              <button
+                                className="btn-approve"
+                                onClick={() => handleVerifyPayment(booking._id, booking.tenant?.name, true)}
+                                disabled={actionLoading === booking._id + "verify"}
+                              >
+                                <CheckCircle2 size={14} /> {actionLoading === booking._id + "verify" ? "Verifying…" : "Verify"}
+                              </button>
+                              <button
+                                className="btn-reject"
+                                onClick={() => handleVerifyPayment(booking._id, booking.tenant?.name, false)}
+                                disabled={actionLoading === booking._id + "reject"}
+                              >
+                                <XCircle size={14} /> {actionLoading === booking._id + "reject" ? "Rejecting…" : "Reject"}
+                              </button>
+                            </>
+                          )}
+
+                          {booking.canCancel ? (
+                            <button
+                              className="btn-cancel"
+                              onClick={() => handleCancelBooking(booking._id, booking.tenant?.name)}
+                              disabled={actionLoading === booking._id + "cancel"}
+                            >
+                              <Trash2 size={14} />
+                              {actionLoading === booking._id + "cancel" ? "Cancelling…" : "Cancel Booking"}
+                            </button>
+                          ) : (
+                            <div className="cancel-info">
+                              ⏳ Can cancel after {booking.daysRemaining} days (Policy: 2 days from join date)
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}

@@ -16,6 +16,15 @@ const NotificationSchema = new mongoose.Schema(
       enum: ["application", "success", "alert", "info"],
       default: "info",
     },
+    booking: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Booking",
+      default: null,
+    },
+    documentUrl: {
+      type: String,
+      default: "",
+    },
     isRead: {
       type: Boolean,
       default: false,

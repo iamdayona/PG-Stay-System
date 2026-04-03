@@ -13,12 +13,14 @@ const mongoose = require("mongoose");
 // GET /api/admin/stats
 exports.getDashboardStats = async (req, res) => {
   try {
-    const [totalUsers, totalPGs, pendingVerifications, activeBookings, recentPGs] =
+    const [totalUsers, totalPGs, pendingPGVerifications, pendingUserVerifications, activeBookings, pendingComplaints, recentPGs] =
       await Promise.all([
         User.countDocuments({ isActive: true }),
         PGStay.countDocuments({ isActive: true }),
         PGStay.countDocuments({ verificationStatus: "pending" }),
+        User.countDocuments({ verificationStatus: "pending", isActive: true }),
         Application.countDocuments({ status: "Approved" }),
+        Complaint.countDocuments({ status: "pending" }),
         PGStay.find({ verificationStatus: "pending" })
           .sort({ createdAt: -1 })
           .limit(5)
@@ -26,7 +28,7 @@ exports.getDashboardStats = async (req, res) => {
       ]);
 
     res.json({
-      data: { totalUsers, totalPGs, pendingVerifications, activeBookings, recentPGs },
+      data: { totalUsers, totalPGs, pendingVerifications: pendingPGVerifications, pendingUserVerifications, activeBookings, pendingComplaints, recentPGs },
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -66,6 +68,7 @@ exports.verifyPG = async (req, res) => {
     }
 
     pg.verificationStatus = "verified";
+    pg.trustScore = Math.min(100, pg.trustScore + 20); // Increase trust score by 20, max 100
     await pg.save();
 
     await createNotification(

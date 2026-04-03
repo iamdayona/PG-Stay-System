@@ -83,7 +83,7 @@ export default function TenantDashboard() {
           prefs?.location ||
           (prefs?.amenities?.length > 0) ||
           (prefs?.budgetMin && prefs.budgetMin > 0) ||
-          (prefs?.budgetMax && prefs.budgetMax !== 50000)
+          (prefs?.budgetMax && prefs.budgetMax > 0)
         );
         if (hasPrefs) {
           return apiGetRecommendations();
@@ -214,7 +214,6 @@ export default function TenantDashboard() {
                         )}
                       </div>
                       <div className="rec-loc"><MapPin size={12}/> {pg.location}</div>
-                      <div className="rec-price"><IndianRupee size={13}/>{pg.rent}<span style={{ fontSize:".7rem", color:"#9a9ab0", fontWeight:500 }}>/mo</span></div>
                       <div className="rec-tags">
                         <span className="rec-tag">⭐ {pg.trustScore}/100</span>
                         {(pg.amenities || []).slice(0, 3).map((a) => (

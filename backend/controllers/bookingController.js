@@ -116,6 +116,9 @@ exports.createBooking = async (req, res) => {
       "success"
     );
 
+    application.status = "Booked";
+    await application.save();
+
     await createNotification(
       application.pgStay.owner,
       `${req.user.name} confirmed a booking for ${application.pgStay.name}.`,
@@ -232,8 +235,14 @@ exports.updateBookingAgreement = async (req, res) => {
     if (!booking) return res.status(404).json({ message: "Booking not found" });
 
     const { agreementStartDate, agreementEndDate } = req.body;
-    if (agreementStartDate) booking.agreementStartDate = new Date(agreementStartDate);
-    if (agreementEndDate) booking.agreementEndDate = new Date(agreementEndDate);
+    if (agreementStartDate) {
+      if (booking.agreementStartDate) return res.status(400).json({ message: "Agreement start date is already finalized and cannot be changed" });
+      booking.agreementStartDate = new Date(agreementStartDate);
+    }
+    if (agreementEndDate) {
+      if (booking.agreementEndDate) return res.status(400).json({ message: "Agreement end date is already finalized and cannot be changed" });
+      booking.agreementEndDate = new Date(agreementEndDate);
+    }
 
     if (req.file) {
       booking.agreementDocument = {
@@ -272,6 +281,65 @@ exports.payBooking = async (req, res) => {
       req.user._id,
       `Payment recorded for ${booking.pgStay.name}. Next payment will be due in 30 days.`,
       "success"
+    );
+
+    res.json({ data: booking });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// POST /api/bookings/cancel
+exports.cancelBooking = async (req, res) => {
+  try {
+    const { bookingId } = req.body;
+    if (!bookingId) return res.status(400).json({ message: "Booking ID is required" });
+
+    const booking = await Booking.findOne({ _id: bookingId, tenant: req.user._id, status: "Active" })
+      .populate("pgStay", "name owner")
+      .populate("tenant", "name");
+
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+
+    // Check if can cancel (within 2 days of join date)
+    const joinDate = booking.agreementStartDate || booking.allocationDate;
+    const daysElapsed = Math.floor((Date.now() - new Date(joinDate).getTime()) / (1000 * 60 * 60 * 24));
+    if (daysElapsed >= 2) return res.status(400).json({ message: "Cannot cancel booking after 2 days" });
+
+    booking.status = "Cancelled";
+    await booking.save();
+
+    // Mark related application as cancelled so it doesn't remain in active list and tenant can reapply
+    if (booking.application) {
+      const app = await Application.findById(booking.application);
+      if (app) {
+        app.status = "Cancelled";
+        app.message = "Booking was cancelled by tenant.";
+        await app.save();
+      }
+    }
+
+    // Update room occupancy
+    const room = await Room.findById(booking.room);
+    if (room && room.currentOccupancy > 0) {
+      room.currentOccupancy -= 1;
+      await room.save();
+      await Room.updateAvailability(booking.room);
+    }
+
+    const availableRooms = await Room.countDocuments({ pgStay: booking.pgStay._id, availability: true });
+    await PGStay.findByIdAndUpdate(booking.pgStay._id, { availableRooms });
+
+    await createNotification(
+      req.user._id,
+      `Your booking for ${booking.pgStay.name} has been cancelled.`,
+      "alert"
+    );
+
+    await createNotification(
+      booking.pgStay.owner,
+      `${booking.tenant.name} cancelled their booking for ${booking.pgStay.name}.`,
+      "info"
     );
 
     res.json({ data: booking });
@@ -398,12 +466,14 @@ exports.uploadPaymentProof = async (req, res) => {
       verifiedBy: null,
       verifiedAt: null,
     };
+    booking.paymentStatus = "unpaid"; // waiting for owner verification
     await booking.save();
 
     await createNotification(
       booking.pgStay.owner,
       `Payment proof uploaded for ${booking.pgStay.name}. Please verify and update payment status.`,
-      "alert"
+      "alert",
+      { booking: booking._id, documentUrl: booking.paymentProof.url }
     );
 
     res.json({ data: booking, message: "Payment proof uploaded. Waiting for owner verification." });
@@ -437,6 +507,16 @@ exports.verifyPayment = async (req, res) => {
     if (verified) {
       booking.paymentStatus = "paid";
       booking.lastPaymentDate = new Date();
+    } else {
+      booking.paymentStatus = "unpaid";
+      booking.paymentProof = {
+        url: "",
+        publicId: "",
+        uploadedAt: null,
+        verificationStatus: "pending",
+        verifiedBy: null,
+        verifiedAt: null,
+      };
     }
 
     await booking.save();

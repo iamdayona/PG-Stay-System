@@ -110,6 +110,7 @@ export default function AdminVerifyMonitor() {
   const [searchQuery, setSearchQuery] = useState("");
   const [actionLoading, setActionLoading] = useState("");
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: "", message: "", callback: null });
+  const [viewingDoc, setViewingDoc] = useState(null);
 
   const fetchData = async () => {
     try {
@@ -121,8 +122,14 @@ export default function AdminVerifyMonitor() {
       setPgListings(pgsRes.data);
       setStats(statsRes.data);
       const allUsers = usersRes.data || [];
-      setTenants(allUsers.filter((u) => u.role === "tenant"));
-      setOwners(allUsers.filter((u) => u.role === "owner"));
+      const sortedUsers = allUsers.sort((a, b) => {
+        // Pending first, then by createdAt desc
+        if (a.verificationStatus === "pending" && b.verificationStatus !== "pending") return -1;
+        if (b.verificationStatus === "pending" && a.verificationStatus !== "pending") return 1;
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+      setTenants(sortedUsers.filter((u) => u.role === "tenant"));
+      setOwners(sortedUsers.filter((u) => u.role === "owner"));
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -288,13 +295,9 @@ export default function AdminVerifyMonitor() {
       {/* Document */}
       <div className="doc-slot">
         {u.documentUrl ? (
-          u.documentFileType === "pdf"
-            ? <a href={u.documentUrl} target="_blank" rel="noreferrer" title="View PDF">
-                <div className="doc-thumb-pdf"><FileText size={16} color="white"/></div>
-              </a>
-            : <a href={u.documentUrl} target="_blank" rel="noreferrer" title="View document">
-                <div className="doc-thumb"><img src={u.documentUrl} alt="doc"/></div>
-              </a>
+          <button onClick={() => setViewingDoc(u)} className="act-btn btn-view-doc">
+            <Eye size={12} /> View
+          </button>
         ) : <span className="no-doc">No doc</span>}
       </div>
       {/* Actions */}
@@ -420,13 +423,9 @@ export default function AdminVerifyMonitor() {
                         {/* License document */}
                         <div className="license-cell">
                           {pg.licenseDocument?.url ? (
-                            pg.licenseDocument.fileType === "pdf"
-                              ? <a href={pg.licenseDocument.url} target="_blank" rel="noreferrer" title="View License PDF">
-                                  <div className="doc-thumb-pdf"><FileText size={14} color="white"/></div>
-                                </a>
-                              : <a href={pg.licenseDocument.url} target="_blank" rel="noreferrer" title="View License Document">
-                                  <div className="doc-thumb"><img src={pg.licenseDocument.url} alt="license doc"/></div>
-                                </a>
+                            <button onClick={() => setViewingDoc({ documentUrl: pg.licenseDocument.url, documentFileType: pg.licenseDocument.fileType })} className="act-btn btn-view-doc">
+                              <Eye size={12} /> View
+                            </button>
                           ) : (
                             <span style={{fontSize:".72rem",color:"#9a9ab0",fontWeight:600}}>—</span>
                           )}
@@ -513,6 +512,73 @@ export default function AdminVerifyMonitor() {
           </div>
         </main>
       </div>
+
+      {/* Document View Modal */}
+      {viewingDoc && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '16px',
+            padding: '20px',
+            maxWidth: '90vw',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            position: 'relative',
+          }}>
+            <button
+              onClick={() => setViewingDoc(null)}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                left: '10px',
+                background: 'linear-gradient(135deg,#42a5f5,#1e88e5)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                fontSize: '18px',
+                fontWeight: 'bold',
+              }}
+              title="Back to verification page"
+            >
+              ←
+            </button>
+            <div style={{ marginTop: '50px' }}>
+              {viewingDoc.documentFileType === "pdf" ? (
+                <iframe
+                  src={viewingDoc.documentUrl}
+                  width="100%"
+                  height="600px"
+                  style={{ border: 'none', borderRadius: '8px' }}
+                  title="Document Viewer"
+                />
+              ) : (
+                <img
+                  src={viewingDoc.documentUrl}
+                  alt="Document"
+                  style={{ maxWidth: '100%', maxHeight: '600px', borderRadius: '8px' }}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

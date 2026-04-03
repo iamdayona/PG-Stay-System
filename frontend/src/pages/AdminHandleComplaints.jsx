@@ -3,7 +3,6 @@ import { CheckCircle, XCircle, Bell, ShieldAlert } from "lucide-react";
 import RoleNavigation from "../context/RoleNavigation";
 import {
   apiAdminGetComplaints,
-  apiAdminResolveComplaint,
   apiAdminRejectComplaint,
   apiAdminWarnUser,
   apiAdminSuspendUser,
@@ -47,9 +46,6 @@ const PAGE_CSS = `
   .badge-rejected { background:rgba(255,235,238,.9); color:#c62828; border-color:rgba(239,154,154,.6); }
 
   .action-btns { display:flex; gap:9px; }
-  .btn-resolve { background:linear-gradient(135deg,#66bb6a,#43a047); color:white; padding:10px 18px; border:none; border-radius:13px; font-family:'Poppins',sans-serif; font-size:.82rem; font-weight:700; cursor:pointer; box-shadow:0 4px 0 #2e7d32,0 7px 16px rgba(102,187,106,.3); transition:transform .15s,filter .15s; display:inline-flex; align-items:center; gap:6px; }
-  .btn-resolve:hover:not(:disabled) { filter:brightness(1.06); transform:translateY(-2px); }
-  .btn-resolve:disabled { opacity:.6; cursor:not-allowed; }
   .btn-reject  { background:rgba(255,255,255,.72); border:2px solid rgba(239,154,154,.6); color:#c62828; padding:10px 18px; border-radius:13px; font-family:'Poppins',sans-serif; font-size:.82rem; font-weight:700; cursor:pointer; box-shadow:0 4px 0 rgba(239,83,80,.15); transition:transform .15s; display:inline-flex; align-items:center; gap:6px; }
   .btn-reject:hover:not(:disabled) { background:rgba(255,235,238,.9); transform:translateY(-2px); }
   .btn-reject:disabled { opacity:.6; cursor:not-allowed; }
@@ -76,19 +72,6 @@ export default function AdminHandleComplaints() {
   };
 
   useEffect(() => { fetchComplaints(); }, []);
-
-  const handleResolve = async (id) => {
-    setActionId(id + "r");
-    try {
-      await apiAdminResolveComplaint(id);
-      toast.success("Complaint resolved successfully");
-      await fetchComplaints();
-    } catch (err) {
-      toast.error(err.message);
-    } finally {
-      setActionId("");
-    }
-  };
 
   const handleReject = async (id) => {
     setActionId(id + "x");
@@ -188,14 +171,6 @@ export default function AdminHandleComplaints() {
                       {c.status === "pending" && (
                         <>
                           <div className="action-btns">
-                            <button
-                              className="clay-btn btn-resolve"
-                              onClick={() => handleResolve(c._id)}
-                              disabled={!!actionId}
-                            >
-                              <CheckCircle size={14} />
-                              {actionId === c._id + "r" ? "Resolving…" : "Resolve"}
-                            </button>
                             <button
                               className="clay-btn btn-reject"
                               onClick={() => handleReject(c._id)}

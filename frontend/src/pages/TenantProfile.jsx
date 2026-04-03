@@ -149,8 +149,10 @@ export default function TenantProfile() {
           district:     addressParts.district       || "",
           pinNumber:    addressParts.pinNumber      || "",
           prefLocation: res.user.preferences?.location  || "",
-          prefBudgetMin:res.user.preferences?.budgetMin || "",
-          prefBudgetMax:res.user.preferences?.budgetMax || "",
+          prefBudgetMin: res.user.preferences?.budgetMin || "",
+          prefBudgetMax: (res.user.preferences?.budgetMax && res.user.preferences?.budgetMax !== 50000)
+            ? res.user.preferences.budgetMax
+            : "",
         });
         setPhoneVerified(!!res.user.phone);
       })
@@ -162,13 +164,16 @@ export default function TenantProfile() {
     if (!form.name.trim()) { toast.warning("Name cannot be empty"); return; }
     setSaving(true);
     try {
+      const preferences = { location: form.prefLocation };
+      if (form.prefBudgetMin) preferences.budgetMin = Number(form.prefBudgetMin);
+      if (form.prefBudgetMax) preferences.budgetMax = Number(form.prefBudgetMax);
+
       const res = await apiUpdateProfile({
-        name: form.name, phone: form.phone, gender: form.gender, address: formatAddress(),
-        preferences: {
-          location:  form.prefLocation,
-          budgetMin: Number(form.prefBudgetMin) || 0,
-          budgetMax: Number(form.prefBudgetMax) || 50000,
-        },
+        name: form.name,
+        phone: form.phone,
+        gender: form.gender,
+        address: formatAddress(),
+        preferences,
       });
       setUser(res.user);
       localStorage.setItem("user", JSON.stringify(res.user));
@@ -344,7 +349,7 @@ export default function TenantProfile() {
                       </div>
                       <div className="clay-section-title">📱 Mobile Verification Status</div>
                     <p style={{fontSize:".82rem",color:"#7a7a9a",marginBottom:16}}>
-                      Verify your mobile number to increase your trust score.
+                      Verify your mobile number to complete the profile.
                     </p>
                     {isEditing ? (
                       <OtpField

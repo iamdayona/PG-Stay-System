@@ -140,6 +140,7 @@ export const apiUploadBookingAgreement = (bookingId, formData) => {
   });
 };
 export const apiPayBooking          = (bookingId) => request(`/bookings/${bookingId}/pay`, { method: "PUT" });
+export const apiCancelBooking       = (bookingId) => request("/bookings/cancel", { method: "POST", body: JSON.stringify({ bookingId }) });
 export const apiUploadPaymentProof  = (bookingId, formData) => {
   const token = getToken();
   return fetch(`${BASE_URL}/bookings/${bookingId}/payment-proof`, {

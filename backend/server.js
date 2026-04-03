@@ -4,6 +4,7 @@ const cors       = require("cors");
 const rateLimit  = require("express-rate-limit");
 const connectDB  = require("./config/db");
 const { checkDuePayments } = require("./utils/paymentReminder");
+const checkExpiredBookings = require("./utils/checkExpiredBookings");
 
 dotenv.config();
 connectDB();
@@ -66,5 +67,7 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   checkDuePayments();
+  checkExpiredBookings();
   setInterval(checkDuePayments, 24 * 60 * 60 * 1000);
+  setInterval(checkExpiredBookings, 24 * 60 * 60 * 1000);
 });

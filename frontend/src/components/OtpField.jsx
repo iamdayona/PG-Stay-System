@@ -116,7 +116,7 @@ export default function OtpField({
 
     const isEmail = type === "email";
     const label = isEmail ? "Email Address" : "Mobile Number";
-    const placeholder = isEmail ? "you@example.com" : "+91 98765 43210";
+    const placeholder = isEmail ? "you@example.com" : "+91 XXXXXXXXXX";
 
     const [step, setStep] = useState(disabled ? "verified" : "idle");
     const [otp, setOtp] = useState("");

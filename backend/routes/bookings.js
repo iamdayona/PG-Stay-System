@@ -6,6 +6,7 @@ const {
   createBooking,
   getMyBookings,
   declineBooking,
+  cancelBooking,
   updateBookingAgreement,
   updateOccupancyDates,
   uploadPaymentProof,
@@ -18,6 +19,7 @@ const {
 router.use(protect);
 router.post("/", authorize("tenant"), createBooking);
 router.post("/decline", authorize("tenant"), declineBooking);
+router.post("/cancel", authorize("tenant"), cancelBooking);
 router.get("/my", authorize("tenant"), getMyBookings);
 router.put("/:id/agreement", authorize("tenant"), uploadAadhaar.single("agreement"), updateBookingAgreement);
 router.put("/:id/occupancy-dates", authorize("tenant"), updateOccupancyDates);

@@ -130,11 +130,7 @@ export default function PGDetailsModal({ pg, rooms = [], onClose, parseAddress }
               <div style={{ fontSize: ".95rem", fontWeight: 600, color: "#2d2d4e" }}>{pg.location}</div>
             </div>
             <div>
-              <div style={{ fontSize: ".75rem", fontWeight: 700, color: "#9a9ab0", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>💰 Rent</div>
-              <div style={{ fontSize: ".95rem", fontWeight: 600, color: "#2d2d4e" }}>₹{pg.rent}/month</div>
-            </div>
-            <div>
-              <div style={{ fontSize: ".75rem", fontWeight: 700, color: "#9a9ab0", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>🚪 Available Rooms</div>
+              <div style={{ fontSize: ".75rem", fontWeight: 700, color: "#9a9ab0", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}> Available Rooms</div>
               <div style={{ fontSize: ".95rem", fontWeight: 600, color: "#2d2d4e" }}>{pg.availableRoomCount ?? pg.availableRooms ?? 0}</div>
             </div>
           </div>

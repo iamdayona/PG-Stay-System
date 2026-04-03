@@ -59,7 +59,10 @@ exports.applyForRoom = async (req, res) => {
 // GET /api/applications/my  (tenant)
 exports.getMyApplications = async (req, res) => {
   try {
-    const apps = await Application.find({ tenant: req.user._id })
+    const apps = await Application.find({
+      tenant: req.user._id,
+      status: { $in: ["Pending", "Approved"] },
+    })
       .populate("pgStay", "name location rent trustScore")
       .populate("room", "roomType rent")
       .sort({ createdAt: -1 });

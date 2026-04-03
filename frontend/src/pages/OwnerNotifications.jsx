@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Bell, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { Bell, CheckCircle2, Clock, AlertCircle, ArrowLeft } from "lucide-react";
 import RoleNavigation from "../context/RoleNavigation";
 import Modal from "../components/Modal";
-import { apiGetNotifications, apiMarkAllRead, apiMarkRead } from "../utils/api";
+import { apiGetNotifications, apiMarkAllRead, apiMarkRead, apiVerifyPayment } from "../utils/api";
+import { toast } from "../components/Toast";
 import { CLAY_BASE, CLAY_OWNER, injectClay } from "../styles/claystyles";
 
 const PAGE_CSS = `
@@ -37,7 +38,9 @@ export default function OwnerNotifications() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedNotification, setSelectedNotification] = useState(null);
+  const [documentPreviewUrl, setDocumentPreviewUrl] = useState(null);
   const [markingRead, setMarkingRead] = useState(false);
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
 
   const fetchNotifs = async () => {
     try {
@@ -80,7 +83,26 @@ export default function OwnerNotifications() {
     }
   };
 
-  const closeModal = () => setSelectedNotification(null);
+  const closeModal = () => {
+    setSelectedNotification(null);
+    setDocumentPreviewUrl(null);
+  };
+
+  const handleMarkAsPaid = async () => {
+    if (!selectedNotification?.booking) return toast.error("This notification is not linked to a booking.");
+    setVerifyingPayment(true);
+
+    try {
+      await apiVerifyPayment(selectedNotification.booking, { verified: true });
+      toast.success("Payment marked paid for tenant booking.");
+      await fetchNotifs();
+      closeModal();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setVerifyingPayment(false);
+    }
+  };
 
   const unread  = notifications.filter((n) => !n.isRead).length;
   const total   = notifications.length;
@@ -162,14 +184,62 @@ export default function OwnerNotifications() {
           onClose={closeModal}
           onConfirm={closeModal}
           confirmLabel="Close"
-          loading={markingRead}
+          loading={markingRead || verifyingPayment}
         >
-          <div style={{ marginTop: 12, lineHeight: 1.75, color: "#2d2d4e" }}>
-            {selectedNotification.message}
-          </div>
-          <div style={{ marginTop: 18, fontSize: ".82rem", color: "#7a7a9a" }}>
-            Type: {selectedNotification.type || "general"}
-          </div>
+          {documentPreviewUrl ? (
+            <>
+              <button
+                className="btn-approve"
+                onClick={() => setDocumentPreviewUrl(null)}
+                style={{ marginBottom: "10px", display: "inline-flex", alignItems: "center", gap: "6px" }}
+              >
+                <ArrowLeft size={14} /> Back to Notification
+              </button>
+              <div style={{ border: "1px solid #ccc", borderRadius: "8px", overflow: "hidden" }}>
+                <iframe
+                  src={documentPreviewUrl}
+                  title="Payment Proof Document"
+                  width="100%"
+                  height="400"
+                  style={{ border: "none" }}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ marginTop: 4, lineHeight: 1.75, color: "#2d2d4e" }}>
+                {selectedNotification.message}
+              </div>
+
+              {selectedNotification.documentUrl && (
+                <div style={{ marginTop: 8 }}>
+                  <button
+                    className="btn-approve"
+                    onClick={() => setDocumentPreviewUrl(selectedNotification.documentUrl)}
+                    style={{ padding: "8px 12px", fontSize: ".85rem" }}
+                  >
+                    View Document
+                  </button>
+                </div>
+              )}
+
+              <div style={{ marginTop: 18, fontSize: ".82rem", color: "#7a7a9a" }}>
+                Type: {selectedNotification.type || "general"}
+              </div>
+
+              {selectedNotification.booking && (
+                <div style={{ marginTop: 16, display: "flex", gap: "10px" }}>
+                  <button
+                    className="btn-approve"
+                    onClick={handleMarkAsPaid}
+                    disabled={verifyingPayment || markingRead}
+                  >
+                    <CheckCircle2 size={14} /> {verifyingPayment ? "Marking Paid…" : "Mark as Paid"}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </Modal>
       )}
     </>

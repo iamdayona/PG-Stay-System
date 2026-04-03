@@ -8,9 +8,15 @@ const sendEmail = require("./sendEmail");
  * @param {string} message - notification message
  * @param {string} type - "application" | "success" | "alert" | "info"
  */
-const createNotification = async (userId, message, type = "info") => {
+const createNotification = async (userId, message, type = "info", options = {}) => {
   try {
-    await Notification.create({ user: userId, message, type });
+    await Notification.create({
+      user: userId,
+      message,
+      type,
+      booking: options.booking || null,
+      documentUrl: options.documentUrl || "",
+    });
   } catch (err) {
     // Notifications are non-critical — log but don't crash
     console.error("Notification creation failed:", err.message);

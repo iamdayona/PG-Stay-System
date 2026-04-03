@@ -370,7 +370,7 @@ export default function FindPGs() {
                       type="number"
                       min="2"
                       max="20"
-                      placeholder="Min capacity (persons)"
+                      placeholder="Capacity (persons)"
                       value={capacityFilter}
                       onChange={(e) => setCapacityFilter(e.target.value)}
                     />
@@ -422,9 +422,6 @@ export default function FindPGs() {
                             )}
                           </div>
                           <div className="pg-meta-row"><MapPin size={14} /> {pg.location}</div>
-                          <div className="pg-price">
-                            <IndianRupee size={15} />{pg.rent}<span className="pg-price-sub">/month</span>
-                          </div>
                           {/* Amenity tags — full wrap, no clipping */}
                           <div className="pg-tags">
                             <span className="clay-badge badge-yellow">⭐ Trust {pg.trustScore}/100</span>
