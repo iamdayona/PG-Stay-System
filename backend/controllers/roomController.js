@@ -64,9 +64,13 @@ exports.updateRoom = async (req, res) => {
     if (roomType !== undefined) room.roomType = roomType;
     if (rent !== undefined) room.rent = Number(rent);
     if (capacity !== undefined) room.capacity = capacity;
-    if (availability !== undefined) room.availability = availability;
+    // Note: availability is now auto-calculated based on capacity and occupancy
+    // Manual availability setting is disabled to prevent conflicts
 
     await room.save();
+
+    // Update availability based on current occupancy and new capacity
+    await Room.updateAvailability(room._id);
 
     // Sync availableRooms count on the PG
     const availableRooms = await Room.countDocuments({

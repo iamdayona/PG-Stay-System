@@ -1,4 +1,4 @@
-export default function PGDetailsModal({ pg, onClose, parseAddress }) {
+export default function PGDetailsModal({ pg, rooms = [], onClose, parseAddress }) {
   if (!pg) return null;
 
   const addressParts = parseAddress(pg.address || "");
@@ -213,6 +213,29 @@ export default function PGDetailsModal({ pg, onClose, parseAddress }) {
                     fontWeight: 600,
                     border: "1.5px solid rgba(144,202,249,.4)"
                   }}>{a}</span>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Room details — from parent loader */}
+          {rooms && rooms.length > 0 && (
+            <>
+              <h3 style={{ fontSize: "1.1rem", fontWeight: 800, color: "#2d2d4e", marginBottom: 16 }}>🛏 Room Details</h3>
+              <div style={{
+                marginBottom: 28,
+                border: "1px solid #e1e8fa",
+                borderRadius: "12px",
+                padding: "12px",
+                background: "rgba(240,248,255,.6)"
+              }}>
+                {rooms.map((room) => (
+                  <div key={room._id} style={{ padding: "8px 0", borderBottom: "1px solid #dbe2f1" }}>
+                    <div style={{ fontWeight: 700, color: "#2d2d4e" }}>{room.roomType}</div>
+                    <div style={{ fontSize: ".86rem", color: "#4f5f7a", marginTop: 2 }}>
+                      Rent: ₹{room.rent} | Capacity: {room.capacity} | Occupancy: {room.currentOccupancy ?? 0} | {room.availability ? "Available" : "Full"}
+                    </div>
+                  </div>
                 ))}
               </div>
             </>

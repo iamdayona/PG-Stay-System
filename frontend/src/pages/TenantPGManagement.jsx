@@ -297,7 +297,7 @@ export default function TenantPGManagement() {
 
                     {activeBooking && (
                       <div className="book-card">
-                        <div className="section-title">�📋 Agreement Time Period</div>
+                        <div className="section-title">📋 Agreement Time Period</div>
                         <p className="card-note">Set your agreement start and end dates.</p>
                         <div className="info-row">
                           <div className="info-card">

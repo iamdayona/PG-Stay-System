@@ -42,8 +42,11 @@ exports.createBooking = async (req, res) => {
       status: "Active",
     });
 
-    // Mark room as unavailable (occupied by active booking)
-    await Room.findByIdAndUpdate(application.room._id, { availability: false });
+    // Update room occupancy and availability
+    const room = await Room.findById(application.room._id);
+    room.currentOccupancy += 1;
+    await room.save();
+    await Room.updateAvailability(application.room._id);
 
     // Sync availableRooms count on PG
     const availableRooms = await Room.countDocuments({
@@ -51,6 +54,61 @@ exports.createBooking = async (req, res) => {
       availability: true,
     });
     await PGStay.findByIdAndUpdate(application.pgStay._id, { availableRooms });
+
+    // If room is now full, reject all other approved applications for this room
+    if (room.currentOccupancy >= room.capacity) {
+      const otherApprovedAppsForRoom = await Application.find({
+        room: application.room._id,
+        status: "Approved",
+        _id: { $ne: application._id }, // Exclude current application
+      }).populate("pgStay", "name").populate("tenant", "name");
+
+      for (const app of otherApprovedAppsForRoom) {
+        app.status = "Rejected";
+        app.message = `Room capacity reached. Another tenant booked this room first.`;
+        await app.save();
+
+        // Notify tenant about auto-rejection due to capacity
+        await createNotification(
+          app.tenant._id,
+          `Your approved application for ${app.pgStay.name} was automatically cancelled because the room capacity was reached by another tenant.`,
+          "alert"
+        );
+
+        // Notify PG owner about auto-rejection
+        await createNotification(
+          app.pgStay.owner,
+          `The approved application from ${app.tenant.name} for ${app.pgStay.name} was automatically cancelled due to room capacity being reached.`,
+          "info"
+        );
+      }
+    }
+
+    // Auto-reject other approved applications by this tenant
+    const otherApprovedApps = await Application.find({
+      tenant: req.user._id,
+      status: "Approved",
+      _id: { $ne: application._id }, // Exclude current application
+    }).populate("pgStay", "name owner");
+
+    for (const app of otherApprovedApps) {
+      app.status = "Rejected";
+      await app.save();
+
+      // Notify tenant about auto-rejection
+      await createNotification(
+        req.user._id,
+        `Your approved application for ${app.pgStay.name} was automatically cancelled because you booked another PG.`,
+        "alert"
+      );
+
+      // Notify PG owner about auto-rejection
+      await createNotification(
+        app.pgStay.owner,
+        `The approved application from ${req.user.name} for ${app.pgStay.name} was automatically cancelled as they booked another property.`,
+        "info"
+      );
+    }
 
     await createNotification(
       req.user._id,
@@ -138,8 +196,14 @@ exports.declineBooking = async (req, res) => {
     application.status = "Rejected";
     await application.save();
 
-    // Mark room as available (no active booking)
-    await Room.findByIdAndUpdate(application.room, { availability: true });
+    // Update room occupancy and availability
+    const room = await Room.findById(application.room);
+    if (room && room.currentOccupancy > 0) {
+      room.currentOccupancy -= 1;
+      await room.save();
+      await Room.updateAvailability(application.room);
+    }
+
     const availableRooms = await Room.countDocuments({ pgStay: application.pgStay, availability: true });
     await PGStay.findByIdAndUpdate(application.pgStay, { availableRooms });
 
@@ -249,8 +313,13 @@ exports.ownerCancelBooking = async (req, res) => {
     booking.status = "Cancelled";
     await booking.save();
 
-    // Mark room as available again
-    await Room.findByIdAndUpdate(booking.room, { availability: true });
+    // Update room occupancy and availability
+    const room = await Room.findById(booking.room);
+    if (room && room.currentOccupancy > 0) {
+      room.currentOccupancy -= 1;
+      await room.save();
+      await Room.updateAvailability(booking.room);
+    }
 
     // Sync availableRooms on PG
     const availableRooms = await Room.countDocuments({

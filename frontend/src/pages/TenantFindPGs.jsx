@@ -109,6 +109,9 @@ export default function FindPGs() {
   const [selectedPGDetails, setSelectedPGDetails] = useState(null);
   const [roomTypeFilter, setRoomTypeFilter] = useState(""); // "Single" | "Shared"
   const [capacityFilter, setCapacityFilter] = useState("");
+  const [pgRooms, setPgRooms] = useState({});
+  const [activePickerPGId, setActivePickerPGId] = useState(null);
+  const [selectedRoomByPG, setSelectedRoomByPG] = useState({});
   const [filters, setFilters] = useState({
     location: "", budgetMin: "", budgetMax: "", amenities: [],
   });
@@ -140,6 +143,62 @@ export default function FindPGs() {
 
   const isVerified = user?.verificationStatus === "verified";
   const hasDocument = !!user?.documentUrl;
+
+  const loadRoomsForPG = async (pgId) => {
+    if (pgRooms[pgId]) return;
+    try {
+      const res = await apiGetRooms(pgId);
+      setPgRooms((prev) => ({ ...prev, [pgId]: res.data }));
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleOpenRoomPicker = async (pg) => {
+    if (!hasDocument) {
+      toast.error("Please upload your Aadhaar document in your profile first.");
+      return;
+    }
+    if (!isVerified) {
+      toast.error("Your Aadhaar is under review. You can apply once admin verifies you.");
+      return;
+    }
+
+    await loadRoomsForPG(pg._id);
+    setActivePickerPGId(pg._id);
+    setSelectedRoomByPG((prev) => ({ ...prev, [pg._id]: "" }));
+  };
+
+  const handleCloseRoomPicker = (pgId) => {
+    if (activePickerPGId === pgId) setActivePickerPGId(null);
+    setSelectedRoomByPG((prev) => ({ ...prev, [pgId]: "" }));
+  };
+
+  const handleApplyForRoom = async (pgId, pgName) => {
+    const roomId = selectedRoomByPG[pgId];
+    if (!roomId) {
+      toast.error("Select a room from the list before applying.");
+      return;
+    }
+
+    setApplying(pgId);
+    try {
+      await apiApply({ pgStayId: pgId, roomId });
+      setAppliedPGs((prev) => [...prev, pgId]);
+      toast.success(`Application submitted for ${pgName}! 🎉`);
+      handleCloseRoomPicker(pgId);
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setApplying("");
+    }
+  };
+
+  const handleViewDetails = async (pg) => {
+    await loadRoomsForPG(pg._id);
+    setSelectedPGDetails(pg);
+    setActivePickerPGId(null);
+  };
 
   const handleApplyFilters = async () => {
     setLoading(true);
@@ -229,7 +288,12 @@ export default function FindPGs() {
         
         {/* PG Details Modal */}
         {selectedPGDetails && (
-          <PGDetailsModal pg={selectedPGDetails} onClose={() => setSelectedPGDetails(null)} parseAddress={parseAddress} />
+          <PGDetailsModal
+            pg={selectedPGDetails}
+            rooms={pgRooms[selectedPGDetails._id] || []}
+            onClose={() => setSelectedPGDetails(null)}
+            parseAddress={parseAddress}
+          />
         )}
         
         <main className="clay-main">
@@ -401,7 +465,7 @@ export default function FindPGs() {
                               transition:"all .15s",
                               whiteSpace:"nowrap"
                             }}
-                            onClick={() => setSelectedPGDetails(pg)}
+                            onClick={() => handleViewDetails(pg)}
                             onMouseEnter={(e) => {
                               e.target.style.background = "rgba(66,165,245,.25)";
                               e.target.style.borderColor = "rgba(66,165,245,.7)";
@@ -415,7 +479,7 @@ export default function FindPGs() {
                           </button>
                           <button
                             className={`apply-btn${!isVerified ? " apply-btn-locked" : ""}${appliedPGs.includes(pg._id) ? " apply-btn-applied" : ""}`}
-                            onClick={() => !appliedPGs.includes(pg._id) && handleApply(pg)}
+                            onClick={() => !appliedPGs.includes(pg._id) && handleOpenRoomPicker(pg)}
                             disabled={applying === pg._id}
                             title={!isVerified ? "Verify your Aadhaar to apply" : appliedPGs.includes(pg._id) ? "Already applied" : ""}
                           >
@@ -424,8 +488,8 @@ export default function FindPGs() {
                               : appliedPGs.includes(pg._id)
                                 ? "✓ Applied"
                                 : !isVerified
-                                  ? "🔒 Apply"
-                                  : "Apply →"}
+                                  ? "🔒 Apply for Room"
+                                  : "Apply for Room"}
                           </button>
                           {!isVerified && (
                             <span style={{ fontSize:".68rem", color:"#9a9ab0", textAlign:"right", maxWidth:90 }}>
@@ -433,6 +497,52 @@ export default function FindPGs() {
                             </span>
                           )}
                         </div>
+
+                        {activePickerPGId === pg._id && (
+                          <div style={{ position:'fixed', inset:0, display:'flex', justifyContent:'center', alignItems:'center', padding:20, background:'rgba(0,0,0,.45)', zIndex:999 }}>
+                            <div style={{ width:'min(600px,100%)', background:'#fff', borderRadius:22, padding:20, boxShadow:'0 20px 60px rgba(0,0,0,.25)', border:'2px solid #dbe2f1' }}>
+                              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+                                <div style={{ fontSize:'.95rem', fontWeight:800, color:'#283e7f' }}>Select room to apply</div>
+                                <button onClick={() => handleCloseRoomPicker(pg._id)} style={{ border:'none', background:'transparent', fontSize:'1.2rem', cursor:'pointer', color:'#8f9bb8' }}>✕</button>
+                              </div>
+
+                              {pgRooms[pg._id] && pgRooms[pg._id].length > 0 ? (
+                                <>
+                                  <select
+                                    value={selectedRoomByPG[pg._id] || ''}
+                                    onChange={(e) => setSelectedRoomByPG((prev) => ({ ...prev, [pg._id]: e.target.value }))}
+                                    style={{ width:'100%', padding:'10px', borderRadius:'10px', border:'1px solid #c7d5ee', marginBottom:'12px' }}
+                                  >
+                                    <option value="">-- Choose room --</option>
+                                    {pgRooms[pg._id].map((room) => (
+                                      <option key={room._id} value={room._id}>
+                                        {room.roomType} | ₹{room.rent} | cap {room.capacity} | occ {room.currentOccupancy ?? 0} | {room.availability ? 'Available' : 'Full'}
+                                      </option>
+                                    ))}
+                                  </select>
+
+                                  <button
+                                    className="apply-btn"
+                                    onClick={() => handleApplyForRoom(pg._id, pg.name)}
+                                    disabled={applying === pg._id || appliedPGs.includes(pg._id)}
+                                    style={{ width:'100%', marginBottom: 10 }}
+                                  >
+                                    {applying === pg._id ? '⏳ Applying…' : 'Apply for Selected Room'}
+                                  </button>
+
+                                  <button
+                                    style={{ width:'100%', padding:'10px', borderRadius:'10px', border:'1px solid #c7d5ee', background:'#fff', color:'#455a64', cursor:'pointer' }}
+                                    onClick={() => handleCloseRoomPicker(pg._id)}
+                                  >
+                                    Close
+                                  </button>
+                                </>
+                              ) : (
+                                <div style={{ fontSize:'.86rem', color:'#606e92' }}>Loading room list...</div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))

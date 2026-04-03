@@ -20,6 +20,10 @@ const RoomSchema = new mongoose.Schema(
       type: Number,
       default: 1,
     },
+    currentOccupancy: {
+      type: Number,
+      default: 0,
+    },
     availability: {
       type: Boolean,
       default: true,
@@ -27,5 +31,18 @@ const RoomSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Static method to update room availability based on capacity
+RoomSchema.statics.updateAvailability = async function(roomId) {
+  const room = await this.findById(roomId);
+  if (!room) return;
+
+  const isAvailable = room.currentOccupancy < room.capacity;
+  if (room.availability !== isAvailable) {
+    room.availability = isAvailable;
+    await room.save();
+  }
+  return room;
+};
 
 module.exports = mongoose.model("Room", RoomSchema);
