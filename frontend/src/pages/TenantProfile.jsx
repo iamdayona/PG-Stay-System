@@ -111,6 +111,7 @@ export default function TenantProfile() {
     name:"", phone:"", gender:"",
     houseName:"", street:"", postOffice:"", placeOfResidence:"", district:"", pinNumber:"",
     prefLocation:"", prefBudgetMin:"", prefBudgetMax:"",
+    bio: "",
   });
 
   // Helper: parse formatted address string into individual fields
@@ -153,6 +154,7 @@ export default function TenantProfile() {
           prefBudgetMax: (res.user.preferences?.budgetMax && res.user.preferences?.budgetMax !== 50000)
             ? res.user.preferences.budgetMax
             : "",
+          bio: res.user.bio || "",
         });
         setPhoneVerified(!!res.user.phone);
       })
@@ -174,6 +176,7 @@ export default function TenantProfile() {
         gender: form.gender,
         address: formatAddress(),
         preferences,
+        bio: form.bio.slice(0, 150),
       });
       setUser(res.user);
       localStorage.setItem("user", JSON.stringify(res.user));
@@ -315,6 +318,21 @@ export default function TenantProfile() {
                           <option value="female">Female</option>
                           <option value="other">Other</option>
                         </select>
+                      </div>
+                      <div className="form-group">
+                        <label className="clay-label">Bio</label>
+                        <input
+                          className="clay-input"
+                          type="text"
+                          value={form.bio}
+                          onChange={(e) => setForm({ ...form, bio: e.target.value.slice(0, 150) })}
+                          placeholder="Share a short bio about yourself"
+                          maxLength={150}
+                          disabled={!isEditing}
+                        />
+                        <div style={{ fontSize: ".78rem", color: form.bio.length > 150 ? "#c62828" : "#7a7a9a", marginTop: 6 }}>
+                          {form.bio.length}/150 characters
+                        </div>
                       </div>
                       <div className="form-group">
                         <label className="clay-label">Phone Number</label>

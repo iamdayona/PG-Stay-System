@@ -3,7 +3,7 @@ import { MapPin, IndianRupee, ShieldAlert } from "lucide-react";
 import RoleNavigation from "../context/RoleNavigation";
 import { toast } from "../components/Toast";
 import PGDetailsModal from "../components/PGDetailsModal";
-import { apiGetRecommendations, apiGetAllPGs, apiApply, apiGetRooms, apiGetMe } from "../utils/api";
+import { apiGetRecommendations, apiGetAllPGs, apiApply, apiGetRooms, apiGetMe, apiGetPGRoommates } from "../utils/api";
 import { CLAY_BASE, CLAY_TENANT, injectClay } from "../styles/claystyles";
 import { toTitleCase } from "../utils/capitalization";
 
@@ -110,6 +110,7 @@ export default function FindPGs() {
   const [roomTypeFilter, setRoomTypeFilter] = useState(""); // "Single" | "Shared"
   const [capacityFilter, setCapacityFilter] = useState("");
   const [pgRooms, setPgRooms] = useState({});
+  const [roommatesByPG, setRoommatesByPG] = useState({});
   const [activePickerPGId, setActivePickerPGId] = useState(null);
   const [selectedRoomByPG, setSelectedRoomByPG] = useState({});
   const [filters, setFilters] = useState({
@@ -194,8 +195,18 @@ export default function FindPGs() {
     }
   };
 
+  const loadRoommatesForPG = async (pgId) => {
+    if (roommatesByPG[pgId]) return;
+    try {
+      const res = await apiGetPGRoommates(pgId);
+      setRoommatesByPG((prev) => ({ ...prev, [pgId]: res.data }));
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
   const handleViewDetails = async (pg) => {
-    await loadRoomsForPG(pg._id);
+    await Promise.all([loadRoomsForPG(pg._id), loadRoommatesForPG(pg._id)]);
     setSelectedPGDetails(pg);
     setActivePickerPGId(null);
   };
@@ -291,6 +302,7 @@ export default function FindPGs() {
           <PGDetailsModal
             pg={selectedPGDetails}
             rooms={pgRooms[selectedPGDetails._id] || []}
+            roommatesByRoom={roommatesByPG[selectedPGDetails._id] || []}
             onClose={() => setSelectedPGDetails(null)}
             parseAddress={parseAddress}
           />
@@ -513,7 +525,7 @@ export default function FindPGs() {
                                     <option value="">-- Choose room --</option>
                                     {pgRooms[pg._id].map((room) => (
                                       <option key={room._id} value={room._id}>
-                                        {room.roomType} | ₹{room.rent} | cap {room.capacity} | occ {room.currentOccupancy ?? 0} | {room.availability ? 'Available' : 'Full'}
+                                        {room.roomNumber ? `${room.roomNumber} · ` : 'N/A · '}{room.roomType} | ₹{room.rent} | cap {room.capacity ?? 'N/A'} | occ {room.currentOccupancy ?? 0} | {room.availability ? 'Available' : 'Full'}
                                       </option>
                                     ))}
                                   </select>

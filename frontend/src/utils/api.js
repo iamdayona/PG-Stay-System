@@ -125,6 +125,7 @@ export const apiRejectApplication    = (id)  => request(`/applications/${id}/rej
 export const apiGetMyBookings        = ()     => request("/bookings/my");
 export const apiCreateBooking        = (body) => request("/bookings", { method: "POST", body: JSON.stringify(body) });
 export const apiDeclineBooking       = (body) => request("/bookings/decline", { method: "POST", body: JSON.stringify(body) });
+export const apiGetPGRoommates       = (pgId) => request(`/bookings/pg/${pgId}/roommates`);
 export const apiGetOwnerBookings     = ()     => request("/bookings/owner");
 export const apiOwnerCancelBooking   = (id)   => request(`/bookings/${id}/cancel-by-owner`, { method: "PUT" });
 export const apiUploadBookingAgreement = (bookingId, formData) => {

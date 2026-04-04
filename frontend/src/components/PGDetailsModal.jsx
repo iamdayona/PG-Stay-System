@@ -1,8 +1,31 @@
-export default function PGDetailsModal({ pg, rooms = [], onClose, parseAddress }) {
-  if (!pg) return null;
+export default function PGDetailsModal({ pg, rooms = [], roommatesByRoom = [], onClose, parseAddress }) {
+  if (!pg) {
+    console.warn('PGDetailsModal: No PG data provided');
+    return null;
+  }
 
-  const addressParts = parseAddress(pg.address || "");
+  const addressParts = parseAddress(pg?.address || "");
   const hasAddress = Object.values(addressParts).some(v => v);
+
+  // Create a map from room ID to tenants array with safe checks
+  const roommatesMap = (roommatesByRoom || [])
+    .filter(item => {
+      if (!item?.room?._id || !Array.isArray(item?.tenants)) {
+        console.warn('Invalid roommate data:', item);
+        return false;
+      }
+      return true;
+    })
+    .reduce((acc, item) => {
+      acc[item.room._id] = (item.tenants || []).filter(tenant => {
+        if (tenant == null) {
+          console.warn('Null tenant found in room:', item.room._id);
+          return false;
+        }
+        return true;
+      });
+      return acc;
+    }, {});
 
   return (
     <div style={{
@@ -83,22 +106,22 @@ export default function PGDetailsModal({ pg, rooms = [], onClose, parseAddress }
           </div>
 
           {/* Photo Gallery */}
-          {pg.images && pg.images.length > 0 ? (
+          {pg?.images && Array.isArray(pg.images) && pg.images.length > 0 ? (
             <div style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
               gap: 12,
               marginBottom: 32
             }}>
-              {pg.images.map((img) => (
-                <div key={img._id} style={{
+              {pg.images.filter(img => img != null).map((img) => (
+                <div key={img?._id || Math.random()} style={{
                   aspect: "4/3",
                   borderRadius: "14px",
                   overflow: "hidden",
                   border: "2px solid rgba(255,255,255,.85)",
                   cursor: "pointer"
                 }}>
-                  <img src={img.url} alt="PG" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img src={img?.url} alt="PG" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </div>
               ))}
             </div>
@@ -190,7 +213,7 @@ export default function PGDetailsModal({ pg, rooms = [], onClose, parseAddress }
           )}
 
           {/* Amenities */}
-          {pg.amenities && pg.amenities.length > 0 && (
+          {pg?.amenities && Array.isArray(pg.amenities) && pg.amenities.length > 0 && (
             <>
               <h3 style={{ fontSize: "1.1rem", fontWeight: 800, color: "#2d2d4e", marginBottom: 16 }}>✨ Amenities</h3>
               <div style={{
@@ -199,8 +222,8 @@ export default function PGDetailsModal({ pg, rooms = [], onClose, parseAddress }
                 gap: 10,
                 marginBottom: 28
               }}>
-                {pg.amenities.map((a) => (
-                  <span key={a} style={{
+                {pg.amenities.filter(a => a != null).map((a, idx) => (
+                  <span key={idx} style={{
                     background: "rgba(144,202,249,.15)",
                     color: "#1565c0",
                     padding: "8px 14px",
@@ -215,7 +238,7 @@ export default function PGDetailsModal({ pg, rooms = [], onClose, parseAddress }
           )}
 
           {/* Room details — from parent loader */}
-          {rooms && rooms.length > 0 && (
+          {rooms && Array.isArray(rooms) && rooms.length > 0 && (
             <>
               <h3 style={{ fontSize: "1.1rem", fontWeight: 800, color: "#2d2d4e", marginBottom: 16 }}>🛏 Room Details</h3>
               <div style={{
@@ -225,20 +248,85 @@ export default function PGDetailsModal({ pg, rooms = [], onClose, parseAddress }
                 padding: "12px",
                 background: "rgba(240,248,255,.6)"
               }}>
-                {rooms.map((room) => (
-                  <div key={room._id} style={{ padding: "8px 0", borderBottom: "1px solid #dbe2f1" }}>
-                    <div style={{ fontWeight: 700, color: "#2d2d4e" }}>{room.roomType}</div>
-                    <div style={{ fontSize: ".86rem", color: "#4f5f7a", marginTop: 2 }}>
-                      Rent: ₹{room.rent} | Capacity: {room.capacity} | Occupancy: {room.currentOccupancy ?? 0} | {room.availability ? "Available" : "Full"}
+                {rooms.filter(room => room != null).map((room) => {
+                  const roomTenants = (roommatesMap[room._id] || []).filter(tenant => tenant != null);
+                  return (
+                    <div key={room._id || Math.random()} style={{ padding: "8px 0", borderBottom: "1px solid #dbe2f1" }}>
+                      <div style={{ fontWeight: 700, color: "#2d2d4e" }}>{room?.roomType || 'Unknown'} - {room?.roomNumber || 'N/A'}</div>
+                      <div style={{ fontSize: ".86rem", color: "#4f5f7a", marginTop: 2 }}>
+                        Rent: ₹{room?.rent || 'N/A'} | Capacity: {room?.capacity || 'N/A'} | Occupancy: {roomTenants.length} | {room?.availability ? "Available" : "Full"}
+                      </div>
+                      {/* Roommates subsection */}
+                      {roomTenants.length > 0 ? (
+                        <div style={{ marginTop: 12 }}>
+                          <div style={{ fontSize: ".9rem", fontWeight: 600, color: "#2d2d4e", marginBottom: 8 }}>👥 Roommates</div>
+                          <div style={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                            gap: 10
+                          }}>
+                            {roomTenants.map((tenant, idx) => {
+                              if (!tenant) {
+                                console.warn('Null tenant in room:', room?._id);
+                                return null;
+                              }
+                              return (
+                                <div key={tenant?._id || `tenant-${idx}`} style={{
+                                  background: "rgba(255,255,255,.9)",
+                                  border: "1px solid rgba(200,200,220,.6)",
+                                  borderRadius: "12px",
+                                  padding: "12px",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "8px",
+                                  minHeight: "120px"
+                                }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                    <div style={{
+                                      width: 40,
+                                      height: 40,
+                                      borderRadius: "50%",
+                                      overflow: "hidden",
+                                      background: "rgba(200,200,220,.2)",
+                                      display: "grid",
+                                      placeItems: "center",
+                                      fontWeight: 700,
+                                      color: "#2d2d4e"
+                                    }}>
+                                      {tenant?.profilePhotoUrl ? (
+                                        <img src={tenant.profilePhotoUrl} alt={tenant?.name || 'Tenant'} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                      ) : (
+                                        tenant?.name?.[0]?.toUpperCase() || "?"
+                                      )}
+                                    </div>
+                                    <div>
+                                      <div style={{ fontSize: ".9rem", fontWeight: 700, color: "#2d2d4e" }}>{tenant?.name || 'Unknown Tenant'}</div>
+                                    </div>
+                                  </div>
+                                  <div style={{ fontSize: ".8rem", color: "#5a5a7a", lineHeight: 1.4 }}>
+                                    {tenant?.bio || "No bio available"}
+                                  </div>
+                                </div>
+                              );
+                            }).filter(Boolean)}
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: ".8rem", color: "#9a9ab0", marginTop: 8, fontStyle: "italic" }}>
+                          No occupants
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           )}
 
+
+
           {/* Rules & Regulations */}
-          {pg.rules && pg.rules.length > 0 && (
+          {pg?.rules && Array.isArray(pg.rules) && pg.rules.length > 0 && (
             <>
               <h3 style={{ fontSize: "1.1rem", fontWeight: 800, color: "#2d2d4e", marginBottom: 16 }}>📋 Rules &amp; Regulations</h3>
               <div style={{
@@ -249,7 +337,7 @@ export default function PGDetailsModal({ pg, rooms = [], onClose, parseAddress }
                 marginBottom: 28
               }}>
                 <ol style={{ margin: 0, paddingLeft: 24, color: "#2d2d4e", fontSize: ".88rem", lineHeight: 1.7 }}>
-                  {pg.rules.map((rule, idx) => (
+                  {pg.rules.filter(rule => rule != null).map((rule, idx) => (
                     <li key={idx} style={{ marginBottom: 8 }}>{rule}</li>
                   ))}
                 </ol>
@@ -258,7 +346,7 @@ export default function PGDetailsModal({ pg, rooms = [], onClose, parseAddress }
           )}
 
           {/* Owner Contact */}
-          {pg.owner && (
+          {pg?.owner && (
             <>
               <h3 style={{ fontSize: "1.1rem", fontWeight: 800, color: "#2d2d4e", marginBottom: 16 }}>👤 Owner Information</h3>
               <div style={{
@@ -269,16 +357,16 @@ export default function PGDetailsModal({ pg, rooms = [], onClose, parseAddress }
               }}>
                 <div style={{ marginBottom: 12 }}>
                   <div style={{ fontSize: ".75rem", fontWeight: 700, color: "#9a9ab0", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Name</div>
-                  <div style={{ fontSize: ".95rem", fontWeight: 600, color: "#2d2d4e" }}>{pg.owner.name}</div>
+                  <div style={{ fontSize: ".95rem", fontWeight: 600, color: "#2d2d4e" }}>{pg.owner.name || 'N/A'}</div>
                 </div>
                 <div style={{ marginBottom: 12 }}>
                   <div style={{ fontSize: ".75rem", fontWeight: 700, color: "#9a9ab0", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Email</div>
-                  <div style={{ fontSize: ".88rem", color: "#5a5a7a", wordBreak: "break-all" }}>{pg.owner.email}</div>
+                  <div style={{ fontSize: ".88rem", color: "#5a5a7a", wordBreak: "break-all" }}>{pg.owner.email || 'N/A'}</div>
                 </div>
                 {pg.owner.phone && (
                   <div>
                     <div style={{ fontSize: ".75rem", fontWeight: 700, color: "#9a9ab0", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>Phone</div>
-                    <div style={{ fontSize: ".88rem", color: "#5a5a7a" }}>+91 {pg.owner.phone.slice(-10)}</div>
+                    <div style={{ fontSize: ".88rem", color: "#5a5a7a" }}>+91 {String(pg.owner.phone).slice(-10)}</div>
                   </div>
                 )}
               </div>

@@ -3,7 +3,7 @@ import RoleNavigation from "../context/RoleNavigation";
 import Modal from "../components/Modal";
 import { toast } from "../components/Toast";
 import ConfirmationModal from "../components/ConfirmationModal";
-import { getUser, apiGetOwnerPGs, apiCreatePG, apiUpdatePG, apiDeletePG, apiGetRooms, apiAddRoom, apiUpdateRoom, apiDeleteRoom } from "../utils/api";
+import { getUser, apiGetOwnerPGs, apiCreatePG, apiUpdatePG, apiDeletePG, apiGetRooms, apiAddRoom, apiUpdateRoom, apiDeleteRoom, apiGetOwnerBookings } from "../utils/api";
 import { CLAY_BASE, CLAY_OWNER, injectClay } from "../styles/claystyles";
 import { Plus, Trash2, ImagePlus, ChevronDown, X, Edit3 } from "lucide-react";
 import { apiUploadPGImages, apiDeletePGImage } from "../utils/api";
@@ -69,6 +69,12 @@ const PAGE_CSS = `
   .room-avail::before   { background:linear-gradient(90deg,#66bb6a,#a5d6a7); }
   .room-unavail::before { background:linear-gradient(90deg,#ef9a9a,#e57373); }
   .room-card:hover { transform:translateY(-3px); }
+  .roommate-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-top:16px; }
+  .roommate-card { background:rgba(255,255,255,.95); border:1px solid rgba(200,200,220,.8); border-radius:16px; padding:14px; display:flex; flex-direction:column; gap:10px; min-height:140px; }
+  .roommate-avatar { width:44px; height:44px; border-radius:50%; overflow:hidden; display:grid; place-items:center; background:rgba(200,200,220,.25); color:#2d2d4e; font-weight:700; font-size:1rem; }
+  .roommate-name { font-size:.95rem; font-weight:700; color:#2d2d4e; }
+  .roommate-bio { font-size:.82rem; color:#5a5a7a; line-height:1.5; }
+  .roommate-empty { margin-top:14px; color:#7a7a9a; font-size:.85rem; }
   .room-type  { font-family:'Nunito',sans-serif; font-size:.95rem; font-weight:800; color:#2d2d4e; margin-bottom:5px; }
   .room-rent  { font-size:.82rem; color:#7a7a9a; margin-bottom:14px; font-weight:500; }
   .toggle-row   { display:flex; align-items:center; justify-content:space-between; }
@@ -207,13 +213,14 @@ function AmenitySelector({ selected, onChange }) {
 export default function OwnerPGManagement() {
   const [pgs, setPgs]               = useState([]);
   const [rooms, setRooms]           = useState([]);
+  const [roommatesByRoom, setRoommatesByRoom] = useState({});
   const [selectedPG, setSelectedPG] = useState(null);
   const [saving, setSaving]         = useState(false);
   const [pgForm, setPgForm]         = useState({ name:"", location:"", pgName:"", street:"", postOffice:"", placeOfResidence:"", district:"", pinNumber:"", rent:"", amenities:[], rules:[] });
   const [uploading, setUploading]   = useState(false);
   const [pgImages, setPgImages]     = useState([]);
   const [showRoomModal, setShowRoomModal] = useState(false);
-  const [roomForm, setRoomForm]           = useState({ roomType:"", rent:"", capacity:"2" });
+  const [roomForm, setRoomForm]           = useState({ roomNumber:"", roomType:"", rent:"", capacity:"2" });
   const [addingRoom, setAddingRoom]       = useState(false);
   const [selectedRoom, setSelectedRoom]   = useState(null);
   const [isEditingRoom, setIsEditingRoom] = useState(false);
@@ -258,6 +265,23 @@ export default function OwnerPGManagement() {
     } catch (err) { toast.error(err.message); }
   };
 
+  const fetchOwnerBookings = async () => {
+    try {
+      const res = await apiGetOwnerBookings();
+      const grouped = (res?.data || []).reduce((acc, booking) => {
+        const roomId = booking?.room?._id || booking?.room;
+        if (!roomId) return acc;
+        acc[roomId] = acc[roomId] || [];
+        if (booking?.tenant) acc[roomId].push(booking.tenant);
+        return acc;
+      }, {});
+      setRoommatesByRoom(grouped);
+    } catch (err) {
+      console.warn('Failed to fetch owner bookings:', err);
+      toast.error(err.message);
+    }
+  };
+
   const selectPG = (pg) => {
     setSelectedPG(pg);
     const addressParts = parsePGAddress(pg.address || "");
@@ -291,6 +315,7 @@ export default function OwnerPGManagement() {
     const user = getUser();
     setOwnerVerified(user?.verificationStatus === "verified");
     fetchPGs();
+    fetchOwnerBookings();
   }, []);
 
   const handleSavePG = async () => {
@@ -454,11 +479,11 @@ export default function OwnerPGManagement() {
     }
     if (!selectedPG) { toast.warning("Save PG details first."); return; }
     if (room) {
-      setRoomForm({ roomType: room.roomType, rent: String(room.rent), capacity: String(room.capacity || 1) });
+      setRoomForm({ roomNumber: room.roomNumber, roomType: room.roomType, rent: String(room.rent), capacity: String(room.capacity || 1) });
       setSelectedRoom(room);
       setIsEditingRoom(true);
     } else {
-      setRoomForm({ roomType:"", rent:"", capacity:"2" });
+      setRoomForm({ roomNumber:"", roomType:"", rent:"", capacity:"2" });
       setSelectedRoom(null);
       setIsEditingRoom(false);
     }
@@ -469,18 +494,19 @@ export default function OwnerPGManagement() {
     setShowRoomModal(false);
     setSelectedRoom(null);
     setIsEditingRoom(false);
-    setRoomForm({ roomType:"", rent:"", capacity:"2" });
+    setRoomForm({ roomNumber:"", roomType:"", rent:"", capacity:"2" });
   };
 
   const handleAddOrUpdateRoom = async () => {
     if (!selectedPG) { toast.warning("Save PG details first."); return; }
-    if (!roomForm.roomType || !roomForm.rent) {
+    if (!roomForm.roomNumber || !roomForm.roomType || !roomForm.rent) {
       toast.warning("Room type and rent are required");
       return;
     }
     setAddingRoom(true);
     try {
       const payload = {
+        roomNumber:   roomForm.roomNumber,
         roomType:     roomForm.roomType,
         rent:         Number(roomForm.rent),
         capacity:     roomForm.roomType === "Shared" ? (Number(roomForm.capacity) || 2) : 1,
@@ -572,6 +598,18 @@ export default function OwnerPGManagement() {
             loading={addingRoom}
             fields={
               <div>
+                {/* Room Number */}
+                <div className="form-group" style={{ marginBottom:16 }}>
+                  <label className="clay-label">Room Number</label>
+                  <input
+                    className="clay-input"
+                    type="text"
+                    placeholder="e.g. RP227, BO3555"
+                    value={roomForm.roomNumber}
+                    onChange={(e) => setRoomForm({ ...roomForm, roomNumber: e.target.value })}
+                  />
+                </div>
+
                 {/* Single / Shared toggle */}
                 <div className="form-group" style={{ marginBottom:16 }}>
                   <label className="clay-label">Room Type</label>
@@ -994,7 +1032,7 @@ export default function OwnerPGManagement() {
                       className={`room-card ${room.availability ? "room-avail" : "room-unavail"}`}
                       style={{ animationDelay:`${i * 0.06}s` }}
                     >
-                      <div className="room-type">{room.roomType}</div>
+                      <div className="room-type">{room.roomType} - {room.roomNumber || 'N/A'}</div>
                       <div className="room-rent">₹{room.rent}/month</div>
                       {room.roomType === "Shared" && room.capacity && (
                         <div style={{ fontSize:".78rem", color:"#7a7a9a", marginBottom:8 }}>
@@ -1010,6 +1048,37 @@ export default function OwnerPGManagement() {
                           <span className="toggle-slider" />
                         </label>
                       </div>
+
+                      {roommatesByRoom[room?._id] && Array.isArray(roommatesByRoom[room._id]) && roommatesByRoom[room._id].length > 0 ? (
+                        <div className="roommate-grid">
+                          {roommatesByRoom[room._id].filter(tenant => {
+                            if (tenant == null) {
+                              console.warn('Null tenant found in room:', room?._id);
+                              return false;
+                            }
+                            return true;
+                          }).map((tenant) => (
+                            <div key={tenant?._id || Math.random()} className="roommate-card">
+                              <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                                <div className="roommate-avatar">
+                                  {tenant?.profilePhotoUrl ? (
+                                    <img src={tenant.profilePhotoUrl} alt={tenant?.name || 'Tenant'} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                  ) : (
+                                    tenant?.name?.[0]?.toUpperCase() || "?"
+                                  )}
+                                </div>
+                                <div>
+                                  <div className="roommate-name">{tenant?.name || 'Unknown Tenant'}</div>
+                                </div>
+                              </div>
+                              <div className="roommate-bio">{tenant?.bio || "No bio available"}</div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="roommate-empty">No active tenants currently occupy this room.</div>
+                      )}
+
                       <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: 12 }}>
                         <button className="room-action-btn room-edit-btn" type="button" onClick={() => openRoomModal(room)}>
                           <Edit3 size={14} /> Edit
