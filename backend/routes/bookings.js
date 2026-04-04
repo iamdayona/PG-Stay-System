@@ -10,6 +10,7 @@ const {
   updateBookingAgreement,
   updateOccupancyDates,
   uploadPaymentProof,
+  getPGRoommates,
   verifyPayment,
   ownerCancelBooking,
   getOwnerBookings,
@@ -21,6 +22,7 @@ router.post("/", authorize("tenant"), createBooking);
 router.post("/decline", authorize("tenant"), declineBooking);
 router.post("/cancel", authorize("tenant"), cancelBooking);
 router.get("/my", authorize("tenant"), getMyBookings);
+router.get("/pg/:pgId/roommates", getPGRoommates);
 router.put("/:id/agreement", authorize("tenant"), uploadAadhaar.single("agreement"), updateBookingAgreement);
 router.put("/:id/occupancy-dates", authorize("tenant"), updateOccupancyDates);
 router.post("/:id/payment-proof", authorize("tenant"), uploadAadhaar.single("proof"), uploadPaymentProof);

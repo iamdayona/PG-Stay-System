@@ -144,37 +144,71 @@ exports.getMyBookings = async (req, res) => {
   }
 };
 
+// GET /api/bookings/pg/:pgId/roommates
+exports.getPGRoommates = async (req, res) => {
+  try {
+    const { pgId } = req.params;
+    if (!pgId) return res.status(400).json({ message: "PG ID is required" });
+
+    const activeBookings = await Booking.find({ pgStay: pgId, status: "Active" })
+      .populate("tenant", "name profilePhotoUrl bio")
+      .populate("room", "roomType rent capacity currentOccupancy availability roomNumber");
+
+    const roommatesByRoom = {};
+    activeBookings
+      .filter(booking => booking?.room?._id && booking?.tenant) // Filter out invalid bookings
+      .forEach((booking) => {
+        const roomId = booking.room._id.toString();
+        if (!roommatesByRoom[roomId]) {
+          roommatesByRoom[roomId] = {
+            room: booking.room,
+            tenants: []
+          };
+        }
+        roommatesByRoom[roomId].tenants.push(booking.tenant);
+      });
+
+    res.json({ data: Object.values(roommatesByRoom) });
+  } catch (err) {
+    console.error('Error in getPGRoommates:', err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // GET /api/bookings/owner (owner only)
 exports.getOwnerBookings = async (req, res) => {
   try {
     // Get all PGs owned by this user
     const ownerPGs = await PGStay.find({ owner: req.user._id }).select("_id");
-    const pgIds = ownerPGs.map((pg) => pg._id);
+    const pgIds = ownerPGs.filter(pg => pg?._id).map((pg) => pg._id);
 
     const bookings = await Booking.find({ pgStay: { $in: pgIds }, status: "Active" })
-      .populate("tenant", "name email trustScore")
+      .populate("tenant", "name email trustScore profilePhotoUrl bio")
       .populate("pgStay", "name location")
       .populate("room", "roomType rent")
       .populate("application", "appliedDate")
       .sort({ createdAt: -1 });
 
     // Calculate days remaining until cancellation is allowed
-    const bookingsWithDays = bookings.map((booking) => {
-      const joinDate = booking.agreementStartDate || booking.allocationDate;
-      const daysElapsed = Math.floor((Date.now() - new Date(joinDate).getTime()) / (1000 * 60 * 60 * 24));
-      const canCancel = daysElapsed >= 2;
-      const daysRemaining = Math.max(0, 2 - daysElapsed);
+    const bookingsWithDays = bookings
+      .filter(booking => booking != null) // Filter out null bookings
+      .map((booking) => {
+        const joinDate = booking.agreementStartDate || booking.allocationDate;
+        const daysElapsed = joinDate ? Math.floor((Date.now() - new Date(joinDate).getTime()) / (1000 * 60 * 60 * 24)) : 0;
+        const canCancel = daysElapsed >= 2;
+        const daysRemaining = Math.max(0, 2 - daysElapsed);
 
-      return {
-        ...booking.toObject(),
-        daysElapsed,
-        canCancel,
-        daysRemaining,
-      };
-    });
+        return {
+          ...booking.toObject(),
+          daysElapsed,
+          canCancel,
+          daysRemaining,
+        };
+      });
 
     res.json({ data: bookingsWithDays });
   } catch (err) {
+    console.error('Error in getOwnerBookings:', err);
     res.status(500).json({ message: err.message });
   }
 };

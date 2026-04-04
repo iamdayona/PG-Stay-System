@@ -24,12 +24,13 @@ exports.addRoom = async (req, res) => {
     if (pg.owner.toString() !== req.user._id.toString())
       return res.status(403).json({ message: "Not authorized" });
 
-    const { roomType, rent, capacity, availability } = req.body;
-    if (!roomType || !rent)
-      return res.status(400).json({ message: "Room type and rent are required" });
+    const { roomNumber, roomType, rent, capacity, availability } = req.body;
+    if (!roomNumber || !roomType || !rent)
+      return res.status(400).json({ message: "Room number, room type and rent are required" });
 
     const room = await Room.create({
       pgStay: req.params.pgId,
+      roomNumber,
       roomType,
       rent: Number(rent),
       capacity: capacity || 1,
@@ -60,7 +61,8 @@ exports.updateRoom = async (req, res) => {
     if (room.pgStay.owner.toString() !== req.user._id.toString())
       return res.status(403).json({ message: "Not authorized" });
 
-    const { roomType, rent, capacity, availability } = req.body;
+    const { roomNumber, roomType, rent, capacity, availability } = req.body;
+    if (roomNumber !== undefined) room.roomNumber = roomNumber;
     if (roomType !== undefined) room.roomType = roomType;
     if (rent !== undefined) room.rent = Number(rent);
     if (capacity !== undefined) room.capacity = capacity;

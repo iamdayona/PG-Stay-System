@@ -51,6 +51,7 @@ const UserSchema = new mongoose.Schema(
       roomType:  { type: String, default: "" },
       amenities: { type: [String], default: [] },
     },
+    bio: { type: String, default: "" },
     // Verification
     verificationStatus: {
       type: String,

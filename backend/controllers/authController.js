@@ -98,7 +98,7 @@ exports.getMe = async (req, res) => {
 // PUT /api/auth/profile
 exports.updateProfile = async (req, res) => {
   try {
-    const { name, phone, gender, address, preferences } = req.body;
+    const { name, phone, gender, address, preferences, bio } = req.body;
     const user = await User.findById(req.user._id);
 
     if (name) user.name = name;
@@ -106,6 +106,7 @@ exports.updateProfile = async (req, res) => {
     if (gender) user.gender = gender;
     if (address !== undefined) user.address = address;
     if (preferences) user.preferences = { ...user.preferences, ...preferences };
+    if (bio !== undefined) user.bio = bio;
 
     let completion = 40;
     if (user.name) completion += 15;

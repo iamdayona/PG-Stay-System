@@ -7,6 +7,11 @@ const RoomSchema = new mongoose.Schema(
       ref: "PGStay",
       required: true,
     },
+    roomNumber: {
+      type: String,
+      required: [true, "Room number is required"],
+      trim: true,
+    },
     roomType: {
       type: String,
       required: [true, "Room type is required"],
@@ -31,6 +36,9 @@ const RoomSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Compound index to ensure roomNumber is unique within each PG
+RoomSchema.index({ pgStay: 1, roomNumber: 1 }, { unique: true });
 
 // Static method to update room availability based on capacity
 RoomSchema.statics.updateAvailability = async function(roomId) {
