@@ -12,6 +12,44 @@ const PAGE_CSS = `
   .mark-all-btn { padding:10px 20px; border:2px solid rgba(255,255,255,.9); border-radius:14px; cursor:pointer; background:rgba(255,255,255,.72); color:#5a5a7a; font-family:'Poppins',sans-serif; font-size:.82rem; font-weight:700; box-shadow:0 4px 0 rgba(0,0,0,.07); transition:transform .15s,box-shadow .15s; }
   .mark-all-btn:hover { transform:translateY(-2px); }
 
+  .btn-view-doc {
+    background:linear-gradient(135deg,#42a5f5,#1e88e5);
+    color:white;
+    padding:10px 16px;
+    border:none;
+    border-radius:14px;
+    font-family:'Poppins',sans-serif;
+    font-size:.85rem;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow:0 5px 0 #1565c0,0 8px 18px rgba(66,165,245,.35);
+    transition:transform .15s,filter .15s;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+  }
+  .btn-view-doc:hover:not(:disabled) { filter:brightness(1.06); transform:translateY(-2px); }
+  .btn-view-doc:disabled { opacity:.6; cursor:not-allowed; }
+
+  .btn-mark-paid {
+    background:linear-gradient(135deg,#66bb6a,#43a047);
+    color:white;
+    padding:10px 16px;
+    border:none;
+    border-radius:14px;
+    font-family:'Poppins',sans-serif;
+    font-size:.85rem;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow:0 5px 0 #2e7d32,0 8px 18px rgba(102,187,106,.35);
+    transition:transform .15s,filter .15s;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+  }
+  .btn-mark-paid:hover:not(:disabled) { filter:brightness(1.06); transform:translateY(-2px); }
+  .btn-mark-paid:disabled { opacity:.6; cursor:not-allowed; }
+
   .clay-card::before { background:linear-gradient(90deg,#ffa726,#e040fb,#66bb6a); }
 
   .notif-item { display:flex; gap:14px; align-items:flex-start; padding:15px 16px; border-radius:18px; margin-bottom:10px; border:2px solid rgba(255,255,255,.8); transition:transform .18s; position:relative; overflow:hidden; }
@@ -212,25 +250,33 @@ export default function OwnerNotifications() {
               </div>
 
               {selectedNotification.documentUrl && (
-                <div style={{ marginTop: 8 }}>
+                <div style={{ marginTop: 8, display: "flex", gap: "10px", flexWrap: "wrap" }}>
                   <button
-                    className="btn-approve"
+                    type="button"
+                    className="btn-view-doc"
                     onClick={() => setDocumentPreviewUrl(selectedNotification.documentUrl)}
-                    style={{ padding: "8px 12px", fontSize: ".85rem" }}
                   >
                     View Document
                   </button>
+
+                  {selectedNotification.booking && (
+                    <button
+                      type="button"
+                      className="btn-mark-paid"
+                      onClick={handleMarkAsPaid}
+                      disabled={verifyingPayment || markingRead}
+                    >
+                      <CheckCircle2 size={14} /> {verifyingPayment ? "Marking Paid…" : "Mark as Paid"}
+                    </button>
+                  )}
                 </div>
               )}
 
-              <div style={{ marginTop: 18, fontSize: ".82rem", color: "#7a7a9a" }}>
-                Type: {selectedNotification.type || "general"}
-              </div>
-
-              {selectedNotification.booking && (
+              {!selectedNotification.documentUrl && selectedNotification.booking && (
                 <div style={{ marginTop: 16, display: "flex", gap: "10px" }}>
                   <button
-                    className="btn-approve"
+                    type="button"
+                    className="btn-mark-paid"
                     onClick={handleMarkAsPaid}
                     disabled={verifyingPayment || markingRead}
                   >
@@ -238,6 +284,10 @@ export default function OwnerNotifications() {
                   </button>
                 </div>
               )}
+
+              <div style={{ marginTop: 18, fontSize: ".82rem", color: "#7a7a9a" }}>
+                Type: {selectedNotification.type || "general"}
+              </div>
             </>
           )}
         </Modal>
