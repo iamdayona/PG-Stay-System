@@ -11,6 +11,8 @@ import {
   apiSubmitComplaint,
   apiGetMyComplaints,
   apiUploadPaymentProof,
+  apiGetPGRoommates,
+  getUser,
 } from "../utils/api";
 import { toast } from "../components/Toast";
 import { CLAY_BASE, CLAY_TENANT, injectClay } from "../styles/claystyles";
@@ -44,6 +46,17 @@ const PAGE_CSS = `
   .tickets-list { margin-top:14px; }
   .ticket-card { background:rgba(255,255,255,.9); border:1px solid rgba(66,165,245,.15); border-radius:18px; padding:16px; margin-bottom:12px; }
   .ticket-meta { font-size:.78rem; color:#7a7a9a; margin-top:10px; }
+  .occupants-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-top:16px; }
+  .occupant-card { background:rgba(255,255,255,.9); border:2px solid rgba(255,255,255,.85); border-radius:18px; padding:18px; display:flex; flex-direction:column; gap:12px; box-shadow:0 4px 14px rgba(0,0,0,.06); transition:transform .2s; }
+  .occupant-card:hover { transform:translateY(-2px); }
+  .occupant-card.you-card { border:2.5px solid rgba(66,165,245,.6); background:linear-gradient(135deg,rgba(227,242,253,.8),rgba(255,255,255,.9)); }
+  .occupant-avatar { width:60px; height:60px; border-radius:50%; overflow:hidden; background:rgba(200,200,220,.2); display:flex; align-items:center; justify-content:center; font-size:1.8rem; font-weight:700; color:#2d2d4e; flex-shrink:0; }
+  .occupant-avatar img { width:100%; height:100%; object-fit:cover; }
+  .occupant-info { display:flex; flex-direction:column; gap:8px; }
+  .occupant-name { font-size:.95rem; font-weight:700; color:#2d2d4e; display:flex; align-items:center; gap:6px; }
+  .occupant-badge { display:inline-flex; align-items:center; gap:4px; background:rgba(66,165,245,.15); color:#1565c0; border:1px solid rgba(66,165,245,.3); border-radius:50px; padding:3px 10px; font-size:.72rem; font-weight:700; width:fit-content; }
+  .occupant-bio { font-size:.82rem; color:#7a7a9a; line-height:1.4; }
+  .occupants-empty { text-align:center; padding:24px; color:#9a9ab0; font-size:.88rem; }
 `; 
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
@@ -78,6 +91,9 @@ export default function TenantPGManagement() {
   const [actionLoading, setActionLoading] = useState("");
   const [agreementStart, setAgreementStart] = useState("");
   const [agreementEnd, setAgreementEnd] = useState("");
+  const [occupants, setOccupants] = useState([]);
+  const [occupantsLoading, setOccupantsLoading] = useState(false);
+  const currentUser = getUser();
 
   const fetchData = async () => {
     try {
@@ -106,6 +122,33 @@ export default function TenantPGManagement() {
 
   const approvedApplications = applications.filter((app) => app.status === "Approved");
   const activeBooking = bookings[0] ?? null;
+
+  // Fetch occupants for the current PG
+  const fetchOccupants = async (pgId) => {
+    if (!pgId) return;
+    setOccupantsLoading(true);
+    try {
+      const res = await apiGetPGRoommates(pgId);
+      // Flatten occupants from all rooms
+      const allOccupants = (res?.data || [])
+        .flatMap(item => (item?.tenants || []))
+        .filter(tenant => tenant != null);
+      setOccupants(allOccupants);
+    } catch (err) {
+      console.error('Error fetching occupants:', err);
+      setOccupants([]);
+    } finally {
+      setOccupantsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeBooking?.pgStay?._id) {
+      fetchOccupants(activeBooking.pgStay._id);
+    } else {
+      setOccupants([]);
+    }
+  }, [activeBooking?.pgStay?._id]);
 
   useEffect(() => {
     if (activeBooking?.paymentStatus === "paid") {
@@ -253,6 +296,7 @@ export default function TenantPGManagement() {
                 ) : (
                   <>
                     {activeBooking ? (
+                      <>
                       <div className="book-card">
                         <div className="section-title">✅ Active Booking</div>
                         <div className="info-row">
@@ -295,6 +339,42 @@ export default function TenantPGManagement() {
                           </button>
                         </div>
                       </div>
+
+                      <div className="book-card">
+                        <div className="section-title">👥 Current Occupants</div>
+                        {occupantsLoading ? (
+                          <div style={{ textAlign: "center", padding: "24px", color: "#7a7a9a", fontSize: ".88rem" }}>⏳ Loading occupants…</div>
+                        ) : occupants && occupants.length > 0 ? (
+                          <div className="occupants-grid">
+                            {occupants.map((occupant) => {
+                              const isYou = currentUser?._id === occupant?._id;
+                              return (
+                                <div key={occupant?._id || Math.random()} className={`occupant-card${isYou ? " you-card" : ""}`}>
+                                  <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
+                                    <div className="occupant-avatar">
+                                      {occupant?.profilePhotoUrl ? (
+                                        <img src={occupant.profilePhotoUrl} alt={occupant?.name || "Occupant"} />
+                                      ) : (
+                                        occupant?.name?.[0]?.toUpperCase() || "?"
+                                      )}
+                                    </div>
+                                    <div className="occupant-info" style={{ flex: 1 }}>
+                                      <div className="occupant-name">
+                                        {occupant?.name || "Unknown Tenant"}
+                                        {isYou && <span className="occupant-badge">✓ You</span>}
+                                      </div>
+                                      <div className="occupant-bio">{occupant?.bio || "No bio available"}</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="occupants-empty">No occupants at the moment</div>
+                        )}
+                      </div>
+                      </>
                     ) : (
                       <div className="book-card">
                         <div className="section-title">📌 Confirm Your Booking</div>

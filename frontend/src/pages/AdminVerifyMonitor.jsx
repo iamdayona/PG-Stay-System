@@ -5,6 +5,7 @@ import ConfirmationModal from "../components/ConfirmationModal";
 import {
   apiAdminGetPGs, apiAdminVerifyPG, apiAdminRestrictPG, apiAdminUnrestrictPG, apiAdminDeletePG,
   apiAdminStats, apiAdminGetUsers, apiAdminVerifyUser, apiAdminSuspendUser, apiAdminUnsuspendUser, apiAdminDeleteUser,
+  apiGetPGRoommates,
 } from "../utils/api";
 import { toast } from "../components/Toast";
 import { CLAY_BASE, CLAY_ADMIN, injectClay } from "../styles/claystyles";
@@ -96,7 +97,28 @@ const PAGE_CSS = `
   /* ── Avatar mini ── */
   .user-avatar { width:36px; height:36px; border-radius:50%; overflow:hidden; border:2px solid rgba(255,255,255,.85); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:.9rem; font-weight:700; color:white; }
   .user-name-wrap { display:flex; align-items:center; gap:10px; }
+  /* ── Occupants Modal ── */
+  .occupants-modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.75); display:flex; align-items:center; justify-content:center; z-index:2000; animation:fadeIn .2s ease-out; }
+  @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+  .occupants-modal-content { background:white; border-radius:20px; padding:28px; max-width:600px; width:90%; max-height:80vh; overflow-y:auto; box-shadow:0 12px 48px rgba(0,0,0,.25); animation:slideUp .25s ease-out; }
+  @keyframes slideUp { from{transform:translateY(20px); opacity:0;} to{transform:translateY(0); opacity:1;} }
+  .occupants-modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; }
+  .occupants-modal-title { font-family:'Nunito',sans-serif; font-size:1.35rem; font-weight:900; color:#2d2d4e; }
+  .occupants-modal-close { background:linear-gradient(135deg,#42a5f5,#1e88e5); color:white; border:none; border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:1.2rem; font-weight:bold; transition:transform .12s,filter .12s; }
+  .occupants-modal-close:hover { transform:scale(1.08); filter:brightness(1.1); }
+  .occupants-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:16px; }
+  .occupant-card { background:linear-gradient(135deg,rgba(255,255,255,.95),rgba(242,242,250,.85)); border:1.5px solid rgba(200,200,220,.4); border-radius:16px; padding:18px; transition:transform .15s,box-shadow .15s,border-color .15s; }
+  .occupant-card:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,.1); border-color:rgba(79,124,255,.3); }
+  .occupant-card.you-card { border:2.5px solid rgba(66,165,245,.6); background:linear-gradient(135deg,rgba(232,245,253,.8),rgba(187,222,251,.5)); }
+  .occupant-avatar { width:60px; height:60px; border-radius:50%; background:linear-gradient(135deg,#42a5f5,#1e88e5); display:flex; align-items:center; justify-content:center; color:white; font-family:'Nunito',sans-serif; font-size:1.5rem; font-weight:900; flex-shrink:0; overflow:hidden; margin-bottom:12px; }
+  .occupant-avatar img { width:100%; height:100%; object-fit:cover; }
+  .occupant-name { font-family:'Nunito',sans-serif; font-size:.95rem; font-weight:800; color:#2d2d4e; margin-bottom:6px; display:flex; align-items:center; gap:8px; }
+  .occupant-badge { display:inline-flex; align-items:center; justify-content:center; background:rgba(66,165,245,.2); color:#1565c0; border-radius:50px; padding:2px 8px; font-size:.65rem; font-weight:700; border:1px solid rgba(66,165,245,.4); }
+  .occupant-bio { font-size:.82rem; color:#7a7a9a; line-height:1.4; word-break:break-word; }
+  .occupants-empty { text-align:center; padding:32px 20px; color:#9a9ab0; font-size:.9rem; font-style:italic; }
+  .occupants-loading { text-align:center; padding:32px 20px; color:#7a7a9a; font-size:.88rem; }
 `;
+
 
 const css = injectClay(CLAY_BASE, CLAY_ADMIN, PAGE_CSS);
 
@@ -111,6 +133,9 @@ export default function AdminVerifyMonitor() {
   const [actionLoading, setActionLoading] = useState("");
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: "", message: "", callback: null });
   const [viewingDoc, setViewingDoc] = useState(null);
+  const [selectedPG, setSelectedPG] = useState(null);
+  const [occupants, setOccupants] = useState([]);
+  const [occupantsLoading, setOccupantsLoading] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -221,6 +246,35 @@ export default function AdminVerifyMonitor() {
         finally { setActionLoading(""); }
       }
     });
+  };
+
+  // ── Occupants modal ─────────────────────────────────────────────────
+  const fetchOccupants = async (pgId) => {
+    try {
+      setOccupantsLoading(true);
+      const res = await apiGetPGRoommates(pgId);
+      const allOccupants = [];
+      if (res.data && Array.isArray(res.data)) {
+        res.data.forEach((roomData) => {
+          if (roomData.tenants && Array.isArray(roomData.tenants)) {
+            roomData.tenants.forEach((tenant) => {
+              if (tenant && tenant._id) allOccupants.push(tenant);
+            });
+          }
+        });
+      }
+      setOccupants(allOccupants);
+    } catch (err) {
+      toast.error("Failed to fetch occupants");
+      console.error(err);
+    } finally {
+      setOccupantsLoading(false);
+    }
+  };
+
+  const handleOpenOccupantsModal = async (pg) => {
+    setSelectedPG(pg);
+    await fetchOccupants(pg._id);
   };
 
   // ── Helpers ─────────────────────────────────────────────────────────
@@ -409,7 +463,16 @@ export default function AdminVerifyMonitor() {
                       <span className="col-head">Actions</span>
                     </div>
                     {filteredPGs.map((pg) => (
-                      <div key={pg._id} className={`pg-row row-hover ${rowClassPG(pg.verificationStatus)}`}>
+                      <div 
+                        key={pg._id} 
+                        className={`pg-row row-hover ${rowClassPG(pg.verificationStatus)}`}
+                        onClick={(e) => {
+                          if (!e.target.closest('button') && !e.target.closest('.act-group')) {
+                            handleOpenOccupantsModal(pg);
+                          }
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      >
                         <div>
                           <div className="cell-name">{pg.name}</div>
                           <div className="cell-sub">{pg.address?.city || ""}</div>
@@ -576,6 +639,50 @@ export default function AdminVerifyMonitor() {
                 />
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Occupants Modal */}
+      {selectedPG && (
+        <div className="occupants-modal-overlay" onClick={() => setSelectedPG(null)}>
+          <div className="occupants-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="occupants-modal-header">
+              <div>
+                <div className="occupants-modal-title">👥 Current Occupants</div>
+                <div style={{ fontSize: '.85rem', color: '#7a7a9a', marginTop: '4px' }}>
+                  {selectedPG.name}
+                </div>
+              </div>
+              <button
+                className="occupants-modal-close"
+                onClick={() => setSelectedPG(null)}
+                title="Close"
+              >
+                ✕
+              </button>
+            </div>
+            {occupantsLoading ? (
+              <div className="occupants-loading">⏳ Loading occupants…</div>
+            ) : occupants && occupants.length > 0 ? (
+              <div className="occupants-grid">
+                {occupants.map((occupant) => (
+                  <div key={occupant._id} className="occupant-card">
+                    <div className="occupant-avatar">
+                      {occupant.profilePhotoUrl ? (
+                        <img src={occupant.profilePhotoUrl} alt={occupant.name || "Occupant"} />
+                      ) : (
+                        occupant.name?.[0]?.toUpperCase() || "?"
+                      )}
+                    </div>
+                    <div className="occupant-name">{occupant.name || "Unknown Tenant"}</div>
+                    <div className="occupant-bio">{occupant.bio || "No bio available"}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="occupants-empty">No occupants currently in this PG</div>
+            )}
           </div>
         </div>
       )}
