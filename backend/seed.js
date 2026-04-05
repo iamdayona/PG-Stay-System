@@ -7,6 +7,11 @@ dotenv.config();
 const User = require("./models/User");
 const PGStay = require("./models/PGStay");
 const Room = require("./models/Room");
+const Notification = require("./models/Notification");
+const Feedback = require("./models/Feedback");
+const Complaint = require("./models/Complaint");
+const Booking = require("./models/Booking");
+const Application = require("./models/Application");
 
 const connectDB = require("./config/db");
 
@@ -17,6 +22,11 @@ const seed = async () => {
   await User.deleteMany();
   await PGStay.deleteMany();
   await Room.deleteMany();
+  await Notification.deleteMany();
+  await Feedback.deleteMany();
+  await Complaint.deleteMany();
+  await Booking.deleteMany();
+  await Application.deleteMany();
 
   console.log("Cleared existing data...");
 
@@ -60,7 +70,7 @@ const seed = async () => {
 
   console.log("\n✅ Database seeded successfully!");
   console.log("\n── Login Credentials ──");
-  console.log("Admin:  ageeshcyriacbaiju33@gmail.com / Ageesh@123");
+  console.log("Admin:  ageeshcyriacbaiju33@gmail.com / Ageesh@123 ,anaghasunny2@gmail.com / Anagha@123 ,aromalharikumar05@gmail.com / Aromal@123 ,dayonasuby@gmail.com / Dayona@123");
 
   process.exit();
 };

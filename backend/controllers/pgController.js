@@ -1,67 +1,126 @@
 const PGStay = require("../models/PGStay");
-const Room = require("../models/Room");
-const notifyAdmins = require("../utils/notifyAdmins");
+const Room   = require("../models/Room");
 
 // GET /api/pgs/recommendations  (tenant only)
+//
+// Scoring model — each dimension contributes a weighted sub-score
+// that is summed into a final matchScore [0–100]:
+//
+//  Dimension          Max pts  Description
+//  ─────────────────  ───────  ────────────────────────────────────
+//  Trust score         40 pts  PG's own trust score normalised
+//  Location match      25 pts  Exact ≥ partial word match
+//  Budget fit          15 pts  In range = full pts; ±20% = partial
+//  Amenity overlap     15 pts  Matched / requested amenities
+//  Availability         5 pts  Has at least one free room
+//
+// PGs are then sorted by matchScore DESC, then trustScore DESC as
+// a tie-breaker. Only PGs with at least 1 available room are shown.
 exports.getRecommendations = async (req, res) => {
   try {
-    const user = req.user;
+    const user  = req.user;
     const prefs = user.preferences || {};
 
-    const filter = { verificationStatus: "verified", isActive: true };
+    // Only return verified, active PGs
+    const pgs = await PGStay.find({ verificationStatus: "verified", isActive: true })
+      .populate("owner", "name email trustScore verificationStatus")
+      .lean();
 
-    const pgs = await PGStay.find(filter)
-      .populate("owner", "name email phone trustScore verificationStatus");
-
-    const results = await Promise.all(
-      pgs.map(async (pg) => {
-        const availableRoomCount = await Room.countDocuments({
-          pgStay: pg._id,
-          availability: true,
-        });
-
-        let matchScore = pg.trustScore;
-
-        if (prefs.amenities?.length > 0) {
-          const matched = (pg.amenities || []).filter((a) =>
-            prefs.amenities.includes(a)
-          ).length;
-          matchScore = Math.min(100, matchScore + matched * 5);
-        }
-
-        let locationMatch = 0;
-        if (prefs.location && pg.location) {
-          const normalize = (text) => text.toLowerCase().trim().replace(/[^a-z0-9\s]/g, " ");
-          const prefText = normalize(prefs.location);
-          const pgText = normalize(pg.location);
-          const prefWords = prefText.split(/\s+/).filter(Boolean);
-          const pgWords = pgText.split(/\s+/).filter(Boolean);
-
-          const exactMatch = pgText.includes(prefText);
-          const wordMatch = prefWords.every((word) => pgWords.some((pgWord) => pgWord.includes(word)));
-
-          if (exactMatch || (prefWords.length > 0 && wordMatch)) {
-            matchScore = Math.min(100, matchScore + 50);
-            locationMatch = 1;
-          }
-        }
-
-        if (prefs.budgetMin !== undefined && prefs.budgetMax !== undefined) {
-          if (pg.rent >= (prefs.budgetMin || 0) && pg.rent <= (prefs.budgetMax || 999999)) {
-            matchScore = Math.min(100, matchScore + 5);
-          }
-        }
-
-        return { ...pg.toObject(), availableRoomCount, matchScore, locationMatch };
-      })
+    // Fetch available room counts for all PGs in one query
+    const pgIds = pgs.map((pg) => pg._id);
+    const availabilityAgg = await Room.aggregate([
+      { $match: { pgStay: { $in: pgIds }, availability: true } },
+      { $group: { _id: "$pgStay", count: { $sum: 1 } } },
+    ]);
+    const availMap = Object.fromEntries(
+      availabilityAgg.map(({ _id, count }) => [_id.toString(), count])
     );
 
-    results.sort((a, b) => {
-      if (b.locationMatch !== a.locationMatch) return b.locationMatch - a.locationMatch;
-      return b.matchScore - a.matchScore;
+    // ── Helpers ──────────────────────────────────────────────────
+    const clamp     = (v, min = 0, max = 100) => Math.max(min, Math.min(max, v));
+    const normalize = (s) => (s || "").toLowerCase().trim().replace(/[^a-z0-9\s]/g, " ");
+
+    // ── Score each PG ────────────────────────────────────────────
+    const scored = pgs.map((pg) => {
+      const availableRoomCount = availMap[pg._id.toString()] || 0;
+      let matchScore = 0;
+
+      // ── 1. Trust score component (40 pts) ──────────────────────
+      // Normalise trustScore [0,100] → [0,40]
+      matchScore += Math.round(((pg.trustScore || 50) / 100) * 40);
+
+      // ── 2. Location match (25 pts) ─────────────────────────────
+      if (prefs.location && pg.location) {
+        const prefText  = normalize(prefs.location);
+        const pgText    = normalize(pg.location);
+        const prefWords = prefText.split(/\s+/).filter(Boolean);
+
+        if (pgText.includes(prefText)) {
+          // Exact substring match → full points
+          matchScore += 25;
+        } else {
+          // Partial: count how many pref words appear in pg location
+          const matched = prefWords.filter((w) => pgText.includes(w)).length;
+          const partial = prefWords.length > 0
+            ? Math.round((matched / prefWords.length) * 15)
+            : 0;
+          matchScore += partial;
+        }
+      }
+
+      // ── 3. Budget fit (15 pts) ─────────────────────────────────
+      const budgetMin = prefs.budgetMin || 0;
+      const budgetMax = prefs.budgetMax || Infinity;
+      if (budgetMin > 0 || prefs.budgetMax) {
+        if (pg.rent >= budgetMin && pg.rent <= budgetMax) {
+          // Perfect fit — full points
+          matchScore += 15;
+        } else {
+          // Within ±20% of budget bounds — partial credit
+          const lowerBound = budgetMin * 0.8;
+          const upperBound = budgetMax * 1.2;
+          if (pg.rent >= lowerBound && pg.rent <= upperBound) {
+            matchScore += 7;
+          }
+          // Outside ±20% → no budget points
+        }
+      }
+
+      // ── 4. Amenity overlap (15 pts) ────────────────────────────
+      if (prefs.amenities?.length > 0) {
+        const pgAmenities   = (pg.amenities || []).map((a) => a.toLowerCase());
+        const prefAmenities = prefs.amenities.map((a) => a.toLowerCase());
+        const matchedCount  = prefAmenities.filter((a) => pgAmenities.includes(a)).length;
+        const amenityScore  = Math.round((matchedCount / prefAmenities.length) * 15);
+        matchScore += amenityScore;
+      }
+
+      // ── 5. Availability bonus (5 pts) ──────────────────────────
+      if (availableRoomCount > 0) matchScore += 5;
+
+      return {
+        ...pg,
+        availableRoomCount,
+        matchScore: clamp(matchScore),
+        // Breakdown for debugging / transparency (stripped client-side)
+        _scoreBreakdown: {
+          trustComponent:  Math.round(((pg.trustScore || 50) / 100) * 40),
+          locationMatch:   prefs.location ? (pg.location?.toLowerCase().includes(normalize(prefs.location)) ? 25 : "partial") : "n/a",
+          budgetFit:       (budgetMin > 0 || prefs.budgetMax) ? (pg.rent >= budgetMin && pg.rent <= budgetMax ? 15 : 0) : "n/a",
+          amenityOverlap:  prefs.amenities?.length > 0 ? `${(pg.amenities||[]).filter(a => prefs.amenities.map(x=>x.toLowerCase()).includes(a.toLowerCase())).length}/${prefs.amenities.length}` : "n/a",
+          availability:    availableRoomCount > 0 ? 5 : 0,
+        },
+      };
     });
 
-    res.json({ data: results });
+    // ── Sort: matchScore DESC → trustScore DESC → name ASC ───────
+    scored.sort((a, b) => {
+      if (b.matchScore !== a.matchScore) return b.matchScore - a.matchScore;
+      if (b.trustScore !== a.trustScore) return b.trustScore - a.trustScore;
+      return (a.name || "").localeCompare(b.name || "");
+    });
+
+    res.json({ data: scored });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -81,9 +140,9 @@ exports.getNearbyPGs = async (req, res) => {
       return res.status(400).json({ message: "lat and lng query parameters are required" });
     }
 
-    const latitude = parseFloat(lat);
+    const latitude  = parseFloat(lat);
     const longitude = parseFloat(lng);
-    const maxDist = parseInt(radius) || 10000; // default 10 km
+    const maxDist   = parseInt(radius) || 10000; // default 10 km
 
     // $near requires the 2dsphere index and returns results sorted by distance
     // GeoJSON uses [longitude, latitude] order
@@ -138,7 +197,7 @@ exports.getAllPGs = async (req, res) => {
     const { location, budgetMin, budgetMax, amenities, roomType, capacity } = req.query;
     const filter = { verificationStatus: "verified", isActive: true };
 
-    if (location) filter.location = { $regex: location, $options: "i" };
+    if (location)  filter.location = { $regex: location, $options: "i" };
     if (budgetMin || budgetMax) {
       filter.rent = {};
       if (budgetMin) filter.rent.$gte = Number(budgetMin);
@@ -195,7 +254,7 @@ exports.getOwnerPGs = async (req, res) => {
 
     const results = await Promise.all(
       pgs.map(async (pg) => {
-        const totalRooms = await Room.countDocuments({ pgStay: pg._id });
+        const totalRooms    = await Room.countDocuments({ pgStay: pg._id });
         const occupiedRooms = await Room.countDocuments({ pgStay: pg._id, availability: false });
         return { ...pg.toObject(), totalRooms, occupiedRooms };
       })
@@ -235,34 +294,21 @@ exports.createPG = async (req, res) => {
     }
 
     const pg = await PGStay.create({
-      owner: req.user._id,
+      owner:       req.user._id,
       name,
       location,
-      address: address || "",
-      rent: Number(rent),
-      amenities: amenities ? (Array.isArray(amenities) ? amenities : JSON.parse(amenities)) : [],
+      address:     address || "",
+      rent:        Number(rent),
+      amenities:   amenities ? (Array.isArray(amenities) ? amenities : JSON.parse(amenities)) : [],
       description: description || "",
-      rules: rules ? (Array.isArray(rules) ? rules : JSON.parse(rules)) : [],
+      rules:       rules ? (Array.isArray(rules) ? rules : JSON.parse(rules)) : [],
       licenseDocument: {
-        url: req.file.path,
+        url:      req.file.path,
         publicId: req.file.filename,
         fileType,
       },
       ...(coordinatesField && { coordinates: coordinatesField }),
     });
-
-    // Notify all admins about the new PG pending verification
-    notifyAdmins({
-      subject: `New PG listing pending verification — "${name}"`,
-      text: `A new PG listing has been submitted and is awaiting verification.\n\nPG Name: ${name}\nLocation: ${location}\nRent: ₹${rent}/month\nOwner: ${req.user.name} (${req.user.email})\n\nPlease log in to the admin panel to review and verify this listing.`,
-      html: `A new PG listing has been submitted for verification.<br><br>
-             🏠 <strong>${name}</strong><br>
-             📍 Location: ${location}<br>
-             💰 Rent: ₹${rent}/month<br>
-             👤 Owner: ${req.user.name} (${req.user.email})<br>
-             🪪 Status: <span style="color:#f57f17;font-weight:700;">Pending verification</span><br><br>
-             Please log in to the admin panel to review the license document and verify this listing.`,
-    }).catch(() => { }); // fire-and-forget
 
     res.status(201).json({ data: pg });
   } catch (err) {
@@ -280,13 +326,13 @@ exports.updatePG = async (req, res) => {
       return res.status(403).json({ message: "Not authorized to update this PG" });
 
     const { name, location, address, rent, amenities, description, rules, lat, lng } = req.body;
-    if (name) pg.name = name;
-    if (location) pg.location = location;
-    if (address !== undefined) pg.address = address;
-    if (rent) pg.rent = Number(rent);
-    if (amenities) pg.amenities = amenities;
+    if (name)                  pg.name        = name;
+    if (location)              pg.location    = location;
+    if (address !== undefined) pg.address     = address;
+    if (rent)                  pg.rent        = Number(rent);
+    if (amenities)             pg.amenities   = amenities;
     if (description !== undefined) pg.description = description;
-    if (rules !== undefined) pg.rules = rules;
+    if (rules !== undefined)   pg.rules       = rules;
 
     // Update coordinates if new ones are provided
     // GeoJSON: [longitude, latitude]
@@ -340,11 +386,11 @@ exports.uploadImages = async (req, res) => {
     if (remaining <= 0)
       return res.status(400).json({ message: "Maximum 10 images already reached" });
 
-    const toAdd = req.files.slice(0, remaining);
+    const toAdd     = req.files.slice(0, remaining);
     const newImages = toAdd.map((file) => ({
-      url: file.path,
+      url:      file.path,
       publicId: file.filename,
-      caption: "",
+      caption:  "",
     }));
 
     pg.images.push(...newImages);
