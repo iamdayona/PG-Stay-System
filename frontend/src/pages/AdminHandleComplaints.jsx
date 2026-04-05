@@ -45,12 +45,69 @@ const PAGE_CSS = `
   .badge-resolved { background:rgba(232,245,233,.9); color:#2e7d32; border-color:rgba(165,214,167,.6); }
   .badge-rejected { background:rgba(255,235,238,.9); color:#c62828; border-color:rgba(239,154,154,.6); }
 
-  .action-btns { display:flex; gap:9px; }
-  .btn-reject  { background:rgba(255,255,255,.72); border:2px solid rgba(239,154,154,.6); color:#c62828; padding:10px 18px; border-radius:13px; font-family:'Poppins',sans-serif; font-size:.82rem; font-weight:700; cursor:pointer; box-shadow:0 4px 0 rgba(239,83,80,.15); transition:transform .15s; display:inline-flex; align-items:center; gap:6px; }
-  .btn-reject:hover:not(:disabled) { background:rgba(255,235,238,.9); transform:translateY(-2px); }
-  .btn-reject:disabled { opacity:.6; cursor:not-allowed; }
+  .action-btns { display:flex; gap:9px; flex-wrap:wrap; }
 
-  .resolved-note { display:flex; align-items:center; gap:7px; padding:10px 14px; background:rgba(232,245,233,.85); border:2px solid rgba(165,214,167,.5); border-radius:13px; font-size:.78rem; color:#2e7d32; font-weight:600; }
+  .btn-reject {
+    background:rgba(255,235,238,.9);
+    border:2px solid rgba(239,154,154,.5);
+    color:#c62828;
+    padding:10px 18px;
+    border-radius:13px;
+    font-family:'Poppins',sans-serif;
+    font-size:.82rem;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow:0 4px 0 rgba(183,28,28,.2), 0 6px 16px rgba(239,83,80,.15);
+    transition:transform .15s, box-shadow .15s, filter .15s;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+  }
+  .btn-reject:hover:not(:disabled) { background:rgba(255,205,210,.95); transform:translateY(-2px); box-shadow:0 6px 0 rgba(183,28,28,.2), 0 10px 20px rgba(239,83,80,.2); filter:brightness(1.04); }
+  .btn-reject:active:not(:disabled) { transform:scale(.97) translateY(2px); box-shadow:0 2px 0 rgba(183,28,28,.2); }
+  .btn-reject:disabled { opacity:.55; cursor:not-allowed; }
+
+  .btn-resolve {
+    background:linear-gradient(135deg,#ffe082,#ffd54f);
+    border:none;
+    color:#6d4c00;
+    padding:10px 18px;
+    border-radius:13px;
+    font-family:'Poppins',sans-serif;
+    font-size:.82rem;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow:0 4px 0 rgba(121,85,0,.25), 0 6px 16px rgba(255,214,79,.3), inset 0 1px 0 rgba(255,255,255,.4);
+    transition:transform .15s, box-shadow .15s, filter .15s;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+  }
+  .btn-resolve:hover:not(:disabled) { filter:brightness(1.07); transform:translateY(-2px); box-shadow:0 6px 0 rgba(121,85,0,.25), 0 10px 22px rgba(255,214,79,.35); }
+  .btn-resolve:active:not(:disabled) { transform:scale(.97) translateY(2px); box-shadow:0 2px 0 rgba(121,85,0,.2); }
+  .btn-resolve:disabled { opacity:.55; cursor:not-allowed; }
+
+  .btn-suspend {
+    background:linear-gradient(135deg,#ef9a9a,#e53935);
+    border:none;
+    color:white;
+    padding:10px 18px;
+    border-radius:13px;
+    font-family:'Poppins',sans-serif;
+    font-size:.82rem;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow:0 4px 0 #b71c1c, 0 6px 16px rgba(239,83,80,.3), inset 0 1px 0 rgba(255,255,255,.25);
+    transition:transform .15s, box-shadow .15s, filter .15s;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+  }
+  .btn-suspend:hover:not(:disabled) { filter:brightness(1.07); transform:translateY(-2px); box-shadow:0 6px 0 #b71c1c, 0 10px 22px rgba(239,83,80,.35); }
+  .btn-suspend:active:not(:disabled) { transform:scale(.97) translateY(2px); box-shadow:0 2px 0 #b71c1c; }
+  .btn-suspend:disabled { opacity:.55; cursor:not-allowed; }
+
+  .resolved-note { display:flex; align-items:center; gap:7px; padding:10px 14px; background:rgba(232,245,233,.85); border:2px solid rgba(165,214,167,.5); border-radius:13px; font-size:.78rem; color:#2e7d32; font-weight:600; box-shadow:0 3px 10px rgba(102,187,106,.15); }
 `;
 
 const css = injectClay(CLAY_BASE, CLAY_ADMIN, PAGE_CSS);
@@ -172,7 +229,7 @@ export default function AdminHandleComplaints() {
                         <>
                           <div className="action-btns">
                             <button
-                              className="clay-btn btn-reject"
+                              className="btn-reject"
                               onClick={() => handleReject(c._id)}
                               disabled={!!actionId}
                             >
@@ -182,14 +239,14 @@ export default function AdminHandleComplaints() {
                           </div>
                           <div className="action-btns" style={{ marginTop: 10 }}>
                             <button
-                              className="clay-btn btn-resolve"
+                              className="btn-resolve"
                               onClick={() => handleWarnOwner(c.pgStay?.owner?._id)}
                               disabled={!!actionId || !c.pgStay?.owner?._id}
                             >
                               <Bell size={14} /> Warn Owner
                             </button>
                             <button
-                              className="clay-btn btn-reject"
+                              className="btn-suspend"
                               onClick={() => handleSuspendOwner(c.pgStay?.owner?._id)}
                               disabled={!!actionId || !c.pgStay?.owner?._id}
                             >

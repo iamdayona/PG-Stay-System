@@ -9,22 +9,22 @@
  *   TWILIO_PHONE=+1xxxxxxxxxx
  */
 
-const express    = require("express");
+const express = require("express");
 const nodemailer = require("nodemailer");
-const twilio     = require("twilio");
-const router     = express.Router();
+const twilio = require("twilio");
+const router = express.Router();
 
 // ── OTP store (in-memory) ─────────────────────────────────────────────────
 const otpStore = new Map();
-const OTP_TTL  = 5 * 60 * 1000; // 5 minutes
+const OTP_TTL = 5 * 60 * 1000; // 5 minutes
 
-function makeOTP()         { return Math.floor(100000 + Math.random() * 900000).toString(); }
-function save(key, otp)    { otpStore.set(key, { otp, exp: Date.now() + OTP_TTL }); }
+function makeOTP() { return Math.floor(100000 + Math.random() * 900000).toString(); }
+function save(key, otp) { otpStore.set(key, { otp, exp: Date.now() + OTP_TTL }); }
 function verify(key, input) {
   const r = otpStore.get(key);
-  if (!r)                return { ok: false, msg: "No OTP found. Request a new one." };
-  if (Date.now() > r.exp){ otpStore.delete(key); return { ok: false, msg: "OTP expired. Request a new one." }; }
-  if (r.otp !== input)   return { ok: false, msg: "Incorrect OTP. Try again." };
+  if (!r) return { ok: false, msg: "No OTP found. Request a new one." };
+  if (Date.now() > r.exp) { otpStore.delete(key); return { ok: false, msg: "OTP expired. Request a new one." }; }
+  if (r.otp !== input) return { ok: false, msg: "Incorrect OTP. Try again." };
   otpStore.delete(key);
   return { ok: true };
 }

@@ -47,8 +47,8 @@ const TOAST_CSS = `
 
 const ICONS = {
   success: "✅",
-  error:   "❌",
-  info:    "ℹ️",
+  error: "❌",
+  info: "ℹ️",
   warning: "⚠️",
 };
 
@@ -100,7 +100,7 @@ export function ToastContainer() {
 // Global toast function — call from anywhere
 export const toast = {
   success: (msg, duration) => _addToast?.(msg, "success", duration),
-  error:   (msg, duration) => _addToast?.(msg, "error",   duration),
-  info:    (msg, duration) => _addToast?.(msg, "info",    duration),
+  error: (msg, duration) => _addToast?.(msg, "error", duration),
+  info: (msg, duration) => _addToast?.(msg, "info", duration),
   warning: (msg, duration) => _addToast?.(msg, "warning", duration),
 };

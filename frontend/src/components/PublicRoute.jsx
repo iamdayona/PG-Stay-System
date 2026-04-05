@@ -11,7 +11,7 @@ import { getToken, getUser } from "../utils/api";
  */
 const PublicRoute = ({ children }) => {
   const token = getToken();
-  const user  = getUser();
+  const user = getUser();
 
   // Only auto-redirect if genuinely still logged in (token present in storage)
   if (token && user?.role) {

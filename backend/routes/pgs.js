@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const {
   getRecommendations,
+  getNearbyPGs,         // ← NEW: Google Maps nearby search
   getAllPGs,
   getPGById,
   getOwnerPGs,
@@ -14,11 +15,11 @@ const { upload, uploadLicense } = require("../middleware/upload");
 const { uploadImages, deleteImage } = require("../controllers/pgController");
 
 router.get("/recommendations", protect, authorize("tenant"), getRecommendations);
+router.get("/nearby", protect, authorize("tenant"), getNearbyPGs); // ← NEW
 router.get("/owner/mine", protect, authorize("owner"), getOwnerPGs);
 router.get("/", protect, getAllPGs);
 router.get("/:id", protect, getPGById);
 
-// License document upload is handled by uploadLicense middleware (required for new PG)
 router.post("/", protect, authorize("owner"), uploadLicense.single("licenseDocument"), createPG);
 
 router.put("/:id", protect, authorize("owner", "admin"), updatePG);

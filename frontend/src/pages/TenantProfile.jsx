@@ -95,28 +95,28 @@ function ScoreRing({ value, color = "#42a5f5" }) {
 }
 
 export default function TenantProfile() {
-  const [user, setUser]             = useState(getUser());
-  const [loading, setLoading]       = useState(true);
-  const [saving, setSaving]         = useState(false);
-  const [activeTab, setActiveTab]   = useState("details");
-  const [isEditing, setIsEditing]   = useState(false);
+  const [user, setUser] = useState(getUser());
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState("details");
+  const [isEditing, setIsEditing] = useState(false);
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [uploadingDoc, setUploadingDoc]     = useState(false);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
 
   const photoInputRef = useRef(null);
-  const docInputRef   = useRef(null);
+  const docInputRef = useRef(null);
 
   const [form, setForm] = useState({
-    name:"", phone:"", gender:"",
-    houseName:"", street:"", postOffice:"", placeOfResidence:"", district:"", pinNumber:"",
-    prefLocation:"", prefBudgetMin:"", prefBudgetMax:"",
+    name: "", phone: "", gender: "",
+    houseName: "", street: "", postOffice: "", placeOfResidence: "", district: "", pinNumber: "",
+    prefLocation: "", prefBudgetMin: "", prefBudgetMax: "",
     bio: "",
   });
 
   // Helper: parse formatted address string into individual fields
   const parseAddress = (addressStr) => {
-    if (!addressStr) return { houseName:"", street:"", postOffice:"", placeOfResidence:"", district:"", pinNumber:"" };
+    if (!addressStr) return { houseName: "", street: "", postOffice: "", placeOfResidence: "", district: "", pinNumber: "" };
     const parts = addressStr.split("\n").reduce((acc, line) => {
       if (line.includes("House name/house number:")) acc.houseName = line.split(":")[1]?.trim() || "";
       else if (line.includes("Street name/locality:")) acc.street = line.split(":")[1]?.trim() || "";
@@ -125,7 +125,7 @@ export default function TenantProfile() {
       else if (line.includes("District:")) acc.district = line.split(":")[1]?.trim() || "";
       else if (line.includes("Pin number:")) acc.pinNumber = line.split(":")[1]?.trim() || "";
       return acc;
-    }, { houseName:"", street:"", postOffice:"", placeOfResidence:"", district:"", pinNumber:"" });
+    }, { houseName: "", street: "", postOffice: "", placeOfResidence: "", district: "", pinNumber: "" });
     return parts;
   };
 
@@ -140,16 +140,16 @@ export default function TenantProfile() {
         setUser(res.user);
         const addressParts = parseAddress(res.user.address || "");
         setForm({
-          name:         res.user.name               || "",
-          phone:        res.user.phone              || "",
-          gender:       res.user.gender             || "",
-          houseName:    addressParts.houseName     || "",
-          street:       addressParts.street         || "",
-          postOffice:   addressParts.postOffice     || "",
+          name: res.user.name || "",
+          phone: res.user.phone || "",
+          gender: res.user.gender || "",
+          houseName: addressParts.houseName || "",
+          street: addressParts.street || "",
+          postOffice: addressParts.postOffice || "",
           placeOfResidence: addressParts.placeOfResidence || "",
-          district:     addressParts.district       || "",
-          pinNumber:    addressParts.pinNumber      || "",
-          prefLocation: res.user.preferences?.location  || "",
+          district: addressParts.district || "",
+          pinNumber: addressParts.pinNumber || "",
+          prefLocation: res.user.preferences?.location || "",
           prefBudgetMin: res.user.preferences?.budgetMin || "",
           prefBudgetMax: (res.user.preferences?.budgetMax && res.user.preferences?.budgetMax !== 50000)
             ? res.user.preferences.budgetMax
@@ -192,7 +192,7 @@ export default function TenantProfile() {
     const file = e.target.files[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) { toast.error("Please select an image file."); return; }
-    if (file.size > 5 * 1024 * 1024)    { toast.error("Profile photo must be under 5MB."); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("Profile photo must be under 5MB."); return; }
 
     setUploadingPhoto(true);
     try {
@@ -237,7 +237,7 @@ export default function TenantProfile() {
 
   const verificationBadge = () => {
     if (user?.verificationStatus === "verified")
-      return <span className="verified-badge"><CheckCircle2 size={14}/> Verified</span>;
+      return <span className="verified-badge"><CheckCircle2 size={14} /> Verified</span>;
     if (user?.verificationStatus === "pending")
       return <span className="pending-badge">⏳ Pending Review</span>;
     return <span className="unverified-badge">❌ Unverified</span>;
@@ -275,10 +275,10 @@ export default function TenantProfile() {
                   </div>
                   {uploadingPhoto
                     ? <div className="avatar-photo-uploading">⏳</div>
-                    : <div className="avatar-photo-overlay"><Camera size={14} color="white"/></div>}
-                  <input ref={photoInputRef} type="file" accept="image/*" style={{display:"none"}} onChange={handlePhotoChange}/>
+                    : <div className="avatar-photo-overlay"><Camera size={14} color="white" /></div>}
+                  <input ref={photoInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handlePhotoChange} />
                 </div>
-                <div style={{fontSize:".7rem",color:"#9a9ab0",marginBottom:12}}>Tap photo to change</div>
+                <div style={{ fontSize: ".7rem", color: "#9a9ab0", marginBottom: 12 }}>Tap photo to change</div>
                 <div className="avatar-name">{user?.name}</div>
                 <span className="avatar-role-badge">🏠 Tenant</span>
                 <ScoreRing value={user?.trustScore || 0} />
@@ -288,9 +288,9 @@ export default function TenantProfile() {
               <div className="details-card">
                 <div className="details-header">
                   <div className="tab-row">
-                    <button className={`tab-btn ${activeTab==="details"?"active":""}`}     onClick={() => setActiveTab("details")}>📋 Details</button>
-                    <button className={`tab-btn ${activeTab==="preferences"?"active":""}`} onClick={() => setActiveTab("preferences")}>🎛️ Preferences</button>
-                    <button className={`tab-btn ${activeTab==="verification"?"active":""}`}onClick={() => setActiveTab("verification")}>🔐 Documents</button>
+                    <button className={`tab-btn ${activeTab === "details" ? "active" : ""}`} onClick={() => setActiveTab("details")}>📋 Details</button>
+                    <button className={`tab-btn ${activeTab === "preferences" ? "active" : ""}`} onClick={() => setActiveTab("preferences")}>🎛️ Preferences</button>
+                    <button className={`tab-btn ${activeTab === "verification" ? "active" : ""}`} onClick={() => setActiveTab("verification")}>🔐 Documents</button>
                   </div>
                   {!isEditing && (
                     <button className="edit-btn" onClick={() => setIsEditing(true)}>Update Profile</button>
@@ -304,15 +304,15 @@ export default function TenantProfile() {
                     <div className="form-grid2">
                       <div className="form-group">
                         <label className="clay-label">Full Name</label>
-                        <input className="clay-input" value={form.name} onChange={(e) => setForm({...form, name: toTitleCase(e.target.value)})} placeholder="Your full name" disabled={!isEditing} />
+                        <input className="clay-input" value={form.name} onChange={(e) => setForm({ ...form, name: toTitleCase(e.target.value) })} placeholder="Your full name" disabled={!isEditing} />
                       </div>
                       <div className="form-group">
                         <label className="clay-label">Email Address</label>
-                        <input className="clay-input" value={user?.email || ""} disabled style={{opacity:.6}} />
+                        <input className="clay-input" value={user?.email || ""} disabled style={{ opacity: .6 }} />
                       </div>
                       <div className="form-group">
                         <label className="clay-label">Gender</label>
-                        <select className="clay-input" value={form.gender} onChange={(e) => setForm({...form, gender:e.target.value})} disabled={!isEditing}>
+                        <select className="clay-input" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} disabled={!isEditing}>
                           <option value="">Prefer not to say</option>
                           <option value="male">Male</option>
                           <option value="female">Female</option>
@@ -336,57 +336,57 @@ export default function TenantProfile() {
                       </div>
                       <div className="form-group">
                         <label className="clay-label">Phone Number</label>
-                        <PhoneInput value={form.phone} onChange={(val) => setForm({...form, phone:val})} disabled={!isEditing} />
+                        <PhoneInput value={form.phone} onChange={(val) => setForm({ ...form, phone: val })} disabled={!isEditing} />
                       </div>
-                      <div className="form-group" style={{gridColumn:"1 / -1"}}>
+                      <div className="form-group" style={{ gridColumn: "1 / -1" }}>
                         <label className="clay-label">📍 Address Details</label>
                       </div>
                       <div className="form-group">
                         <label className="clay-label">House Name / Number</label>
-                        <input className="clay-input" value={form.houseName} onChange={(e) => setForm({...form, houseName: toTitleCase(e.target.value)})} placeholder="House name or number" disabled={!isEditing} />
+                        <input className="clay-input" value={form.houseName} onChange={(e) => setForm({ ...form, houseName: toTitleCase(e.target.value) })} placeholder="House name or number" disabled={!isEditing} />
                       </div>
                       <div className="form-group">
                         <label className="clay-label">Street / Locality</label>
-                        <input className="clay-input" value={form.street} onChange={(e) => setForm({...form, street: toTitleCase(e.target.value)})} placeholder="Street name or locality" disabled={!isEditing} />
+                        <input className="clay-input" value={form.street} onChange={(e) => setForm({ ...form, street: toTitleCase(e.target.value) })} placeholder="Street name or locality" disabled={!isEditing} />
                       </div>
                       <div className="form-group">
                         <label className="clay-label">Post Office</label>
-                        <input className="clay-input" value={form.postOffice} onChange={(e) => setForm({...form, postOffice: toTitleCase(e.target.value)})} placeholder="Post office name" disabled={!isEditing} />
+                        <input className="clay-input" value={form.postOffice} onChange={(e) => setForm({ ...form, postOffice: toTitleCase(e.target.value) })} placeholder="Post office name" disabled={!isEditing} />
                       </div>
                       <div className="form-group">
                         <label className="clay-label">Place of Residence</label>
-                        <input className="clay-input" value={form.placeOfResidence} onChange={(e) => setForm({...form, placeOfResidence: toTitleCase(e.target.value)})} placeholder="City or town" disabled={!isEditing} />
+                        <input className="clay-input" value={form.placeOfResidence} onChange={(e) => setForm({ ...form, placeOfResidence: toTitleCase(e.target.value) })} placeholder="City or town" disabled={!isEditing} />
                       </div>
                       <div className="form-group">
                         <label className="clay-label">District</label>
-                        <input className="clay-input" value={form.district} onChange={(e) => setForm({...form, district: toTitleCase(e.target.value)})} placeholder="District" disabled={!isEditing} />
+                        <input className="clay-input" value={form.district} onChange={(e) => setForm({ ...form, district: toTitleCase(e.target.value) })} placeholder="District" disabled={!isEditing} />
                       </div>
                       <div className="form-group">
                         <label className="clay-label">Pin Number</label>
-                        <input className="clay-input" value={form.pinNumber} onChange={(e) => setForm({...form, pinNumber: e.target.value})} placeholder="Postal code" disabled={!isEditing} maxLength="6" />
+                        <input className="clay-input" value={form.pinNumber} onChange={(e) => setForm({ ...form, pinNumber: e.target.value })} placeholder="Postal code" disabled={!isEditing} maxLength="6" />
                       </div>
                       <div className="clay-section-title">📱 Mobile Verification Status</div>
-                    <p style={{fontSize:".82rem",color:"#7a7a9a",marginBottom:16}}>
-                      Verify your mobile number to complete the profile.
-                    </p>
-                    {isEditing ? (
-                      <OtpField
-                        type="phone"
-                        value={form.phone}
-                        onChange={(val) => { setForm({...form, phone:val}); setPhoneVerified(false); }}
-                        onVerified={() => { setPhoneVerified(true); toast.success("Mobile verified! Save your profile to update."); }}
-                        accent="#42a5f5"
-                        accentDark="#1565c0"
-                      />
-                    ) : (
-                      <div style={{marginBottom:20, fontSize:'.88rem', color:'#5a5a7a'}}>
-                        {phoneVerified ? "Mobile number is verified." : "Click Update Profile to verify your phone."}
-                      </div>
-                    )}
+                      <p style={{ fontSize: ".82rem", color: "#7a7a9a", marginBottom: 16 }}>
+                        Verify your mobile number to complete the profile.
+                      </p>
+                      {isEditing ? (
+                        <OtpField
+                          type="phone"
+                          value={form.phone}
+                          onChange={(val) => { setForm({ ...form, phone: val }); setPhoneVerified(false); }}
+                          onVerified={() => { setPhoneVerified(true); toast.success("Mobile verified! Save your profile to update."); }}
+                          accent="#42a5f5"
+                          accentDark="#1565c0"
+                        />
+                      ) : (
+                        <div style={{ marginBottom: 20, fontSize: '.88rem', color: '#5a5a7a' }}>
+                          {phoneVerified ? "Mobile number is verified." : "Click Update Profile to verify your phone."}
+                        </div>
+                      )}
                     </div>
                     {isEditing && (
                       <button className="save-btn" onClick={handleSave} disabled={saving}>
-                        <Save size={16}/> {saving?"Saving…":"Save Changes"}
+                        <Save size={16} /> {saving ? "Saving…" : "Save Changes"}
                       </button>
                     )}
                   </div>
@@ -397,23 +397,23 @@ export default function TenantProfile() {
                   <div>
                     <div className="clay-section-title">🎛️ PG Search Preferences</div>
                     <div className="form-grid2">
-                      <div className="form-group" style={{gridColumn:"1 / -1"}}>
+                      <div className="form-group" style={{ gridColumn: "1 / -1" }}>
                         <label className="clay-label">Preferred Location</label>
-                        <input className="clay-input" value={form.prefLocation} onChange={(e) => setForm({...form, prefLocation: toTitleCase(e.target.value)})} placeholder="e.g. Koramangala, Bangalore" disabled={!isEditing} />
+                        <input className="clay-input" value={form.prefLocation} onChange={(e) => setForm({ ...form, prefLocation: toTitleCase(e.target.value) })} placeholder="e.g. Koramangala, Bangalore" disabled={!isEditing} />
                       </div>
                       <div className="form-group">
                         <label className="clay-label">Min Budget (₹/month)</label>
-                        <input className="clay-input" type="number" value={form.prefBudgetMin} onChange={(e) => setForm({...form, prefBudgetMin:e.target.value})} placeholder="e.g. 5000" disabled={!isEditing} />
+                        <input className="clay-input" type="number" value={form.prefBudgetMin} onChange={(e) => setForm({ ...form, prefBudgetMin: e.target.value })} placeholder="e.g. 5000" disabled={!isEditing} />
                       </div>
                       <div className="form-group">
                         <label className="clay-label">Max Budget (₹/month)</label>
-                        <input className="clay-input" type="number" value={form.prefBudgetMax} onChange={(e) => setForm({...form, prefBudgetMax:e.target.value})} placeholder="e.g. 15000" disabled={!isEditing} />
+                        <input className="clay-input" type="number" value={form.prefBudgetMax} onChange={(e) => setForm({ ...form, prefBudgetMax: e.target.value })} placeholder="e.g. 15000" disabled={!isEditing} />
                       </div>
                     </div>
-                    <p style={{fontSize:".8rem",color:"#9a9ab0",marginBottom:16}}>💡 These preferences personalise PG recommendations for you.</p>
+                    <p style={{ fontSize: ".8rem", color: "#9a9ab0", marginBottom: 16 }}>💡 These preferences personalise PG recommendations for you.</p>
                     {isEditing && (
                       <button className="save-btn" onClick={handleSave} disabled={saving}>
-                        <Save size={16}/> {saving?"Saving…":"Save Preferences"}
+                        <Save size={16} /> {saving ? "Saving…" : "Save Preferences"}
                       </button>
                     )}
                   </div>
@@ -422,16 +422,16 @@ export default function TenantProfile() {
                 {/* ── Verification tab ── */}
                 {activeTab === "verification" && (
                   <div>
-                    
+
 
                     <div className="clay-divider" />
                     <div className="clay-section-title">🪪 Aadhaar / Identity Verification</div>
-                    <p style={{fontSize:".82rem",color:"#7a7a9a",marginBottom:14}}>
+                    <p style={{ fontSize: ".82rem", color: "#7a7a9a", marginBottom: 14 }}>
                       Upload your Aadhaar card or Student ID for identity verification. Once uploaded, admin will review and verify your account.
                     </p>
 
                     <input id="tenant-doc-upload" type="file" accept=".jpg,.jpeg,.png,.pdf"
-                      style={{display:"none"}} onChange={handleDocChange} ref={docInputRef} disabled={uploadingDoc}/>
+                      style={{ display: "none" }} onChange={handleDocChange} ref={docInputRef} disabled={uploadingDoc} />
 
                     {/* Show existing document preview */}
                     {user?.documentUrl && (
@@ -444,13 +444,13 @@ export default function TenantProfile() {
                           Replace Document
                         </button>
                         {user.documentFileType === "pdf"
-                          ? <div className="doc-preview-pdf"><FileText size={22}/><span>PDF</span></div>
+                          ? <div className="doc-preview-pdf"><FileText size={22} /><span>PDF</span></div>
                           : <img className="doc-preview-img" src={user.documentUrl} alt="Aadhaar" />}
                         <div className="doc-preview-info">
                           <div className="doc-preview-label">Uploaded Document</div>
                           <div className="doc-preview-status">Aadhaar / ID Card</div>
                           <a className="doc-view-btn" href={user.documentUrl} target="_blank" rel="noreferrer">
-                            <Eye size={12}/> View Document
+                            <Eye size={12} /> View Document
                           </a>
                         </div>
                       </div>
@@ -461,7 +461,7 @@ export default function TenantProfile() {
                       <label
                         className={`upload-zone ${uploadingDoc ? "upload-zone-uploading" : ""}`}
                         htmlFor="tenant-doc-upload"
-                        style={{cursor: uploadingDoc ? "not-allowed" : "pointer"}}
+                        style={{ cursor: uploadingDoc ? "not-allowed" : "pointer" }}
                       >
                         <div className="upload-zone-icon">{uploadingDoc ? "⏳" : "🪪"}</div>
                         <div className="upload-zone-title">
@@ -484,7 +484,7 @@ export default function TenantProfile() {
                     </div>
                     <div className="stat-row">
                       <span className="stat-row-label">⭐ Trust Score</span>
-                      <span className="stat-row-value val-green">{user?.trustScore || 0}<span style={{fontSize:".7rem",color:"#9a9ab0"}}>/100</span></span>
+                      <span className="stat-row-value val-green">{user?.trustScore || 0}<span style={{ fontSize: ".7rem", color: "#9a9ab0" }}>/100</span></span>
                     </div>
                   </div>
                 )}

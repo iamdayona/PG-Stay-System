@@ -61,11 +61,11 @@ export default function Login() {
   const navigate = useNavigate();
   const { setRole } = useRole();
 
-  const [email, setEmail]       = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -75,9 +75,9 @@ export default function Login() {
       const data = await apiLogin({ email, password });
       saveAuth(data.token, data.user);
       setRole(data.user.role);
-      if (data.user.role === "admin")       navigate("/admin/dashboard");
+      if (data.user.role === "admin") navigate("/admin/dashboard");
       else if (data.user.role === "tenant") navigate("/tenant/dashboard");
-      else if (data.user.role === "owner")  navigate("/owner/dashboard");
+      else if (data.user.role === "owner") navigate("/owner/dashboard");
     } catch (err) {
       setError(err.message || "Login failed. Please check your credentials.");
     } finally {

@@ -33,7 +33,7 @@ const css = injectClay(CLAY_BASE, CLAY_ADMIN, PAGE_CSS);
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [stats, setStats]     = useState(null);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,10 +44,10 @@ export default function AdminDashboard() {
   }, []);
 
   const menuItems = [
-    { emoji:"✅", title:"Verification & Management", desc:"Review and verify user identities and PG listings", path:"/admin/verifymonitor" },
-    { emoji:"🛡️", title:"Monitor Trust Scores",      desc:"Track and manage user trust scores",              path:"/admin/monitortrustscore" },
-    { emoji:"⚠️", title:"Handle Complaints",         desc:"Review and resolve user complaints",              path:"/admin/handlecomplaints" },
-    { emoji:"📡", title:"System Monitoring",         desc:"Monitor overall system health and activity",      path:"/admin/systemmonitoring" },
+    { emoji: "✅", title: "Verification & Management", desc: "Review and verify user identities and PG listings", path: "/admin/verifymonitor" },
+    { emoji: "🛡️", title: "Monitor Trust Scores", desc: "Track and manage user trust scores", path: "/admin/monitortrustscore" },
+    { emoji: "⚠️", title: "Handle Complaints", desc: "Review and resolve user complaints", path: "/admin/handlecomplaints" },
+    { emoji: "📡", title: "System Monitoring", desc: "Monitor overall system health and activity", path: "/admin/systemmonitoring" },
   ];
 
   return (
@@ -64,12 +64,12 @@ export default function AdminDashboard() {
             {/* Stats — uses clay-stat from CLAY_BASE, colour from PAGE_CSS */}
             <div className="stats4">
               {[
-                { label:"Total Users",           value:stats?.totalUsers,            icon:"👥", cls:"s-blue",   vcls:"v-blue",   d:"0s"   },
-                { label:"PG Stays Listed",        value:stats?.totalPGs,              icon:"🏠", cls:"s-purple", vcls:"v-purple", d:".08s" },
-                { label:"Pending Verifications",  value:stats?.pendingVerifications,  icon:"⏳", cls:"s-yellow", vcls:"v-yellow", d:".16s" },
-                { label:"Active Bookings",        value:stats?.activeBookings,        icon:"✅", cls:"s-green",  vcls:"v-green",  d:".24s" },
+                { label: "Total Users", value: stats?.totalUsers, icon: "👥", cls: "s-blue", vcls: "v-blue", d: "0s" },
+                { label: "PG Stays Listed", value: stats?.totalPGs, icon: "🏠", cls: "s-purple", vcls: "v-purple", d: ".08s" },
+                { label: "Pending Verifications", value: stats?.pendingVerifications, icon: "⏳", cls: "s-yellow", vcls: "v-yellow", d: ".16s" },
+                { label: "Active Bookings", value: stats?.activeBookings, icon: "✅", cls: "s-green", vcls: "v-green", d: ".24s" },
               ].map((s) => (
-                <div key={s.label} className={`clay-stat ${s.cls}`} style={{ animationDelay:s.d }}>
+                <div key={s.label} className={`clay-stat ${s.cls}`} style={{ animationDelay: s.d }}>
                   <div className="clay-stat-icon">{s.icon}</div>
                   <div className="clay-stat-label">{s.label}</div>
                   <div className={`clay-stat-value ${s.vcls}`}>{loading ? "…" : (s.value ?? 0)}</div>
@@ -80,19 +80,19 @@ export default function AdminDashboard() {
             {/* Menu — uses clay-menu-card + clay-menu-icon from CLAY_BASE */}
             <div className="menu-grid">
               {menuItems.map((item, i) => (
-                <div key={i} className="clay-menu-card" style={{ animationDelay:`${.15+i*.08}s` }} onClick={() => navigate(item.path)}>
+                <div key={i} className="clay-menu-card" style={{ animationDelay: `${.15 + i * .08}s` }} onClick={() => navigate(item.path)}>
                   <div className="clay-menu-icon">{item.emoji}</div>
                   <div>
                     <div className="clay-menu-card-title">{item.title}</div>
                     <div className="clay-menu-card-desc">{item.desc}</div>
                   </div>
-                  <span style={{ marginLeft:"auto", color:"#ccc", fontSize:"1.1rem" }}>›</span>
+                  <span style={{ marginLeft: "auto", color: "#ccc", fontSize: "1.1rem" }}>›</span>
                 </div>
               ))}
             </div>
 
             {/* Recent Pending — uses clay-card + clay-section-title + clay-empty from CLAY_BASE */}
-            <div className="clay-card clay-card-p" style={{ "--bar-bg":"linear-gradient(90deg,#ef5350,#e040fb,#42a5f5)" }}>
+            <div className="clay-card clay-card-p" style={{ "--bar-bg": "linear-gradient(90deg,#ef5350,#e040fb,#42a5f5)" }}>
               <style>{`.clay-card::before{background:linear-gradient(90deg,#ef5350,#e040fb,#42a5f5);}`}</style>
               <div className="clay-section-title">⏳ Recent Pending Verifications</div>
               {loading ? (

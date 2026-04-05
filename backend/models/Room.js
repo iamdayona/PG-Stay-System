@@ -41,7 +41,7 @@ const RoomSchema = new mongoose.Schema(
 RoomSchema.index({ pgStay: 1, roomNumber: 1 }, { unique: true });
 
 // Static method to update room availability based on capacity
-RoomSchema.statics.updateAvailability = async function(roomId) {
+RoomSchema.statics.updateAvailability = async function (roomId) {
   const room = await this.findById(roomId);
   if (!room) return;
 

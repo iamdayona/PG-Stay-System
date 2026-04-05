@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { CLAY_BASE,CLAY_COMMON, CLAY_NAV, CLAY_HERO, injectClay } from "../styles/claystyles";
+import { CLAY_BASE, CLAY_COMMON, CLAY_NAV, CLAY_HERO, injectClay } from "../styles/claystyles";
 
 const PAGE_CSS = `
   .nav-back { padding:9px 20px; border:none; border-radius:50px; cursor:pointer; background:linear-gradient(135deg,#00acc1,#00838f); color:white; font-family:'Poppins',sans-serif; font-size:.82rem; font-weight:700; box-shadow:0 4px 0 #006064,0 7px 16px rgba(0,172,193,.3),inset 0 1px 0 rgba(255,255,255,.3); transition:transform .15s,box-shadow .15s; }
@@ -52,20 +52,20 @@ const PAGE_CSS = `
   .team-email { font-size:.68rem; color:#8aaab8; word-break:break-all; line-height:1.4; }
 `;
 
-const css = injectClay(CLAY_BASE,CLAY_COMMON, CLAY_NAV, CLAY_HERO, PAGE_CSS);
+const css = injectClay(CLAY_BASE, CLAY_COMMON, CLAY_NAV, CLAY_HERO, PAGE_CSS);
 
 const CONTACTS = [
-  { label:"General Enquiries", phone:"+91 97785 41454", email:"dayonasuby@gmail.com",          cls:"cn-1", icls:"ci-1", emoji:"🌐" },
-  { label:"Tenant Support",    phone:"+91 89216 94353", email:"aromalharikumar05@gmail.com",   cls:"cn-2", icls:"ci-2", emoji:"🏠" },
-  { label:"Owner Support",     phone:"+91 80783 29968", email:"anaghasunny2@gmail.com",        cls:"cn-3", icls:"ci-3", emoji:"🏢" },
-  { label:"Technical Support", phone:"+91 88485 07913", email:"ageeshcyriacbaiju33@gmail.com",cls:"cn-4", icls:"ci-4", emoji:"🔧" },
+  { label: "General Enquiries", phone: "+91 97785 41454", email: "dayonasuby@gmail.com", cls: "cn-1", icls: "ci-1", emoji: "🌐" },
+  { label: "Tenant Support", phone: "+91 89216 94353", email: "aromalharikumar05@gmail.com", cls: "cn-2", icls: "ci-2", emoji: "🏠" },
+  { label: "Owner Support", phone: "+91 80783 29968", email: "anaghasunny2@gmail.com", cls: "cn-3", icls: "ci-3", emoji: "🏢" },
+  { label: "Technical Support", phone: "+91 88485 07913", email: "ageeshcyriacbaiju33@gmail.com", cls: "cn-4", icls: "ci-4", emoji: "🔧" },
 ];
 
 const TEAM = [
-  { role:"General",   initials:"D",  cls:"tc-1", acls:"ta-1", email:"dayonasuby@gmail.com" },
-  { role:"Tenant",    initials:"A",  cls:"tc-2", acls:"ta-2", email:"aromalharikumar05@gmail.com" },
-  { role:"Owner",     initials:"A",  cls:"tc-3", acls:"ta-3", email:"anaghasunny2@gmail.com" },
-  { role:"Technical", initials:"A",  cls:"tc-4", acls:"ta-4", email:"ageeshcyriacbaiju33@gmail.com" },
+  { role: "General", initials: "D", cls: "tc-1", acls: "ta-1", email: "dayonasuby@gmail.com" },
+  { role: "Tenant", initials: "A", cls: "tc-2", acls: "ta-2", email: "aromalharikumar05@gmail.com" },
+  { role: "Owner", initials: "A", cls: "tc-3", acls: "ta-3", email: "anaghasunny2@gmail.com" },
+  { role: "Technical", initials: "A", cls: "tc-4", acls: "ta-4", email: "ageeshcyriacbaiju33@gmail.com" },
 ];
 
 export default function Contact() {
@@ -83,14 +83,14 @@ export default function Contact() {
 
         <div className="clay-hero">
           <div className="clay-hero-badge">📬 Contact Us</div>
-          <h1 className="clay-hero-title">We're Here<br/><span>to Help You</span></h1>
+          <h1 className="clay-hero-title">We're Here<br /><span>to Help You</span></h1>
           <p className="clay-hero-sub">Reach out to our team for any queries about bookings, accounts, or technical issues. We're always just a call or email away.</p>
         </div>
 
         <main className="clay-main">
 
           {/* Phone numbers */}
-          <div className="cc cc-teal" style={{ animationDelay:".05s" }}>
+          <div className="cc cc-teal" style={{ animationDelay: ".05s" }}>
             <div className="sec-title">📞 Contact Numbers</div>
             <div className="contact-grid">
               {CONTACTS.map((c) => (
@@ -106,7 +106,7 @@ export default function Contact() {
           </div>
 
           {/* Email addresses */}
-          <div className="cc cc-purple" style={{ animationDelay:".13s" }}>
+          <div className="cc cc-purple" style={{ animationDelay: ".13s" }}>
             <div className="sec-title">📧 Email Addresses</div>
             <div className="contact-grid">
               {CONTACTS.map((c) => (
@@ -122,10 +122,10 @@ export default function Contact() {
           </div>
 
           {/* Team */}
-          <div className="cc" style={{ animationDelay:".21s", "--before-bg":"none" }}>
+          <div className="cc" style={{ animationDelay: ".21s", "--before-bg": "none" }}>
             <style>{`.cc-team::before{background:linear-gradient(90deg,#00acc1,#ffa726,#ce93d8,#66bb6a);}`}</style>
-            <div className="cc-team" style={{ position:"absolute", top:0, left:0, right:0, height:4, borderRadius:"26px 26px 0 0", background:"linear-gradient(90deg,#00acc1,#ffa726,#ce93d8,#66bb6a)" }} />
-            <div className="sec-title" style={{ marginTop:4 }}>👥 Our Team</div>
+            <div className="cc-team" style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, borderRadius: "26px 26px 0 0", background: "linear-gradient(90deg,#00acc1,#ffa726,#ce93d8,#66bb6a)" }} />
+            <div className="sec-title" style={{ marginTop: 4 }}>👥 Our Team</div>
             <div className="team-grid">
               {TEAM.map((m) => (
                 <div key={m.email} className={`team-card ${m.cls}`}>

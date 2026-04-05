@@ -43,9 +43,9 @@ const css = injectClay(CLAY_BASE, CLAY_OWNER, PAGE_CSS);
 
 export default function OwnerDashboard() {
   const navigate = useNavigate();
-  const [pgSummary, setPgSummary]   = useState({ totalPGs: 0, totalRooms: 0, occupiedRooms: 0 });
+  const [pgSummary, setPgSummary] = useState({ totalPGs: 0, totalRooms: 0, occupiedRooms: 0 });
   const [recentApps, setRecentApps] = useState([]);
-  const [loading, setLoading]       = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([apiGetOwnerPGs(), apiGetOwnerApplications()])
@@ -53,7 +53,7 @@ export default function OwnerDashboard() {
         const pgs = pgsRes.data;
         setPgSummary({
           totalPGs: pgs.length,
-          totalRooms:    pgs.reduce((s, p) => s + (p.totalRooms    || 0), 0),
+          totalRooms: pgs.reduce((s, p) => s + (p.totalRooms || 0), 0),
           occupiedRooms: pgs.reduce((s, p) => s + (p.occupiedRooms || 0), 0),
         });
         setRecentApps(appsRes.data.slice(0, 3));
@@ -65,11 +65,11 @@ export default function OwnerDashboard() {
   const pendingCount = recentApps.filter((a) => a.status === "Pending").length;
 
   const menuItems = [
-    { emoji: "👤", title: "Profile", desc: "Manage your owner profile and documents",  path: "/owner/profile" },
-    { emoji: "🏢", title: "Manage PG Stays",        desc: "Add and manage your PG properties",         path: "/owner/pgsmanagement" },
-    { emoji: "📋", title: "Requests Received",      desc: "Review and approve tenant applications",     path: "/owner/applications" },
-    { emoji: "⚠️", title: "Handle Complaints",      desc: "Respond to tenant complaints for your PGs",  path: "/owner/complaints" },
-    { emoji: "🔔", title: "Notifications",          desc: "View updates and messages",                  path: "/owner/notifications" },
+    { emoji: "👤", title: "Profile", desc: "Manage your owner profile and documents", path: "/owner/profile" },
+    { emoji: "🏢", title: "Manage PG Stays", desc: "Add and manage your PG properties", path: "/owner/pgsmanagement" },
+    { emoji: "📋", title: "Requests Received", desc: "Review and approve tenant applications", path: "/owner/applications" },
+    { emoji: "⚠️", title: "Handle Complaints", desc: "Respond to tenant complaints for your PGs", path: "/owner/complaints" },
+    { emoji: "🔔", title: "Notifications", desc: "View updates and messages", path: "/owner/notifications" },
   ];
 
   const badgeClass = (s) => s === "Approved" ? "b-approved" : s === "Rejected" ? "b-rejected" : "b-pending";
@@ -89,10 +89,10 @@ export default function OwnerDashboard() {
             {/* Stats */}
             <div className="stats-grid">
               {[
-                { label: "PG Stays Listed",  value: pgSummary.totalPGs,                                        icon: "🏠", cls: "s-orange", vcls: "v-orange", delay: "0s" },
-                { label: "Total Rooms",       value: pgSummary.totalRooms,                                       icon: "🚪", cls: "s-amber",  vcls: "v-amber",  delay: ".08s" },
-                { label: "Rooms Occupied",    value: pgSummary.occupiedRooms,                                    icon: "✅", cls: "s-green",  vcls: "v-green",  delay: ".16s" },
-                { label: "Pending Requests",  value: recentApps.filter((a) => a.status === "Pending").length,   icon: "⏳", cls: "s-red",    vcls: "v-red",    delay: ".24s" },
+                { label: "PG Stays Listed", value: pgSummary.totalPGs, icon: "🏠", cls: "s-orange", vcls: "v-orange", delay: "0s" },
+                { label: "Total Rooms", value: pgSummary.totalRooms, icon: "🚪", cls: "s-amber", vcls: "v-amber", delay: ".08s" },
+                { label: "Rooms Occupied", value: pgSummary.occupiedRooms, icon: "✅", cls: "s-green", vcls: "v-green", delay: ".16s" },
+                { label: "Pending Requests", value: recentApps.filter((a) => a.status === "Pending").length, icon: "⏳", cls: "s-red", vcls: "v-red", delay: ".24s" },
               ].map((s) => (
                 <div key={s.label} className={`clay-stat ${s.cls}`} style={{ animationDelay: s.delay }}>
                   <div className="stat-icon">{s.icon}</div>
@@ -111,13 +111,13 @@ export default function OwnerDashboard() {
                     <div className="menu-title">{item.title}</div>
                     <div className="menu-desc">{item.desc}</div>
                   </div>
-                  <span style={{ marginLeft:"auto", color:"#ccc", fontSize:"1.1rem" }}>›</span>
+                  <span style={{ marginLeft: "auto", color: "#ccc", fontSize: "1.1rem" }}>›</span>
                 </div>
               ))}
             </div>
 
             {/* Recent Requests */}
-            <div className="clay-card clay-card-p" style={{ "--bar-bg":"linear-gradient(90deg,#ef5350,#e040fb,#42a5f5)" }}>
+            <div className="clay-card clay-card-p" style={{ "--bar-bg": "linear-gradient(90deg,#ef5350,#e040fb,#42a5f5)" }}>
               <style>{`.clay-card::before{background:linear-gradient(90deg,#ef5350,#e040fb,#42a5f5);}`}</style>
               <div className="clay-section-title">⚡ Recent Requests</div>
               {loading ? (

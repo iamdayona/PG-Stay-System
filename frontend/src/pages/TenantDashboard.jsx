@@ -61,11 +61,11 @@ const css = injectClay(CLAY_BASE, CLAY_TENANT, PAGE_CSS);
 
 export default function TenantDashboard() {
   const navigate = useNavigate();
-  const [user, setUser]           = useState(getUser());
-  const [recentApps, setRecentApps]   = useState([]);
-  const [recommendations, setRecs]    = useState([]);
+  const [user, setUser] = useState(getUser());
+  const [recentApps, setRecentApps] = useState([]);
+  const [recommendations, setRecs] = useState([]);
   const [hasManagement, setHasManagement] = useState(false);
-  const [loading, setLoading]         = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([apiGetMe(), apiGetMyApplications(), apiGetMyBookings()])
@@ -98,11 +98,11 @@ export default function TenantDashboard() {
   }, []);
 
   const menuItems = [
-    { icon: User,     title: "Profile",    desc: "Manage your profile and verify your identity ", path: "/tenant/profile",       emoji: "👤" },
-    { icon: Search,   title: "Search PG",                 desc: "Find and apply for PG accommodations",          path: "/tenant/findpgs",        emoji: "🔍" },
-    { icon: FileText, title: "My Applications",           desc: "Track your application status",                 path: "/tenant/applications",   emoji: "📋" },
+    { icon: User, title: "Profile", desc: "Manage your profile and verify your identity ", path: "/tenant/profile", emoji: "👤" },
+    { icon: Search, title: "Search PG", desc: "Find and apply for PG accommodations", path: "/tenant/findpgs", emoji: "🔍" },
+    { icon: FileText, title: "My Applications", desc: "Track your application status", path: "/tenant/applications", emoji: "📋" },
     ...(hasManagement ? [{ icon: FileText, title: "My PG Stay", desc: "Manage your confirmed PG booking and agreement", path: "/tenant/pgmanagement", emoji: "🏠" }] : []),
-    { icon: Bell,     title: "Notifications & Feedback",  desc: "View updates and share your experience",        path: "/tenant/notifications",  emoji: "🔔" },
+    { icon: Bell, title: "Notifications & Feedback", desc: "View updates and share your experience", path: "/tenant/notifications", emoji: "🔔" },
   ];
 
   const activeCount = recentApps.filter((a) => a.status === "Pending").length;
@@ -196,8 +196,8 @@ export default function TenantDashboard() {
             {recommendations.length > 0 && (
               <div className="clay-card clay-card-p">
                 <div className="clay-section-title">✨ Recommended for You</div>
-                <p style={{ fontSize:".82rem", color:"#7a7a9a", marginBottom:16 }}>
-                  Based on your preferences — <a style={{ color:"#42a5f5", fontWeight:700, cursor:"pointer" }} onClick={() => navigate("/tenant/profile")}>update preferences</a>
+                <p style={{ fontSize: ".82rem", color: "#7a7a9a", marginBottom: 16 }}>
+                  Based on your preferences — <a style={{ color: "#42a5f5", fontWeight: 700, cursor: "pointer" }} onClick={() => navigate("/tenant/profile")}>update preferences</a>
                 </p>
                 <div className="rec-grid">
                   {recommendations.map((pg, i) => (
@@ -213,7 +213,7 @@ export default function TenantDashboard() {
                           <span className="rec-match-badge">⚡ {pg.matchScore}% match</span>
                         )}
                       </div>
-                      <div className="rec-loc"><MapPin size={12}/> {pg.location}</div>
+                      <div className="rec-loc"><MapPin size={12} /> {pg.location}</div>
                       <div className="rec-tags">
                         <span className="rec-tag">⭐ {pg.trustScore}/100</span>
                         {(pg.amenities || []).slice(0, 3).map((a) => (

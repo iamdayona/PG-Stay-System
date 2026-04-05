@@ -59,7 +59,7 @@ const PAGE_CSS = `
 const css = injectClay(CLAY_BASE, CLAY_ADMIN, PAGE_CSS);
 
 export default function AdminMonitorTrustScores() {
-  const [data, setData]     = useState({ pgs:[], users:[] });
+  const [data, setData] = useState({ pgs: [], users: [] });
   const [loading, setLoading] = useState(true);
   const [warningOpen, setWarningOpen] = useState(false);
   const [warningTarget, setWarningTarget] = useState(null);
@@ -115,18 +115,18 @@ export default function AdminMonitorTrustScores() {
   };
 
   const allItems = [
-    ...data.pgs.map((p)  => ({ name:p.name, type:"PG",    owner:p.owner?.name||"—", score:p.trustScore, _id:p._id, isUser:false, warnTargetId:p.owner?._id })),
-    ...data.users.map((u) => ({ name:u.name, type:u.role,  owner:"—",               score:u.trustScore, _id:u._id, isUser:true, warnTargetId:u._id })),
+    ...data.pgs.map((p) => ({ name: p.name, type: "PG", owner: p.owner?.name || "—", score: p.trustScore, _id: p._id, isUser: false, warnTargetId: p.owner?._id })),
+    ...data.users.map((u) => ({ name: u.name, type: u.role, owner: "—", score: u.trustScore, _id: u._id, isUser: true, warnTargetId: u._id })),
   ];
 
-  const high   = allItems.filter((i) => i.score >= 80).length;
+  const high = allItems.filter((i) => i.score >= 80).length;
   const medium = allItems.filter((i) => i.score >= 60 && i.score < 80).length;
-  const low    = allItems.filter((i) => i.score < 60).length;
+  const low = allItems.filter((i) => i.score < 60).length;
 
   const scoreClass = (s) => s >= 80 ? "score-high" : s >= 60 ? "score-mid" : "score-low";
-  const barClass   = (s) => s >= 80 ? "sf-high"    : s >= 60 ? "sf-mid"    : "sf-low";
-  const badgeClass = (s) => s >= 80 ? "tb-high"    : s >= 60 ? "tb-mid"    : "tb-low";
-  const typeClass  = (t) => t === "PG" ? "type-pg" : t === "owner" ? "type-owner" : "type-tenant";
+  const barClass = (s) => s >= 80 ? "sf-high" : s >= 60 ? "sf-mid" : "sf-low";
+  const badgeClass = (s) => s >= 80 ? "tb-high" : s >= 60 ? "tb-mid" : "tb-low";
+  const typeClass = (t) => t === "PG" ? "type-pg" : t === "owner" ? "type-owner" : "type-tenant";
   const badgeLabel = (s) => s >= 80 ? "High Trust" : s >= 60 ? "Medium" : "Low Trust";
 
   return (
@@ -136,7 +136,7 @@ export default function AdminMonitorTrustScores() {
         isOpen={confirmDialog.isOpen}
         title={confirmDialog.title}
         message={confirmDialog.message}
-        onYes={confirmDialog.callback || (() => {})}
+        onYes={confirmDialog.callback || (() => { })}
         onNo={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
       />
       <div className="clay-page">
@@ -155,13 +155,13 @@ export default function AdminMonitorTrustScores() {
                 <div className="ts-value tv-g">{loading ? "…" : high}</div>
                 <div className="ts-sub">Healthy accounts</div>
               </div>
-              <div className="ts-card tc-yellow" style={{ animationDelay:".1s" }}>
+              <div className="ts-card tc-yellow" style={{ animationDelay: ".1s" }}>
                 <div className="ts-icon">⚠️</div>
                 <div className="ts-label">Medium Trust (60–79)</div>
                 <div className="ts-value tv-y">{loading ? "…" : medium}</div>
                 <div className="ts-sub">Needs attention</div>
               </div>
-              <div className="ts-card tc-red" style={{ animationDelay:".2s" }}>
+              <div className="ts-card tc-red" style={{ animationDelay: ".2s" }}>
                 <div className="ts-icon">🚨</div>
                 <div className="ts-label">Low Trust (&lt;60)</div>
                 <div className="ts-value tv-r">{loading ? "…" : low}</div>
@@ -170,7 +170,7 @@ export default function AdminMonitorTrustScores() {
             </div>
 
             {/* Table */}
-            <div className="clay-card clay-card-p" style={{ "--bar-bg":"linear-gradient(90deg,#ef5350,#e040fb,#42a5f5)" }}>
+            <div className="clay-card clay-card-p" style={{ "--bar-bg": "linear-gradient(90deg,#ef5350,#e040fb,#42a5f5)" }}>
               <style>{`.clay-card::before{background:linear-gradient(90deg,#ef5350,#e040fb,#42a5f5);}`}</style>
               <div className="clay-section-title">📊 Trust Score Details</div>
               {loading ? (
@@ -200,13 +200,13 @@ export default function AdminMonitorTrustScores() {
                             <div className="score-wrap">
                               <span className={`score-num ${scoreClass(item.score)}`}>{item.score}</span>
                               <div className="score-bar">
-                                <div className={`score-fill ${barClass(item.score)}`} style={{ width:`${item.score}%` }} />
+                                <div className={`score-fill ${barClass(item.score)}`} style={{ width: `${item.score}%` }} />
                               </div>
                             </div>
                           </td>
                           <td>
                             <span className={`trust-badge ${badgeClass(item.score)}`}>
-                              {item.score >= 80 ? <ShieldCheck size={12}/> : item.score >= 60 ? <ShieldAlert size={12}/> : <ShieldX size={12}/>}
+                              {item.score >= 80 ? <ShieldCheck size={12} /> : item.score >= 60 ? <ShieldAlert size={12} /> : <ShieldX size={12} />}
                               {badgeLabel(item.score)}
                             </span>
                           </td>

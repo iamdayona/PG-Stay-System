@@ -68,8 +68,8 @@ const PAGE_CSS = `
 const css = injectClay(CLAY_BASE, CLAY_AUTH, PAGE_CSS);
 
 const ROLES = [
-  { value:"tenant", emoji:"🏠", label:"Tenant",  desc:"Search & apply for PG accommodations", selClass:"selected",       dotClass:"" },
-  { value:"owner",  emoji:"🏢", label:"PG Owner", desc:"List & manage PG properties",          selClass:"owner-selected", dotClass:"owner-dot" },
+  { value: "tenant", emoji: "🏠", label: "Tenant", desc: "Search & apply for PG accommodations", selClass: "selected", dotClass: "" },
+  { value: "owner", emoji: "🏢", label: "PG Owner", desc: "List & manage PG properties", selClass: "owner-selected", dotClass: "owner-dot" },
 ];
 
 export default function Register() {
@@ -77,25 +77,25 @@ export default function Register() {
   const { setRole } = useRole();
 
   const [selectedRole, setSelectedRole] = useState("");
-  const [name,         setName]         = useState("");
-  const [nameError,    setNameError]    = useState("");
-  const [email,        setEmail]        = useState("");
-  const [password,     setPassword]     = useState("");
-  const [confirmPwd,   setConfirmPwd]   = useState("");
+  const [name, setName] = useState("");
+  const [nameError, setNameError] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPwd, setConfirmPwd] = useState("");
   const [confirmError, setConfirmError] = useState("");
-  const [showPwd,      setShowPwd]      = useState(false);
-  const [showConfirm,  setShowConfirm]  = useState(false);
-  const [pwdTouched,   setPwdTouched]   = useState(false);
-  const [loading,      setLoading]      = useState(false);
-  const [error,        setError]        = useState("");
+  const [showPwd, setShowPwd] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [pwdTouched, setPwdTouched] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [emailVerified, setEmailVerified] = useState(false);
 
   // ── Validation helpers ──────────────────────────────────────────────
   const isPwdLongEnough = (v) => v.length >= 5;
-  const hasPwdLetter    = (v) => /[A-Za-z]/.test(v);
-  const hasPwdNumber    = (v) => /[0-9]/.test(v);
-  const hasPwdSpecial   = (v) => /[^A-Za-z0-9]/.test(v);
-  const isPwdValid      = (v) =>
+  const hasPwdLetter = (v) => /[A-Za-z]/.test(v);
+  const hasPwdNumber = (v) => /[0-9]/.test(v);
+  const hasPwdSpecial = (v) => /[^A-Za-z0-9]/.test(v);
+  const isPwdValid = (v) =>
     isPwdLongEnough(v) && hasPwdLetter(v) && hasPwdNumber(v) && hasPwdSpecial(v);
 
   // Name must have at least two words (Firstname Lastname)
@@ -132,20 +132,20 @@ export default function Register() {
     e.preventDefault();
     setError("");
 
-    if (!selectedRole)              { setError("Please select a role to continue."); return; }
-    if (!emailVerified)             { setError("Please verify your email address before registering."); return; }
+    if (!selectedRole) { setError("Please select a role to continue."); return; }
+    if (!emailVerified) { setError("Please verify your email address before registering."); return; }
 
     const trimmedName = name.trim();
-    if (!hasTwoWords(trimmedName))  { setNameError("Full name must contain at least two words (e.g. John Doe)."); setError("Please fix the errors above."); return; }
-    if (!isPwdValid(password))      { setError("Password does not meet the requirements listed below."); setPwdTouched(true); return; }
-    if (confirmPwd !== password)    { setConfirmError("Passwords do not match."); setError("Please fix the errors above."); return; }
+    if (!hasTwoWords(trimmedName)) { setNameError("Full name must contain at least two words (e.g. John Doe)."); setError("Please fix the errors above."); return; }
+    if (!isPwdValid(password)) { setError("Password does not meet the requirements listed below."); setPwdTouched(true); return; }
+    if (confirmPwd !== password) { setConfirmError("Passwords do not match."); setError("Please fix the errors above."); return; }
 
     setLoading(true);
     try {
       const data = await apiRegister({ name: trimmedName, email, password, role: selectedRole });
       saveAuth(data.token, data.user);
       setRole(data.user.role);
-      if (data.user.role === "tenant")     navigate("/tenant/dashboard");
+      if (data.user.role === "tenant") navigate("/tenant/dashboard");
       else if (data.user.role === "owner") navigate("/owner/dashboard");
     } catch (err) {
       setError(err.message || "Registration failed. Please try again.");
@@ -234,7 +234,7 @@ export default function Register() {
                     tabIndex={-1}
                     aria-label={showPwd ? "Hide password" : "Show password"}
                   >
-                    {showPwd ? <EyeOff size={18}/> : <Eye size={18}/>}
+                    {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
                 {pwdTouched && (
@@ -242,9 +242,9 @@ export default function Register() {
                     <div className="pwd-rules-title">Password Requirements:</div>
                     {[
                       { ok: isPwdLongEnough(password), label: "At least 5 characters" },
-                      { ok: hasPwdLetter(password),    label: "Contains at least one letter (a–z, A–Z)" },
-                      { ok: hasPwdNumber(password),    label: "Contains at least one number (0–9)" },
-                      { ok: hasPwdSpecial(password),   label: "Contains at least one special character (!@#$…)" },
+                      { ok: hasPwdLetter(password), label: "Contains at least one letter (a–z, A–Z)" },
+                      { ok: hasPwdNumber(password), label: "Contains at least one number (0–9)" },
+                      { ok: hasPwdSpecial(password), label: "Contains at least one special character (!@#$…)" },
                     ].map(({ ok, label }) => (
                       <div key={label} className={`pwd-rule ${ok ? "ok" : "bad"}`}>
                         <span className="pwd-rule-icon">{ok ? "✅" : "❌"}</span>
@@ -275,7 +275,7 @@ export default function Register() {
                     tabIndex={-1}
                     aria-label={showConfirm ? "Hide confirm password" : "Show confirm password"}
                   >
-                    {showConfirm ? <EyeOff size={18}/> : <Eye size={18}/>}
+                    {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
                 {confirmError && (
@@ -329,7 +329,7 @@ export default function Register() {
           <div className="clay-footer-inner">
             <div className="clay-footer-copy">© {new Date().getFullYear()} PGStay · All rights reserved</div>
             <div className="clay-footer-links">
-              {[["About","/about"],["Contact","/contact"],["Help","/help"]].map(([l,p]) => (
+              {[["About", "/about"], ["Contact", "/contact"], ["Help", "/help"]].map(([l, p]) => (
                 <button key={l} className="clay-footer-btn" onClick={() => navigate(p)}>{l}</button>
               ))}
             </div>

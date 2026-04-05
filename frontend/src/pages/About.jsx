@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { CLAY_BASE,CLAY_COMMON, CLAY_NAV, CLAY_HERO, injectClay } from "../styles/claystyles";
+import { CLAY_BASE, CLAY_COMMON, CLAY_NAV, CLAY_HERO, injectClay } from "../styles/claystyles";
 
 const PAGE_CSS = `
   .nav-back { padding:9px 20px; border:none; border-radius:50px; cursor:pointer; background:linear-gradient(135deg,#00acc1,#00838f); color:white; font-family:'Poppins',sans-serif; font-size:.82rem; font-weight:700; box-shadow:0 4px 0 #006064,0 7px 16px rgba(0,172,193,.3),inset 0 1px 0 rgba(255,255,255,.3); transition:transform .15s,box-shadow .15s; }
@@ -37,7 +37,7 @@ const PAGE_CSS = `
   .feat-desc  { font-size:.78rem; color:#6a8898; line-height:1.55; }
 `;
 
-const css = injectClay(CLAY_BASE,CLAY_COMMON, CLAY_NAV, CLAY_HERO, PAGE_CSS);
+const css = injectClay(CLAY_BASE, CLAY_COMMON, CLAY_NAV, CLAY_HERO, PAGE_CSS);
 
 export default function About() {
   const navigate = useNavigate();
@@ -56,7 +56,7 @@ export default function About() {
         {/* Hero */}
         <div className="clay-hero">
           <div className="clay-hero-badge">🏠 About PG Accommodation System</div>
-          <h1 className="clay-hero-title">Smart PG Living,<br/><span>Made Simple</span></h1>
+          <h1 className="clay-hero-title">Smart PG Living,<br /><span>Made Simple</span></h1>
           <p className="clay-hero-sub">
             A modern web platform connecting tenants and PG owners — making the search, booking, and management of Paying Guest stays transparent and effortless.
           </p>
@@ -66,7 +66,7 @@ export default function About() {
         <main className="clay-main">
 
           {/* Introduction */}
-          <div className="cc cc-teal" style={{ animationDelay:".05s" }}>
+          <div className="cc cc-teal" style={{ animationDelay: ".05s" }}>
             <div className="sec-title">📖 Introduction</div>
             <p className="clay-prose">
               The PG Accommodation System is a web-based application designed to simplify the process of finding and managing Paying Guest (PG) stays. It connects tenants and PG owners on a single platform, making booking, payment, and communication easy and transparent.
@@ -74,14 +74,14 @@ export default function About() {
           </div>
 
           {/* Objectives */}
-          <div className="cc cc-purple" style={{ animationDelay:".12s" }}>
+          <div className="cc cc-purple" style={{ animationDelay: ".12s" }}>
             <div className="sec-title">🎯 Objectives</div>
             <ul className="obj-list">
               {[
-                ["🔍","Provide an easy platform for tenants to find PG accommodations."],
-                ["🏢","Allow PG owners to manage rooms and bookings efficiently."],
-                ["🔒","Enable secure booking and payment tracking."],
-                ["⭐","Maintain trust score and feedback system for accountability."],
+                ["🔍", "Provide an easy platform for tenants to find PG accommodations."],
+                ["🏢", "Allow PG owners to manage rooms and bookings efficiently."],
+                ["🔒", "Enable secure booking and payment tracking."],
+                ["⭐", "Maintain trust score and feedback system for accountability."],
               ].map(([emoji, text], i) => (
                 <li key={i}><span className="obj-dot">{emoji}</span><span>{text}</span></li>
               ))}
@@ -89,14 +89,14 @@ export default function About() {
           </div>
 
           {/* Key Features */}
-          <div className="cc cc-green" style={{ animationDelay:".2s" }}>
+          <div className="cc cc-green" style={{ animationDelay: ".2s" }}>
             <div className="sec-title">✨ Key Features</div>
             <div className="features-grid">
               {[
-                { emoji:"👥", title:"User Management",      desc:"Role-based access for tenants, PG owners, and administrators.",    cls:"fc-1" },
-                { emoji:"📋", title:"Room Booking",          desc:"Easy booking system with real-time room availability.",             cls:"fc-2" },
-                { emoji:"💳", title:"Online Payments",       desc:"Secure payment tracking with full transaction history.",            cls:"fc-3" },
-                { emoji:"⭐", title:"Feedback & Trust Score",desc:"Ratings and reviews help maintain transparency and reliability.",   cls:"fc-4" },
+                { emoji: "👥", title: "User Management", desc: "Role-based access for tenants, PG owners, and administrators.", cls: "fc-1" },
+                { emoji: "📋", title: "Room Booking", desc: "Easy booking system with real-time room availability.", cls: "fc-2" },
+                { emoji: "💳", title: "Online Payments", desc: "Secure payment tracking with full transaction history.", cls: "fc-3" },
+                { emoji: "⭐", title: "Feedback & Trust Score", desc: "Ratings and reviews help maintain transparency and reliability.", cls: "fc-4" },
               ].map((f) => (
                 <div key={f.title} className={`feat-card ${f.cls}`}>
                   <div className="feat-emoji">{f.emoji}</div>
@@ -108,7 +108,7 @@ export default function About() {
           </div>
 
           {/* Conclusion */}
-          <div className="cc cc-rainbow" style={{ animationDelay:".28s" }}>
+          <div className="cc cc-rainbow" style={{ animationDelay: ".28s" }}>
             <div className="sec-title">🚀 Conclusion</div>
             <p className="clay-prose">
               This system enhances the traditional PG accommodation process by digitalizing bookings, payments, and communication. It ensures efficiency, security, and convenience for both tenants and PG owners — building a trustworthy and seamless rental experience for everyone.

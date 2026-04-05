@@ -69,7 +69,7 @@ export default function Home() {
 
             {/* Hero */}
             <div className="clay-hero">
-              
+
               <h1>
                 Find Your Perfect{" "}
                 <span className="accent-pink">PG Stay</span>

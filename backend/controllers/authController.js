@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const notifyAdmins = require("../utils/notifyAdmins");
 
 const generateToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
@@ -35,6 +36,16 @@ exports.register = async (req, res) => {
     if (exists) return res.status(400).json({ message: "Email already registered" });
 
     const user = await User.create({ name, email, password, role });
+
+    // Notify all admins that a new user has registered and needs verification
+    notifyAdmins({
+      subject: `New ${role} registered — verification pending`,
+      text: `A new ${role} has registered on PGStay and is awaiting identity verification.\n\nName: ${name}\nEmail: ${email}\nRole: ${role.charAt(0).toUpperCase() + role.slice(1)}\n\nPlease log in to the admin panel to review and verify this user.`,
+      html: `<strong>${name}</strong> has registered as a <strong>${role}</strong>.<br><br>
+             📧 Email: ${email}<br>
+             🪪 Status: <span style="color:#f57f17;font-weight:700;">Pending verification</span><br><br>
+             Please log in to the admin panel to verify this user's identity documents.`,
+    }).catch(() => { }); // fire-and-forget
 
     res.status(201).json({
       token: generateToken(user._id),

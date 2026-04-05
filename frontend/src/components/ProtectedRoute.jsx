@@ -4,8 +4,8 @@ import { getToken, getUser, clearAuth } from "../utils/api";
 
 const ProtectedRoute = ({ children, role, isDashboard = false }) => {
   const navigate = useNavigate();
-  const token    = getToken();
-  const user     = getUser();
+  const token = getToken();
+  const user = getUser();
 
   useEffect(() => {
     if (!isDashboard) return;

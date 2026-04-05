@@ -7,6 +7,7 @@ const PGStay = require("../models/PGStay");
 const { protect, authorize } = require("../middleware/auth");
 const createNotification = require("../utils/createNotification");
 const sendEmail = require("../utils/sendEmail");
+const notifyAdmins = require("../utils/notifyAdmins");
 
 // POST /api/complaints  — tenant submits a complaint
 router.post("/", protect, authorize("tenant"), async (req, res) => {
@@ -60,6 +61,20 @@ router.post("/", protect, authorize("tenant"), async (req, res) => {
         "alert"
       );
     }
+
+    // Notify all admins about the new complaint
+    notifyAdmins({
+      subject: `New complaint filed — "${pg?.name || pgStayId}"`,
+      text: `A tenant has filed a complaint that requires admin review.\n\nPG: ${pg?.name || "Unknown"}\nLocation: ${pg?.location || "Unknown"}\nTenant: ${req.user.name} (${req.user.email})\nOwner: ${pg?.owner?.name || "Unknown"} (${pg?.owner?.email || "Unknown"})\n\nIssue:\n${issue}\n\nPlease log in to the admin panel to review and take action on this complaint.`,
+      html: `A tenant has filed a complaint that requires your review.<br><br>
+             🏠 <strong>PG:</strong> ${pg?.name || "Unknown"}<br>
+             📍 Location: ${pg?.location || "Unknown"}<br>
+             👤 <strong>Tenant:</strong> ${req.user.name} (${req.user.email})<br>
+             🏢 <strong>Owner:</strong> ${pg?.owner?.name || "Unknown"} (${pg?.owner?.email || "Unknown"})<br><br>
+             📋 <strong>Issue:</strong><br>
+             <div style="background:rgba(255,235,238,.6);border-radius:8px;padding:10px 14px;margin-top:6px;">${issue}</div><br>
+             Please log in to the admin panel to review and take action.`,
+    }).catch(() => { }); // fire-and-forget
 
     res.status(201).json({ data: complaint });
   } catch (err) {

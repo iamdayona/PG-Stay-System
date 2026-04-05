@@ -98,9 +98,9 @@ export default function OwnerNotifications() {
   };
 
   const getIcon = (type) => {
-    if (type === "success")     return <CheckCircle2 size={18} color="#43a047" />;
-    if (type === "alert")       return <AlertCircle  size={18} color="#e53935" />;
-    if (type === "application") return <Clock        size={18} color="#ffa726" />;
+    if (type === "success") return <CheckCircle2 size={18} color="#43a047" />;
+    if (type === "alert") return <AlertCircle size={18} color="#e53935" />;
+    if (type === "application") return <Clock size={18} color="#ffa726" />;
     return <Bell size={18} color="#ffa726" />;
   };
 
@@ -142,8 +142,8 @@ export default function OwnerNotifications() {
     }
   };
 
-  const unread  = notifications.filter((n) => !n.isRead).length;
-  const total   = notifications.length;
+  const unread = notifications.filter((n) => !n.isRead).length;
+  const total = notifications.length;
   const readCnt = total - unread;
 
   return (
@@ -168,15 +168,15 @@ export default function OwnerNotifications() {
             {/* Stats strip */}
             {!loading && total > 0 && (
               <div className="stats-strip">
-                <div className="strip-stat" style={{ animationDelay:"0s" }}>
+                <div className="strip-stat" style={{ animationDelay: "0s" }}>
                   <div className="strip-label">Total</div>
                   <div className="strip-value sv-orange">{total}</div>
                 </div>
-                <div className="strip-stat" style={{ animationDelay:".08s" }}>
+                <div className="strip-stat" style={{ animationDelay: ".08s" }}>
                   <div className="strip-label">Unread</div>
                   <div className="strip-value sv-red">{unread}</div>
                 </div>
-                <div className="strip-stat" style={{ animationDelay:".16s" }}>
+                <div className="strip-stat" style={{ animationDelay: ".16s" }}>
                   <div className="strip-label">Read</div>
                   <div className="strip-value sv-green">{readCnt}</div>
                 </div>
@@ -184,15 +184,15 @@ export default function OwnerNotifications() {
             )}
 
             {/* Notifications card */}
-            <div className="clay-card clay-card-p" style={{ "--bar-bg":"linear-gradient(90deg,#ef5350,#e040fb,#42a5f5)" }}>
+            <div className="clay-card clay-card-p" style={{ "--bar-bg": "linear-gradient(90deg,#ef5350,#e040fb,#42a5f5)" }}>
               <style>{`.clay-card::before{background:linear-gradient(90deg,#ef5350,#e040fb,#42a5f5);}`}</style>
               {loading ? (
                 <div className="clay-empty"><span className="clay-empty-emoji">⏳</span>Loading notifications…</div>
               ) : notifications.length === 0 ? (
                 <div className="clay-empty">
                   <span className="clay-empty-emoji">🔕</span>
-                  No notifications yet.<br/>
-                  <span style={{ color:"#ffa726", fontWeight:700 }}>You'll be notified when tenants apply!</span>
+                  No notifications yet.<br />
+                  <span style={{ color: "#ffa726", fontWeight: 700 }}>You'll be notified when tenants apply!</span>
                 </div>
               ) : (
                 notifications.map((n) => (
@@ -202,7 +202,7 @@ export default function OwnerNotifications() {
                     onClick={() => handleOpenNotification(n)}
                   >
                     <div className="notif-icon-wrap">{getIcon(n.type)}</div>
-                    <div style={{ flex:1 }}>
+                    <div style={{ flex: 1 }}>
                       <div className="notif-message">{n.message}</div>
                       <div className="notif-time">{new Date(n.createdAt).toLocaleString()}</div>
                     </div>

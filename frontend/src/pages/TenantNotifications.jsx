@@ -53,16 +53,16 @@ const css = injectClay(CLAY_BASE, CLAY_TENANT, PAGE_CSS);
 
 export default function TenantNotifications() {
   const [notifications, setNotifications] = useState([]);
-  const [myFeedback, setMyFeedback]       = useState([]);
-  const [appliedPGs, setAppliedPGs]       = useState([]);
-  const [loading, setLoading]             = useState(true);
-  const [rating, setRating]               = useState(0);
-  const [pgStayId, setPgStayId]           = useState("");
-  const [comment, setComment]             = useState("");
-  const [submitting, setSubmitting]       = useState(false);
-  const [feedbackMsg, setFeedbackMsg]     = useState("");
+  const [myFeedback, setMyFeedback] = useState([]);
+  const [appliedPGs, setAppliedPGs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [rating, setRating] = useState(0);
+  const [pgStayId, setPgStayId] = useState("");
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [feedbackMsg, setFeedbackMsg] = useState("");
   const [selectedNotification, setSelectedNotification] = useState(null);
-  const [markingRead, setMarkingRead]     = useState(false);
+  const [markingRead, setMarkingRead] = useState(false);
 
   const fetchAll = async () => {
     try {
@@ -103,7 +103,7 @@ export default function TenantNotifications() {
 
   const getIcon = (type) => {
     if (type === "success") return <CheckCircle2 size={16} color="#43a047" />;
-    if (type === "alert")   return <AlertCircle  size={16} color="#e53935" />;
+    if (type === "alert") return <AlertCircle size={16} color="#e53935" />;
     return <Bell size={16} color="#1e88e5" />;
   };
 
@@ -145,8 +145,8 @@ export default function TenantNotifications() {
                 <div className="clay-card clay-card-p">
                   <style>{`.clay-card::before{background:linear-gradient(90deg,#ef5350,#e040fb,#42a5f5);}`}</style>
                   <div className="section-header">
-                    <div className="clay-section-title" style={{ display:"flex", alignItems:"center", gap:8 }}>
-                      <Bell size={16}/> Notifications
+                    <div className="clay-section-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <Bell size={16} /> Notifications
                       {unread > 0 && <span className="unread-count">{unread}</span>}
                     </div>
                     {unread > 0 && (
@@ -207,7 +207,7 @@ export default function TenantNotifications() {
                   <div className="form-group">
                     <label className="clay-label">Select PG</label>
                     {appliedPGs.length === 0 ? (
-                      <div className="clay-empty" style={{ padding: "12px 0", fontSize:".82rem" }}>
+                      <div className="clay-empty" style={{ padding: "12px 0", fontSize: ".82rem" }}>
                         No approved bookings yet. You can leave feedback once your application is approved.
                       </div>
                     ) : (
@@ -238,7 +238,7 @@ export default function TenantNotifications() {
                 {/* Past Feedback — properly placed as a separate full-width card below feedback form */}
                 {myFeedback.length > 0 && (
                   <div className="past-feedback-card">
-                    <div className="clay-section-title" style={{ marginBottom:16 }}>📝 Your Past Feedback</div>
+                    <div className="clay-section-title" style={{ marginBottom: 16 }}>📝 Your Past Feedback</div>
                     {myFeedback.map((fb) => (
                       <div key={fb._id} className="feedback-item">
                         <div className="feedback-header">

@@ -93,13 +93,13 @@ export default function TenantApplications() {
             ) : applications.length === 0 ? (
               <div className="clay-empty">
                 <span className="clay-empty-emoji">📭</span>
-                You haven't applied to any PG yet.<br/>
+                You haven't applied to any PG yet.<br />
                 <span style={{ color: "#42a5f5", fontWeight: 700 }}>Go search for your perfect stay!</span>
               </div>
             ) : (
               applications.map((app, i) => {
                 const stageIdx = getStageIndex(app.status);
-                const fillPct  = app.status === "Rejected" ? 0 : (stageIdx / (STAGES.length - 1)) * 100;
+                const fillPct = app.status === "Rejected" ? 0 : (stageIdx / (STAGES.length - 1)) * 100;
                 return (
                   <div key={app._id} className={`app-card ${getCardClass(app.status)}`} style={{ animationDelay: `${i * .08}s` }}>
 
@@ -126,7 +126,7 @@ export default function TenantApplications() {
                             <div className="tracker-line-fill" style={{ width: `${fillPct}%` }} />
                           </div>
                           {STAGES.map((stage, idx) => {
-                            const done   = idx < stageIdx;
+                            const done = idx < stageIdx;
                             const active = idx === stageIdx;
                             // Approved step: always render as green "done" dot
                             const isApprovedStep = stage === "Approved" && app.status === "Approved";

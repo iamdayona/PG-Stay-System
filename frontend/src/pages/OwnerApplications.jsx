@@ -54,8 +54,8 @@ const css = injectClay(CLAY_BASE, CLAY_OWNER, PAGE_CSS);
 
 export default function OwnerApplications() {
   const [applications, setApplications] = useState([]);
-  const [bookings, setBookings]         = useState([]);
-  const [loading, setLoading]           = useState(true);
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState("");
 
   const fetchData = async () => {
@@ -128,8 +128,8 @@ export default function OwnerApplications() {
   };
 
   const getTrustClass = (score) => score >= 85 ? "trust-high" : score >= 70 ? "trust-mid" : "trust-low";
-  const getCardClass  = (s)     => s === "Approved" ? "card-approved" : s === "Rejected" ? "card-rejected" : "card-pending";
-  const getChipClass  = (s)     => s === "Approved" ? "chip-approved" : s === "Rejected" ? "chip-rejected" : "chip-pending";
+  const getCardClass = (s) => s === "Approved" ? "card-approved" : s === "Rejected" ? "card-rejected" : "card-pending";
+  const getChipClass = (s) => s === "Approved" ? "chip-approved" : s === "Rejected" ? "chip-rejected" : "chip-pending";
 
   return (
     <>

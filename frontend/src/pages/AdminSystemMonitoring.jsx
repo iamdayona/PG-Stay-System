@@ -49,7 +49,7 @@ const PAGE_CSS = `
 const css = injectClay(CLAY_BASE, CLAY_ADMIN, PAGE_CSS);
 
 export default function AdminSystemMonitoring() {
-  const [stats, setStats]     = useState(null);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -60,17 +60,17 @@ export default function AdminSystemMonitoring() {
   }, []);
 
   const sysCards = [
-    { label:"Server Status", value: stats?.serverStatus || "Online", icon: Server,   iconCls:"sc-icon-blue",   cardCls:"sc-blue",   status:"good" },
-    { label:"Database",      value: stats?.dbStatus     || "Online", icon: Database, iconCls:"sc-icon-green",  cardCls:"sc-green",  status:"good" },
-    { label:"Total Users",   value: stats?.totalUsers   ?? "—",      icon: Users,    iconCls:"sc-icon-purple", cardCls:"sc-purple", status:null   },
-    { label:"Total Bookings",value: stats?.totalBookings?? "—",      icon: Activity, iconCls:"sc-icon-orange", cardCls:"sc-orange", status:null   },
+    { label: "Server Status", value: stats?.serverStatus || "Online", icon: Server, iconCls: "sc-icon-blue", cardCls: "sc-blue", status: "good" },
+    { label: "Database", value: stats?.dbStatus || "Online", icon: Database, iconCls: "sc-icon-green", cardCls: "sc-green", status: "good" },
+    { label: "Total Users", value: stats?.totalUsers ?? "—", icon: Users, iconCls: "sc-icon-purple", cardCls: "sc-purple", status: null },
+    { label: "Total Bookings", value: stats?.totalBookings ?? "—", icon: Activity, iconCls: "sc-icon-orange", cardCls: "sc-orange", status: null },
   ];
 
   const dbItems = [
-    { emoji:"👥", label:"Total Users",    value: stats?.totalUsers    ?? 0, cls:"dt-1" },
-    { emoji:"🏠", label:"Total PG Stays", value: stats?.totalPGs      ?? 0, cls:"dt-2" },
-    { emoji:"📋", label:"Total Bookings", value: stats?.totalBookings ?? 0, cls:"dt-3" },
-    { emoji:"⭐", label:"Total Feedback", value: stats?.totalFeedback ?? 0, cls:"dt-4" },
+    { emoji: "👥", label: "Total Users", value: stats?.totalUsers ?? 0, cls: "dt-1" },
+    { emoji: "🏠", label: "Total PG Stays", value: stats?.totalPGs ?? 0, cls: "dt-2" },
+    { emoji: "📋", label: "Total Bookings", value: stats?.totalBookings ?? 0, cls: "dt-3" },
+    { emoji: "⭐", label: "Total Feedback", value: stats?.totalFeedback ?? 0, cls: "dt-4" },
   ];
 
   return (
@@ -89,7 +89,7 @@ export default function AdminSystemMonitoring() {
               {sysCards.map((card, i) => {
                 const Icon = card.icon;
                 return (
-                  <div key={i} className={`sys-card ${card.cardCls}`} style={{ animationDelay:`${i*.08}s` }}>
+                  <div key={i} className={`sys-card ${card.cardCls}`} style={{ animationDelay: `${i * .08}s` }}>
                     <div className={`sc-icon ${card.iconCls}`}>
                       <Icon size={20} color={card.cardCls === "sc-blue" ? "#1e88e5" : card.cardCls === "sc-green" ? "#43a047" : card.cardCls === "sc-purple" ? "#8e24aa" : "#fb8c00"} />
                     </div>
@@ -106,7 +106,7 @@ export default function AdminSystemMonitoring() {
             </div>
 
             {/* Database Summary */}
-            <div className="clay-card clay-card-p" style={{ "--bar-bg":"linear-gradient(90deg,#ef5350,#e040fb,#42a5f5)" }}>
+            <div className="clay-card clay-card-p" style={{ "--bar-bg": "linear-gradient(90deg,#ef5350,#e040fb,#42a5f5)" }}>
               <style>{`.clay-card::before{background:linear-gradient(90deg,#ef5350,#e040fb,#42a5f5);}`}</style>
               <div className="clay-section-title">🗄️ Database Summary</div>
               {loading ? (

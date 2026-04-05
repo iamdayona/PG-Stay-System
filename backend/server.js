@@ -1,8 +1,8 @@
-const express    = require("express");
-const dotenv     = require("dotenv");
-const cors       = require("cors");
-const rateLimit  = require("express-rate-limit");
-const connectDB  = require("./config/db");
+const express = require("express");
+const dotenv = require("dotenv");
+const cors = require("cors");
+const rateLimit = require("express-rate-limit");
+const connectDB = require("./config/db");
 const { checkDuePayments } = require("./utils/paymentReminder");
 const checkExpiredBookings = require("./utils/checkExpiredBookings");
 
@@ -13,7 +13,7 @@ const app = express();
 
 // Middleware
 // CORS configuration - allow configurable origins
-const allowedOrigins = process.env.CORS_ORIGINS 
+const allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(",").map(origin => origin.trim())
   : ["http://localhost:5173", "http://localhost:5174"];
 
@@ -36,16 +36,16 @@ const loginLimiter = rateLimit({
 });
 
 // Routes
-app.use("/api/auth",          loginLimiter, require("./routes/auth"));
-app.use("/api/pgs",           require("./routes/pgs"));
-app.use("/api/rooms",         require("./routes/rooms"));
-app.use("/api/applications",  require("./routes/applications"));
-app.use("/api/feedback",      require("./routes/feedback"));
+app.use("/api/auth", loginLimiter, require("./routes/auth"));
+app.use("/api/pgs", require("./routes/pgs"));
+app.use("/api/rooms", require("./routes/rooms"));
+app.use("/api/applications", require("./routes/applications"));
+app.use("/api/feedback", require("./routes/feedback"));
 app.use("/api/notifications", require("./routes/notifications"));
-app.use("/api/complaints",    require("./routes/complaints"));
-app.use("/api/bookings",      require("./routes/bookings"));
-app.use("/api/admin",         require("./routes/admin"));
-app.use("/api/verify",        require("./routes/verify"));  // ← NEW
+app.use("/api/complaints", require("./routes/complaints"));
+app.use("/api/bookings", require("./routes/bookings"));
+app.use("/api/admin", require("./routes/admin"));
+app.use("/api/verify", require("./routes/verify"));  // ← NEW
 
 // Health check
 app.get("/", (req, res) => res.json({ message: "PG Stay API is running" }));

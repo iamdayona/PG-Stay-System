@@ -45,10 +45,12 @@ const UserSchema = new mongoose.Schema(
       default: "",
     },
     preferences: {
-      location:  { type: String, default: "" },
+      location: { type: String, default: "" },
+      locationLat: { type: Number, default: null }, // pinned map lat (from LocationPicker)
+      locationLng: { type: Number, default: null }, // pinned map lng (from LocationPicker)
       budgetMin: { type: Number, default: 0 },
       budgetMax: { type: Number },
-      roomType:  { type: String, default: "" },
+      roomType: { type: String, default: "" },
       amenities: { type: [String], default: [] },
     },
     bio: { type: String, default: "" },
@@ -59,9 +61,9 @@ const UserSchema = new mongoose.Schema(
       default: "unverified",
     },
     // Aadhaar / identity document (Cloudinary URL)
-    documentUrl:      { type: String, default: "" },
+    documentUrl: { type: String, default: "" },
     documentFileType: { type: String, default: "" }, // "image" or "pdf"
-    profilePhotoUrl:  { type: String, default: "" },
+    profilePhotoUrl: { type: String, default: "" },
     trustScore: {
       type: Number,
       default: 50,
@@ -69,7 +71,7 @@ const UserSchema = new mongoose.Schema(
       max: 100,
     },
     profileCompletion: { type: Number, default: 40 },
-    isActive:          { type: Boolean, default: true },
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
 );

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CLAY_BASE,CLAY_COMMON, CLAY_NAV, CLAY_HERO, injectClay } from "../styles/claystyles";
+import { CLAY_BASE, CLAY_COMMON, CLAY_NAV, CLAY_HERO, injectClay } from "../styles/claystyles";
 
 const PAGE_CSS = `
   @keyframes expand { from{opacity:0;max-height:0;transform:translateY(-8px);} to{opacity:1;max-height:400px;transform:translateY(0);} }
@@ -58,14 +58,14 @@ const PAGE_CSS = `
   .sb-3 { background:rgba(255,235,238,.9); color:#c62828; }
 `;
 
-const css = injectClay(CLAY_BASE,CLAY_COMMON, CLAY_NAV, CLAY_HERO, PAGE_CSS);
+const css = injectClay(CLAY_BASE, CLAY_COMMON, CLAY_NAV, CLAY_HERO, PAGE_CSS);
 
 const FAQS = [
-  { q:"How do I register as a tenant?", a:"Click on Sign Up, choose the Tenant role, and fill in your details to create an account. Verification is completed via email.", icon:"👤" },
-  { q:"How is trust score calculated?",  a:"Trust score is based on user feedback, ratings, booking history, and identity verification status. It updates automatically after each interaction.", icon:"⭐" },
-  { q:"Can I cancel my booking?",        a:"Yes, booking cancellation depends on the PG owner's cancellation policy. Check your booking details for specific terms and deadlines.", icon:"❌" },
-  { q:"How do I list my PG as an owner?",a:"Register as a PG Owner, complete profile verification, then use the PG Management page to add your property details, rooms, and amenities.", icon:"🏢" },
-  { q:"What happens if I have a complaint?", a:"Visit the Help & Support section and submit your issue. Our admin team reviews all complaints and responds within 24–48 hours.", icon:"⚠️" },
+  { q: "How do I register as a tenant?", a: "Click on Sign Up, choose the Tenant role, and fill in your details to create an account. Verification is completed via email.", icon: "👤" },
+  { q: "How is trust score calculated?", a: "Trust score is based on user feedback, ratings, booking history, and identity verification status. It updates automatically after each interaction.", icon: "⭐" },
+  { q: "Can I cancel my booking?", a: "Yes, booking cancellation depends on the PG owner's cancellation policy. Check your booking details for specific terms and deadlines.", icon: "❌" },
+  { q: "How do I list my PG as an owner?", a: "Register as a PG Owner, complete profile verification, then use the PG Management page to add your property details, rooms, and amenities.", icon: "🏢" },
+  { q: "What happens if I have a complaint?", a: "Visit the Help & Support section and submit your issue. Our admin team reviews all complaints and responds within 24–48 hours.", icon: "⚠️" },
 ];
 
 export default function Help() {
@@ -84,20 +84,20 @@ export default function Help() {
 
         <div className="clay-hero">
           <div className="clay-hero-badge">🆘 Help & Support</div>
-          <h1 className="clay-hero-title">How Can We<br/><span>Help You?</span></h1>
+          <h1 className="clay-hero-title">How Can We<br /><span>Help You?</span></h1>
           <p className="clay-hero-sub">Find answers to common questions, learn how the system works, or reach out to our support team.</p>
         </div>
 
         <main className="clay-main">
 
           {/* How It Works */}
-          <div className="cc cc-teal" style={{ animationDelay:".05s" }}>
+          <div className="cc cc-teal" style={{ animationDelay: ".05s" }}>
             <div className="sec-title">🔎 How PG Stay System Works</div>
             <div className="steps-grid">
               {[
-                { num:"1", emoji:"🔍", title:"Search PG",     desc:"Browse PG accommodations by location, amenities, rent, and trust score to find your ideal match.", sn:"sn-1", s:"s-1" },
-                { num:"2", emoji:"📋", title:"Book Room",      desc:"Select your preferred room type, check real-time availability, and confirm your booking instantly.",  sn:"sn-2", s:"s-2" },
-                { num:"3", emoji:"💳", title:"Make Payment",   desc:"Complete secure payment and receive booking confirmation with full transaction details.",            sn:"sn-3", s:"s-3" },
+                { num: "1", emoji: "🔍", title: "Search PG", desc: "Browse PG accommodations by location, amenities, rent, and trust score to find your ideal match.", sn: "sn-1", s: "s-1" },
+                { num: "2", emoji: "📋", title: "Book Room", desc: "Select your preferred room type, check real-time availability, and confirm your booking instantly.", sn: "sn-2", s: "s-2" },
+                { num: "3", emoji: "💳", title: "Make Payment", desc: "Complete secure payment and receive booking confirmation with full transaction details.", sn: "sn-3", s: "s-3" },
               ].map((step) => (
                 <div key={step.num} className={`step-card ${step.s}`}>
                   <div className={`step-num ${step.sn}`}>{step.num}</div>
@@ -110,7 +110,7 @@ export default function Help() {
           </div>
 
           {/* FAQ Accordion */}
-          <div className="cc cc-purple" style={{ animationDelay:".13s" }}>
+          <div className="cc cc-purple" style={{ animationDelay: ".13s" }}>
             <div className="sec-title">❓ Frequently Asked Questions</div>
             {FAQS.map((faq, i) => (
               <div key={i} className={`faq-item ${openFaq === i ? "open" : ""}`}>
@@ -124,13 +124,13 @@ export default function Help() {
           </div>
 
           {/* Support Categories */}
-          <div className="cc cc-green" style={{ animationDelay:".21s" }}>
+          <div className="cc cc-green" style={{ animationDelay: ".21s" }}>
             <div className="sec-title">🛠️ Support Categories</div>
             <div className="support-grid">
               {[
-                { icon:"🏠", title:"Tenant Support",    desc:"Assistance with bookings, payments, applications, and account-related issues.",    badge:"For Tenants",    bcls:"sb-1", cls:"sup-1" },
-                { icon:"🏢", title:"Owner Support",     desc:"Help with listing PGs, managing rooms, verifying identity, and monitoring trust.", badge:"For Owners",     bcls:"sb-2", cls:"sup-2" },
-                { icon:"🔧", title:"Technical Support", desc:"Report bugs, login issues, payment failures, and other system-related problems.",   badge:"System Issues",  bcls:"sb-3", cls:"sup-3" },
+                { icon: "🏠", title: "Tenant Support", desc: "Assistance with bookings, payments, applications, and account-related issues.", badge: "For Tenants", bcls: "sb-1", cls: "sup-1" },
+                { icon: "🏢", title: "Owner Support", desc: "Help with listing PGs, managing rooms, verifying identity, and monitoring trust.", badge: "For Owners", bcls: "sb-2", cls: "sup-2" },
+                { icon: "🔧", title: "Technical Support", desc: "Report bugs, login issues, payment failures, and other system-related problems.", badge: "System Issues", bcls: "sb-3", cls: "sup-3" },
               ].map((s) => (
                 <div key={s.title} className={`sup-card ${s.cls}`}>
                   <div className="sup-icon">{s.icon}</div>

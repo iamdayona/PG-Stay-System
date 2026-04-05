@@ -6,10 +6,10 @@ export default function PhoneInput({ value, onChange, disabled = false }) {
 
   // Determine display value
   const displayValue = value || "";
-  
+
   // Masked shadow format
   const maskValue = "+91 XXXXXXXXXX";
-  
+
   // Calculate character to show - if editing or partial input, show what user typed; otherwise show real number
   const showShadow = !displayValue || (isEditing && displayValue.length < 10);
 

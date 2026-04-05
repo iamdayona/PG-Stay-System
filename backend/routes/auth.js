@@ -1,5 +1,5 @@
 const express = require("express");
-const router  = express.Router();
+const router = express.Router();
 const {
   register,
   login,
@@ -11,9 +11,9 @@ const { uploadAadhaar, uploadProfilePhoto } = require("../middleware/upload");
 const User = require("../models/User");
 
 router.post("/register", register);
-router.post("/login",    login);
-router.get("/me",        protect, getMe);
-router.put("/profile",   protect, updateProfile);
+router.post("/login", login);
+router.get("/me", protect, getMe);
+router.put("/profile", protect, updateProfile);
 
 // POST /api/auth/upload-aadhaar  — multipart, field name "aadhaar"
 router.post("/upload-aadhaar", protect,
@@ -23,7 +23,7 @@ router.post("/upload-aadhaar", protect,
       if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
       const user = await User.findById(req.user._id);
-      user.documentUrl      = req.file.path;          // Cloudinary secure URL
+      user.documentUrl = req.file.path;          // Cloudinary secure URL
       user.documentFileType = req.file.mimetype === "application/pdf" ? "pdf" : "image";
       user.verificationStatus = "pending";
 
@@ -33,7 +33,7 @@ router.post("/upload-aadhaar", protect,
 
       res.json({
         message: "Document uploaded. Verification is now pending.",
-        documentUrl:      user.documentUrl,
+        documentUrl: user.documentUrl,
         documentFileType: user.documentFileType,
         verificationStatus: user.verificationStatus,
       });

@@ -201,7 +201,7 @@ export default function OtpField({
             </div>
 
             {emailError && (
-                <div style={{color:"#c62828",fontSize:".78rem",fontWeight:600,marginTop:"6px",display:"flex",alignItems:"center",gap:"5px",animation:"otpfIn .25s ease"}}>
+                <div style={{ color: "#c62828", fontSize: ".78rem", fontWeight: 600, marginTop: "6px", display: "flex", alignItems: "center", gap: "5px", animation: "otpfIn .25s ease" }}>
                     <span>⚠️</span> {emailError}
                 </div>
             )}

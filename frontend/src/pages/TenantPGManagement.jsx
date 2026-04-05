@@ -57,7 +57,7 @@ const PAGE_CSS = `
   .occupant-badge { display:inline-flex; align-items:center; gap:4px; background:rgba(66,165,245,.15); color:#1565c0; border:1px solid rgba(66,165,245,.3); border-radius:50px; padding:3px 10px; font-size:.72rem; font-weight:700; width:fit-content; }
   .occupant-bio { font-size:.82rem; color:#7a7a9a; line-height:1.4; }
   .occupants-empty { text-align:center; padding:24px; color:#9a9ab0; font-size:.88rem; }
-`; 
+`;
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -297,83 +297,83 @@ export default function TenantPGManagement() {
                   <>
                     {activeBooking ? (
                       <>
-                      <div className="book-card">
-                        <div className="section-title">✅ Active Booking</div>
-                        <div className="info-row">
-                          <div className="info-card">
-                            <div className="info-label">PG Name</div>
-                            <div className="info-value">{activeBooking.pgStay?.name}</div>
+                        <div className="book-card">
+                          <div className="section-title">✅ Active Booking</div>
+                          <div className="info-row">
+                            <div className="info-card">
+                              <div className="info-label">PG Name</div>
+                              <div className="info-value">{activeBooking.pgStay?.name}</div>
+                            </div>
+                            <div className="info-card">
+                              <div className="info-label">Room</div>
+                              <div className="info-value">{activeBooking.room?.roomType}</div>
+                            </div>
                           </div>
-                          <div className="info-card">
-                            <div className="info-label">Room</div>
-                            <div className="info-value">{activeBooking.room?.roomType}</div>
+                          <div className="info-row">
+                            <div className="info-card">
+                              <div className="info-label">Payment Status</div>
+                              <div className={`info-value status-${activeBooking.paymentStatus}`}>{statusLabel(activeBooking.paymentStatus)}</div>
+                            </div>
+                            <div className="info-card">
+                              <div className="info-label">Booking Date</div>
+                              <div className="info-value">{new Date(activeBooking.allocationDate).toLocaleDateString()}</div>
+                            </div>
+                          </div>
+                          <div className="info-row">
+                            <div className="info-card">
+                              <div className="info-label">Agreement Start</div>
+                              <div className="info-value">{activeBooking.agreementStartDate ? new Date(activeBooking.agreementStartDate).toLocaleDateString() : "Not set"}</div>
+                            </div>
+                            <div className="info-card">
+                              <div className="info-label">Agreement End</div>
+                              <div className="info-value">{activeBooking.agreementEndDate ? new Date(activeBooking.agreementEndDate).toLocaleDateString() : "Not set"}</div>
+                            </div>
+                          </div>
+                          <div className="btn-row">
+                            <button
+                              className="btn-action btn-decline"
+                              disabled={actionLoading === "cancel"}
+                              onClick={handleCancelBooking}
+                            >
+                              <AlertTriangle size={16} /> {actionLoading === "cancel" ? "Cancelling…" : "Cancel Booking"}
+                            </button>
                           </div>
                         </div>
-                        <div className="info-row">
-                          <div className="info-card">
-                            <div className="info-label">Payment Status</div>
-                            <div className={`info-value status-${activeBooking.paymentStatus}`}>{statusLabel(activeBooking.paymentStatus)}</div>
-                          </div>
-                          <div className="info-card">
-                            <div className="info-label">Booking Date</div>
-                            <div className="info-value">{new Date(activeBooking.allocationDate).toLocaleDateString()}</div>
-                          </div>
-                        </div>
-                        <div className="info-row">
-                          <div className="info-card">
-                            <div className="info-label">Agreement Start</div>
-                            <div className="info-value">{activeBooking.agreementStartDate ? new Date(activeBooking.agreementStartDate).toLocaleDateString() : "Not set"}</div>
-                          </div>
-                          <div className="info-card">
-                            <div className="info-label">Agreement End</div>
-                            <div className="info-value">{activeBooking.agreementEndDate ? new Date(activeBooking.agreementEndDate).toLocaleDateString() : "Not set"}</div>
-                          </div>
-                        </div>
-                        <div className="btn-row">
-                          <button
-                            className="btn-action btn-decline"
-                            disabled={actionLoading === "cancel"}
-                            onClick={handleCancelBooking}
-                          >
-                            <AlertTriangle size={16} /> {actionLoading === "cancel" ? "Cancelling…" : "Cancel Booking"}
-                          </button>
-                        </div>
-                      </div>
 
-                      <div className="book-card">
-                        <div className="section-title">👥 Current Occupants</div>
-                        {occupantsLoading ? (
-                          <div style={{ textAlign: "center", padding: "24px", color: "#7a7a9a", fontSize: ".88rem" }}>⏳ Loading occupants…</div>
-                        ) : occupants && occupants.length > 0 ? (
-                          <div className="occupants-grid">
-                            {occupants.map((occupant) => {
-                              const isYou = currentUser?._id === occupant?._id;
-                              return (
-                                <div key={occupant?._id || Math.random()} className={`occupant-card${isYou ? " you-card" : ""}`}>
-                                  <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
-                                    <div className="occupant-avatar">
-                                      {occupant?.profilePhotoUrl ? (
-                                        <img src={occupant.profilePhotoUrl} alt={occupant?.name || "Occupant"} />
-                                      ) : (
-                                        occupant?.name?.[0]?.toUpperCase() || "?"
-                                      )}
-                                    </div>
-                                    <div className="occupant-info" style={{ flex: 1 }}>
-                                      <div className="occupant-name">
-                                        {occupant?.name || "Unknown Tenant"}
-                                        {isYou && <span className="occupant-badge">✓ You</span>}
+                        <div className="book-card">
+                          <div className="section-title">👥 Current Occupants</div>
+                          {occupantsLoading ? (
+                            <div style={{ textAlign: "center", padding: "24px", color: "#7a7a9a", fontSize: ".88rem" }}>⏳ Loading occupants…</div>
+                          ) : occupants && occupants.length > 0 ? (
+                            <div className="occupants-grid">
+                              {occupants.map((occupant) => {
+                                const isYou = currentUser?._id === occupant?._id;
+                                return (
+                                  <div key={occupant?._id || Math.random()} className={`occupant-card${isYou ? " you-card" : ""}`}>
+                                    <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
+                                      <div className="occupant-avatar">
+                                        {occupant?.profilePhotoUrl ? (
+                                          <img src={occupant.profilePhotoUrl} alt={occupant?.name || "Occupant"} />
+                                        ) : (
+                                          occupant?.name?.[0]?.toUpperCase() || "?"
+                                        )}
                                       </div>
-                                      <div className="occupant-bio">{occupant?.bio || "No bio available"}</div>
+                                      <div className="occupant-info" style={{ flex: 1 }}>
+                                        <div className="occupant-name">
+                                          {occupant?.name || "Unknown Tenant"}
+                                          {isYou && <span className="occupant-badge">✓ You</span>}
+                                        </div>
+                                        <div className="occupant-bio">{occupant?.bio || "No bio available"}</div>
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div className="occupants-empty">No occupants at the moment</div>
-                        )}
-                      </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <div className="occupants-empty">No occupants at the moment</div>
+                          )}
+                        </div>
                       </>
                     ) : (
                       <div className="book-card">
@@ -407,7 +407,7 @@ export default function TenantPGManagement() {
                       </div>
                     )}
 
-                    
+
 
                     {activeBooking && (
                       <div className="book-card">
@@ -458,19 +458,19 @@ export default function TenantPGManagement() {
                     </div>
 
                     <div className="book-card">
-                        <div className="section-title">🛠️ Complaint & Support</div>
-                        <p className="card-note">File a complaint about your PG stay. The owner and admin will be notified.</p>
-                        <textarea
-                          className="complaint-input"
-                          value={complaintText}
-                          onChange={(e) => setComplaintText(e.target.value)}
-                          placeholder="Describe the issue you are facing…"
-                        />
-                        <div className="btn-row">
-                          <button className="btn-action btn-send" disabled={actionLoading === "complaint"} onClick={handleSubmitComplaint}>
-                            <Send size={16} /> {actionLoading === "complaint" ? "Submitting…" : "Submit Complaint"}
-                          </button>
-                        </div>
+                      <div className="section-title">🛠️ Complaint & Support</div>
+                      <p className="card-note">File a complaint about your PG stay. The owner and admin will be notified.</p>
+                      <textarea
+                        className="complaint-input"
+                        value={complaintText}
+                        onChange={(e) => setComplaintText(e.target.value)}
+                        placeholder="Describe the issue you are facing…"
+                      />
+                      <div className="btn-row">
+                        <button className="btn-action btn-send" disabled={actionLoading === "complaint"} onClick={handleSubmitComplaint}>
+                          <Send size={16} /> {actionLoading === "complaint" ? "Submitting…" : "Submit Complaint"}
+                        </button>
+                      </div>
                     </div>
 
                     {complaints.length > 0 && (
