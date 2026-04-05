@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Complaint = require("../models/Complaint");
 const Application = require("../models/Application");
+const Booking = require("../models/Booking");
 const PGStay = require("../models/PGStay");
 const { protect, authorize } = require("../middleware/auth");
 const createNotification = require("../utils/createNotification");
@@ -15,13 +16,24 @@ router.post("/", protect, authorize("tenant"), async (req, res) => {
     if (!pgStayId || !issue)
       return res.status(400).json({ message: "PG Stay and issue are required" });
 
-    // Only tenants with an approved application can file a complaint
-    const approved = await Application.findOne({
-      tenant: req.user._id,
+    const tenantId = req.user._id;
+    console.log("[Complaint] tenantId:", tenantId.toString(), "pgStayId:", pgStayId);
+
+    const validBooking = await Booking.findOne({
+      tenant: tenantId,
       pgStay: pgStayId,
-      status: "Approved",
+      status: { $in: ["Active", "Completed"] },
     });
-    if (!approved)
+    console.log("[Complaint] validBooking:", validBooking ? validBooking._id.toString() : null, validBooking ? validBooking.status : null);
+
+    const validApplication = await Application.findOne({
+      tenant: tenantId,
+      pgStay: pgStayId,
+      status: { $in: ["Approved", "Booked"] },
+    });
+    console.log("[Complaint] validApplication:", validApplication ? validApplication._id.toString() : null, validApplication ? validApplication.status : null);
+
+    if (!validBooking && !validApplication)
       return res.status(403).json({ message: "You can only file complaints for PGs you have stayed at" });
 
     const complaint = await Complaint.create({
