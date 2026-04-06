@@ -1,5 +1,6 @@
 const Feedback = require("../models/Feedback");
 const Application = require("../models/Application");
+const Booking = require("../models/Booking");
 const PGStay = require("../models/PGStay");
 const { recalcPGTrustScore } = require("../utils/trustScore");
 const createNotification = require("../utils/createNotification");
@@ -15,13 +16,19 @@ exports.submitFeedback = async (req, res) => {
     if (rating < 1 || rating > 5)
       return res.status(400).json({ message: "Rating must be between 1 and 5" });
 
-    // Only allow feedback if tenant has an approved application for this PG
+    // Only allow feedback if tenant has an approved application or an active/completed booking for this PG
     const approvedApp = await Application.findOne({
       tenant: req.user._id,
       pgStay: pgStayId,
       status: "Approved",
     });
-    if (!approvedApp)
+    const activeBooking = await Booking.findOne({
+      tenant: req.user._id,
+      pgStay: pgStayId,
+      status: { $in: ["Active", "Completed"] },
+    });
+
+    if (!approvedApp && !activeBooking)
       return res.status(403).json({ message: "You can only review a PG you have stayed at" });
 
     // Upsert: update existing feedback or create new
