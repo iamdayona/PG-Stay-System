@@ -3,7 +3,7 @@ import RoleNavigation from "../context/RoleNavigation";
 import Modal from "../components/Modal";
 import { toast } from "../components/Toast";
 import ConfirmationModal from "../components/ConfirmationModal";
-import { getUser, apiGetOwnerPGs, apiCreatePG, apiUpdatePG, apiDeletePG, apiGetRooms, apiAddRoom, apiUpdateRoom, apiDeleteRoom, apiGetOwnerBookings } from "../utils/api";
+import { getUser, apiGetMe, apiGetOwnerPGs, apiCreatePG, apiUpdatePG, apiDeletePG, apiGetRooms, apiAddRoom, apiUpdateRoom, apiDeleteRoom, apiGetOwnerBookings } from "../utils/api";
 import { CLAY_BASE, CLAY_OWNER, injectClay } from "../styles/claystyles";
 import { Plus, Trash2, ImagePlus, ChevronDown, X, Edit3, MapPin } from "lucide-react";
 import { apiUploadPGImages, apiDeletePGImage } from "../utils/api";
@@ -459,9 +459,23 @@ export default function OwnerPGManagement() {
   };
 
   useEffect(() => {
-    const user = getUser();
-    setOwnerVerified(user?.verificationStatus === "verified");
-    fetchPGs(); fetchOwnerBookings();
+    const syncUser = async () => {
+      try {
+        const res = await apiGetMe();
+        const freshUser = res.user;
+        if (freshUser) {
+          localStorage.setItem("user", JSON.stringify(freshUser));
+          setOwnerVerified(freshUser.verificationStatus === "verified");
+        }
+      } catch (err) {
+        const user = getUser();
+        setOwnerVerified(user?.verificationStatus === "verified");
+      }
+    };
+
+    syncUser();
+    fetchPGs();
+    fetchOwnerBookings();
   }, []);
 
   /* ── Map location confirmed ── */
