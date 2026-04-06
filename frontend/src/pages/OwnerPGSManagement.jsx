@@ -111,6 +111,9 @@ const PAGE_CSS = `
   .license-upload-ready { border-color:rgba(102,187,106,.7); background:rgba(232,245,233,.6); color:#2e7d32; }
   .license-error { color:#c62828; font-size:.78rem; font-weight:600; margin-top:6px; display:flex; align-items:center; gap:5px; }
   .license-required-badge { display:inline-flex; align-items:center; gap:4px; background:rgba(255,235,238,.9); color:#c62828; border:1.5px solid rgba(239,154,154,.5); border-radius:50px; padding:3px 10px; font-size:.72rem; font-weight:700; margin-left:8px; }
+  /* ── Creation date read-only info box ── */
+  .created-info-box { display:inline-flex; align-items:center; gap:8px; padding:8px 16px; background:rgba(255,248,225,.85); border:1.5px solid rgba(255,224,130,.5); border-radius:50px; font-size:.76rem; font-weight:700; color:#b86900; margin-bottom:18px; box-shadow:0 2px 8px rgba(255,167,38,.1); user-select:none; pointer-events:none; }
+  .room-created-badge { display:inline-flex; align-items:center; gap:4px; font-size:.7rem; font-weight:600; color:#9a9ab0; margin-top:6px; background:rgba(245,245,250,.85); border:1px solid rgba(200,200,220,.4); border-radius:50px; padding:2px 9px; }
   /* ── Location display bar ── */
   .location-bar { display:flex; align-items:center; gap:10px; padding:11px 16px; background:rgba(255,255,255,.7); border:2px solid rgba(255,255,255,.9); border-radius:14px; box-shadow:0 3px 10px rgba(0,0,0,.06); min-height:46px; }
   .location-bar-text { flex:1; font-size:.88rem; color:#2d2d4e; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -844,6 +847,13 @@ export default function OwnerPGManagement() {
                 </div>
               </div>
 
+              {selectedPG && selectedPG.createdAt && (
+                <div className="created-info-box" aria-label="PG creation date (non-editable)">
+                  📅 PG Listed On: {new Date(selectedPG.createdAt).toLocaleDateString("en-IN", { day:"2-digit", month:"long", year:"numeric" })}
+                  &nbsp;·&nbsp; {new Date(selectedPG.createdAt).toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit" })}
+                </div>
+              )}
+
               {selectedPG && (
                 <div className={`pg-alert ${selectedPG.verificationStatus==="verified"?"pg-alert-success":"pg-alert-info"}`}>
                   {selectedPG.verificationStatus==="verified" ? "Your PG is verified and live for tenants to find."
@@ -924,6 +934,11 @@ export default function OwnerPGManagement() {
                       <div className="room-rent">₹{room.rent}/month</div>
                       {room.roomType==="Shared" && room.capacity && (
                         <div style={{ fontSize:".78rem", color:"#7a7a9a", marginBottom:8 }}>👥 Capacity: {room.capacity} persons</div>
+                      )}
+                      {room.createdAt && (
+                        <div className="room-created-badge">
+                          🗓 Added: {new Date(room.createdAt).toLocaleDateString("en-IN", { day:"2-digit", month:"short", year:"numeric" })}
+                        </div>
                       )}
                       <div className="toggle-row">
                         <span className="toggle-label">{room.availability?"✅ Available":"❌ Unavailable"}</span>
