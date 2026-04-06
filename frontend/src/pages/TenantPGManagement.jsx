@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle2, AlertTriangle, Send, Calendar } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Send, Calendar, XCircle, Info } from "lucide-react";
 import RoleNavigation from "../context/RoleNavigation";
 import {
   apiGetMyApplications,
@@ -27,13 +27,14 @@ const PAGE_CSS = `
   .info-label { font-size:.75rem; color:#7a7a9a; margin-bottom:6px; text-transform:uppercase; letter-spacing:.5px; }
   .info-value { font-size:.95rem; font-weight:700; color:#2d2d4e; }
   .btn-row { display:flex; flex-wrap:wrap; gap:12px; margin-top:14px; }
-  .btn-action { cursor:pointer; border:none; border-radius:16px; font-size:.92rem; font-weight:700; padding:11px 18px; transition:transform .15s,filter .15s; }
+  .btn-action { cursor:pointer; border:none; border-radius:16px; font-size:.92rem; font-weight:700; padding:11px 18px; transition:transform .15s,filter .15s; display:inline-flex; align-items:center; gap:7px; }
   .btn-book { background:linear-gradient(135deg,#43a047,#66bb6a); color:white; }
   .btn-decline { background:linear-gradient(135deg,#ef5350,#f06257); color:white; }
   .btn-upload { background:linear-gradient(135deg,#42a5f5,#1e88e5); color:white; }
   .btn-pay { background:linear-gradient(135deg,#ffb300,#ffa000); color:white; }
   .btn-send { background:linear-gradient(135deg,#8e24aa,#d81b60); color:white; }
   .btn-action:hover { transform:translateY(-1px); }
+  .btn-action:disabled { opacity:.55; cursor:not-allowed; transform:none; }
   .status-pill { display:inline-flex; align-items:center; gap:8px; padding:8px 14px; border-radius:999px; font-size:.82rem; font-weight:700; }
   .status-active { background:rgba(232,245,233,.95); color:#2e7d32; }
   .status-unpaid { background:rgba(255,249,196,.95); color:#f57f17; }
@@ -57,10 +58,20 @@ const PAGE_CSS = `
   .occupant-badge { display:inline-flex; align-items:center; gap:4px; background:rgba(66,165,245,.15); color:#1565c0; border:1px solid rgba(66,165,245,.3); border-radius:50px; padding:3px 10px; font-size:.72rem; font-weight:700; width:fit-content; }
   .occupant-bio { font-size:.82rem; color:#7a7a9a; line-height:1.4; }
   .occupants-empty { text-align:center; padding:24px; color:#9a9ab0; font-size:.88rem; }
+  /* Approved apps list */
+  .app-list { display:flex; flex-direction:column; gap:14px; margin-top:16px; }
+  .app-item { background:rgba(241,248,255,.9); border:1.5px solid rgba(66,165,245,.25); border-radius:18px; padding:18px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .app-item.selected { border-color:#43a047; background:rgba(232,245,233,.9); }
+  .app-item-info { flex:1; min-width:180px; }
+  .app-item-name { font-size:.95rem; font-weight:800; color:#2d2d4e; margin-bottom:4px; }
+  .app-item-meta { font-size:.8rem; color:#7a7a9a; }
+  .app-item-actions { display:flex; gap:10px; flex-wrap:wrap; }
+  .capacity-badge { display:inline-block; font-size:.72rem; font-weight:700; padding:3px 10px; border-radius:50px; background:rgba(255,243,224,.9); color:#e65100; border:1px solid rgba(255,152,0,.3); margin-left:8px; }
+  .alert-box { background:rgba(255,243,224,.95); border:1.5px solid rgba(255,152,0,.4); border-radius:18px; padding:16px 20px; margin-bottom:18px; display:flex; gap:12px; align-items:flex-start; }
+  .alert-box-text { font-size:.88rem; color:#b26200; line-height:1.5; }
 `;
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-
 const getToken = () => localStorage.getItem("token");
 
 const apiUpdateAgreementDates = (bookingId, body) => {
@@ -105,11 +116,12 @@ export default function TenantPGManagement() {
       setApplications(appsRes.data);
       setBookings(bookingsRes.data);
       setComplaints(complaintsRes.data);
-      const approvedApp = appsRes.data.find((app) => app.status === "Approved");
-      setSelectedApplicationId(approvedApp?._id || "");
+      // Auto-select first approved app if nothing selected
+      const approvedApps = appsRes.data.filter((a) => a.status === "Approved");
+      if (approvedApps.length > 0) setSelectedApplicationId((prev) => prev || approvedApps[0]._id);
       if (bookingsRes.data?.[0]) {
-        setAgreementStart(bookingsRes.data[0].agreementStartDate?.split('T')[0] || "");
-        setAgreementEnd(bookingsRes.data[0].agreementEndDate?.split('T')[0] || "");
+        setAgreementStart(bookingsRes.data[0].agreementStartDate?.split("T")[0] || "");
+        setAgreementEnd(bookingsRes.data[0].agreementEndDate?.split("T")[0] || "");
       }
     } catch (err) {
       toast.error(err.message);
@@ -123,19 +135,16 @@ export default function TenantPGManagement() {
   const approvedApplications = applications.filter((app) => app.status === "Approved");
   const activeBooking = bookings[0] ?? null;
 
-  // Fetch occupants for the current PG
   const fetchOccupants = async (pgId) => {
     if (!pgId) return;
     setOccupantsLoading(true);
     try {
       const res = await apiGetPGRoommates(pgId);
-      // Flatten occupants from all rooms
       const allOccupants = (res?.data || [])
-        .flatMap(item => (item?.tenants || []))
-        .filter(tenant => tenant != null);
+        .flatMap((item) => item?.tenants || [])
+        .filter((t) => t != null);
       setOccupants(allOccupants);
     } catch (err) {
-      console.error('Error fetching occupants:', err);
       setOccupants([]);
     } finally {
       setOccupantsLoading(false);
@@ -143,11 +152,8 @@ export default function TenantPGManagement() {
   };
 
   useEffect(() => {
-    if (activeBooking?.pgStay?._id) {
-      fetchOccupants(activeBooking.pgStay._id);
-    } else {
-      setOccupants([]);
-    }
+    if (activeBooking?.pgStay?._id) fetchOccupants(activeBooking.pgStay._id);
+    else setOccupants([]);
   }, [activeBooking?.pgStay?._id]);
 
   useEffect(() => {
@@ -157,41 +163,36 @@ export default function TenantPGManagement() {
     }
   }, [activeBooking?.paymentStatus]);
 
-  const handleBook = async () => {
-    if (!selectedApplicationId) return toast.error("Select an approved application to book.");
-    setActionLoading("book");
+  const handleBook = async (appId) => {
+    const targetId = appId || selectedApplicationId;
+    if (!targetId) return toast.error("Select an approved application to book.");
+    setActionLoading(`book-${targetId}`);
     try {
-      await apiCreateBooking({ applicationId: selectedApplicationId });
-      toast.success("Booking confirmed. Manage your stay below.");
+      await apiCreateBooking({ applicationId: targetId });
+      toast.success("Booking confirmed! Other approved applications have been auto-rejected.");
       await fetchData();
     } catch (err) {
       toast.error(err.message);
+      await fetchData(); // refresh in case auto-rejection happened
     } finally {
       setActionLoading("");
     }
   };
 
-  const handleDecline = async () => {
-    if (!selectedApplicationId) return toast.error("Select an approved application to decline.");
-    setActionLoading("decline");
+  const handleDecline = async (appId) => {
+    const targetId = appId || selectedApplicationId;
+    if (!targetId) return toast.error("Select an approved application to decline.");
+    setActionLoading(`decline-${targetId}`);
     try {
-      await apiDeclineBooking({ applicationId: selectedApplicationId });
-      toast.info("Approved application declined. You can search for another PG.");
+      await apiDeclineBooking({ applicationId: targetId });
+      toast.info("Application declined. You can search for another PG.");
       await fetchData();
-      navigate("/tenant/findpgs");
+      if (approvedApplications.length <= 1) navigate("/tenant/findpgs");
     } catch (err) {
       toast.error(err.message);
     } finally {
       setActionLoading("");
     }
-  };
-
-  const handleAgreementUpload = async () => {
-    // Removed - Agreement upload functionality removed
-  };
-
-  const handlePay = async () => {
-    // Removed - Manual payment marking removed
   };
 
   const handleUploadPaymentProof = async () => {
@@ -218,7 +219,7 @@ export default function TenantPGManagement() {
     setActionLoading("cancel");
     try {
       await apiCancelBooking(activeBooking._id);
-      toast.success("Booking cancelled successfully. You may book another PG.");
+      toast.success("Booking cancelled. You may book another PG.");
       await fetchData();
     } catch (err) {
       toast.error(err.message);
@@ -229,11 +230,12 @@ export default function TenantPGManagement() {
 
   const handleSaveAgreementDates = async () => {
     if (!activeBooking) return toast.error("No active booking found.");
-    if (activeBooking.agreementStartDate || activeBooking.agreementEndDate) {
+    if (activeBooking.agreementStartDate || activeBooking.agreementEndDate)
       return toast.info("Agreement dates are finalized and cannot be changed.");
-    }
-    if (!agreementStart || !agreementEnd) return toast.error("Please enter both agreement start and end dates.");
-    if (new Date(agreementStart) >= new Date(agreementEnd)) return toast.error("Agreement start date must be before end date.");
+    if (!agreementStart || !agreementEnd)
+      return toast.error("Please enter both agreement start and end dates.");
+    if (new Date(agreementStart) >= new Date(agreementEnd))
+      return toast.error("Agreement start date must be before end date.");
     setActionLoading("agreement");
     try {
       await apiUpdateAgreementDates(activeBooking._id, {
@@ -273,6 +275,13 @@ export default function TenantPGManagement() {
     return "Unpaid";
   };
 
+  const roomSlotsLabel = (app) => {
+    const room = app.room;
+    if (!room) return null;
+    const remaining = (room.capacity || 1) - (room.currentOccupancy || 0);
+    return `${remaining} slot${remaining !== 1 ? "s" : ""} left`;
+  };
+
   return (
     <>
       <style>{css}</style>
@@ -281,20 +290,28 @@ export default function TenantPGManagement() {
         <main className="clay-main">
           <div className="clay-container">
             <h2 className="clay-page-title">🏠 PG Stay Management</h2>
-            <p className="clay-page-sub">Book your approved PG, upload agreements, track payments, and raise complaints.</p>
+            <p className="clay-page-sub">
+              Book your approved PG, upload agreements, track payments, and raise complaints.
+            </p>
 
             {loading ? (
-              <div className="clay-empty"><span className="clay-empty-emoji">⏳</span>Loading your PG stay details…</div>
+              <div className="clay-empty">
+                <span className="clay-empty-emoji">⏳</span>Loading your PG stay details…
+              </div>
             ) : (
               <>
                 {!activeBooking && approvedApplications.length === 0 ? (
                   <div className="clay-empty">
                     <span className="clay-empty-emoji">📭</span>
-                    No approved applications yet.<br />
-                    <span style={{ color: "#42a5f5", fontWeight: 700 }}>Search PGs and apply to start your stay.</span>
+                    No approved applications yet.
+                    <br />
+                    <span style={{ color: "#42a5f5", fontWeight: 700 }}>
+                      Search PGs and apply to start your stay.
+                    </span>
                   </div>
                 ) : (
                   <>
+                    {/* ── Active Booking ─────────────────────────────────── */}
                     {activeBooking ? (
                       <>
                         <div className="book-card">
@@ -312,21 +329,33 @@ export default function TenantPGManagement() {
                           <div className="info-row">
                             <div className="info-card">
                               <div className="info-label">Payment Status</div>
-                              <div className={`info-value status-${activeBooking.paymentStatus}`}>{statusLabel(activeBooking.paymentStatus)}</div>
+                              <div className={`info-value status-${activeBooking.paymentStatus}`}>
+                                {statusLabel(activeBooking.paymentStatus)}
+                              </div>
                             </div>
                             <div className="info-card">
                               <div className="info-label">Booking Date</div>
-                              <div className="info-value">{new Date(activeBooking.allocationDate).toLocaleDateString()}</div>
+                              <div className="info-value">
+                                {new Date(activeBooking.allocationDate).toLocaleDateString()}
+                              </div>
                             </div>
                           </div>
                           <div className="info-row">
                             <div className="info-card">
                               <div className="info-label">Agreement Start</div>
-                              <div className="info-value">{activeBooking.agreementStartDate ? new Date(activeBooking.agreementStartDate).toLocaleDateString() : "Not set"}</div>
+                              <div className="info-value">
+                                {activeBooking.agreementStartDate
+                                  ? new Date(activeBooking.agreementStartDate).toLocaleDateString()
+                                  : "Not set"}
+                              </div>
                             </div>
                             <div className="info-card">
                               <div className="info-label">Agreement End</div>
-                              <div className="info-value">{activeBooking.agreementEndDate ? new Date(activeBooking.agreementEndDate).toLocaleDateString() : "Not set"}</div>
+                              <div className="info-value">
+                                {activeBooking.agreementEndDate
+                                  ? new Date(activeBooking.agreementEndDate).toLocaleDateString()
+                                  : "Not set"}
+                              </div>
                             </div>
                           </div>
                           <div className="btn-row">
@@ -335,21 +364,28 @@ export default function TenantPGManagement() {
                               disabled={actionLoading === "cancel"}
                               onClick={handleCancelBooking}
                             >
-                              <AlertTriangle size={16} /> {actionLoading === "cancel" ? "Cancelling…" : "Cancel Booking"}
+                              <AlertTriangle size={16} />
+                              {actionLoading === "cancel" ? "Cancelling…" : "Cancel Booking"}
                             </button>
                           </div>
                         </div>
 
+                        {/* Occupants */}
                         <div className="book-card">
                           <div className="section-title">👥 Current Occupants</div>
                           {occupantsLoading ? (
-                            <div style={{ textAlign: "center", padding: "24px", color: "#7a7a9a", fontSize: ".88rem" }}>⏳ Loading occupants…</div>
+                            <div style={{ textAlign: "center", padding: "24px", color: "#7a7a9a", fontSize: ".88rem" }}>
+                              ⏳ Loading occupants…
+                            </div>
                           ) : occupants && occupants.length > 0 ? (
                             <div className="occupants-grid">
                               {occupants.map((occupant) => {
                                 const isYou = currentUser?._id === occupant?._id;
                                 return (
-                                  <div key={occupant?._id || Math.random()} className={`occupant-card${isYou ? " you-card" : ""}`}>
+                                  <div
+                                    key={occupant?._id || Math.random()}
+                                    className={`occupant-card${isYou ? " you-card" : ""}`}
+                                  >
                                     <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
                                       <div className="occupant-avatar">
                                         {occupant?.profilePhotoUrl ? (
@@ -376,39 +412,71 @@ export default function TenantPGManagement() {
                         </div>
                       </>
                     ) : (
+                      /* ── Pending Booking Confirmation ─────────────────── */
                       <div className="book-card">
                         <div className="section-title">📌 Confirm Your Booking</div>
-                        <p className="card-note">You have approved applications waiting for booking confirmation. Select one to either confirm or decline.</p>
-                        <div className="info-row">
-                          <div className="info-card">
-                            <div className="info-label">Approved Application</div>
-                            <select
-                              className="clay-select"
-                              value={selectedApplicationId}
-                              onChange={(e) => setSelectedApplicationId(e.target.value)}
-                            >
-                              <option value="">Select approved PG</option>
-                              {approvedApplications.map((app) => (
-                                <option key={app._id} value={app._id}>
-                                  {app.pgStay?.name} — ₹{app.rentAmount}/mo
-                                </option>
-                              ))}
-                            </select>
+
+                        {approvedApplications.length > 1 && (
+                          <div className="alert-box">
+                            <Info size={18} style={{ color: "#e65100", flexShrink: 0, marginTop: 2 }} />
+                            <div className="alert-box-text">
+                              You have <strong>{approvedApplications.length} approved applications</strong>.
+                              When you confirm one booking, all other approved applications will be
+                              <strong> automatically rejected</strong> and the respective PG owners will be notified.
+                              Choose wisely!
+                            </div>
                           </div>
-                        </div>
-                        <div className="btn-row">
-                          <button className="btn-action btn-book" disabled={actionLoading === "book"} onClick={handleBook}>
-                            <CheckCircle2 size={16} /> {actionLoading === "book" ? "Booking…" : "Book PG"}
-                          </button>
-                          <button className="btn-action btn-decline" disabled={actionLoading === "decline"} onClick={handleDecline}>
-                            <AlertTriangle size={16} /> {actionLoading === "decline" ? "Cancelling…" : "Reject Booking"}
-                          </button>
+                        )}
+
+                        <p className="card-note">
+                          Select an approved application to confirm your booking or decline it.
+                        </p>
+
+                        <div className="app-list">
+                          {approvedApplications.map((app) => (
+                            <div
+                              key={app._id}
+                              className={`app-item${selectedApplicationId === app._id ? " selected" : ""}`}
+                              onClick={() => setSelectedApplicationId(app._id)}
+                              style={{ cursor: "pointer" }}
+                            >
+                              <div className="app-item-info">
+                                <div className="app-item-name">
+                                  {app.pgStay?.name}
+                                  {app.room?.capacity > 1 && (
+                                    <span className="capacity-badge">{roomSlotsLabel(app)}</span>
+                                  )}
+                                </div>
+                                <div className="app-item-meta">
+                                  {app.room?.roomType} · ₹{app.rentAmount}/mo ·{" "}
+                                  {app.pgStay?.location}
+                                </div>
+                              </div>
+                              <div className="app-item-actions">
+                                <button
+                                  className="btn-action btn-book"
+                                  disabled={actionLoading === `book-${app._id}`}
+                                  onClick={(e) => { e.stopPropagation(); handleBook(app._id); }}
+                                >
+                                  <CheckCircle2 size={15} />
+                                  {actionLoading === `book-${app._id}` ? "Booking…" : "Book"}
+                                </button>
+                                <button
+                                  className="btn-action btn-decline"
+                                  disabled={actionLoading === `decline-${app._id}`}
+                                  onClick={(e) => { e.stopPropagation(); handleDecline(app._id); }}
+                                >
+                                  <XCircle size={15} />
+                                  {actionLoading === `decline-${app._id}` ? "Declining…" : "Decline"}
+                                </button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
 
-
-
+                    {/* ── Agreement Dates ────────────────────────────────── */}
                     {activeBooking && (
                       <div className="book-card">
                         <div className="section-title">📋 Agreement Time Period</div>
@@ -436,30 +504,51 @@ export default function TenantPGManagement() {
                           </div>
                         </div>
                         <div className="btn-row">
-                          <button className="btn-action btn-upload" disabled={actionLoading === "agreement"} onClick={handleSaveAgreementDates}>
-                            <Calendar size={16} /> {actionLoading === "agreement" ? "Saving…" : "Save Agreement Dates"}
+                          <button
+                            className="btn-action btn-upload"
+                            disabled={actionLoading === "agreement"}
+                            onClick={handleSaveAgreementDates}
+                          >
+                            <Calendar size={16} />
+                            {actionLoading === "agreement" ? "Saving…" : "Save Agreement Dates"}
                           </button>
                         </div>
                       </div>
                     )}
 
+                    {/* ── Payment Proof ──────────────────────────────────── */}
                     <div className="book-card">
                       <div className="section-title">💳 Payment Proof</div>
-                      <p className="card-note">Upload payment proof (screenshot/receipt). Owner will verify and update payment status.</p>
+                      <p className="card-note">
+                        Upload payment proof (screenshot/receipt). Owner will verify and update payment status.
+                      </p>
                       <div className="file-row">
                         <div className="file-label">Upload payment proof</div>
-                        <input ref={paymentProofInputRef} type="file" accept="image/*,.pdf" onChange={(e) => setPaymentProofFile(e.target.files?.[0] ?? null)} />
+                        <input
+                          ref={paymentProofInputRef}
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={(e) => setPaymentProofFile(e.target.files?.[0] ?? null)}
+                        />
                       </div>
                       <div className="btn-row">
-                        <button className="btn-action btn-upload" disabled={actionLoading === "paymentProof"} onClick={handleUploadPaymentProof}>
-                          <Calendar size={16} /> {actionLoading === "paymentProof" ? "Uploading…" : "Upload Proof"}
+                        <button
+                          className="btn-action btn-upload"
+                          disabled={actionLoading === "paymentProof"}
+                          onClick={handleUploadPaymentProof}
+                        >
+                          <Calendar size={16} />
+                          {actionLoading === "paymentProof" ? "Uploading…" : "Upload Proof"}
                         </button>
                       </div>
                     </div>
 
+                    {/* ── Complaint & Support ────────────────────────────── */}
                     <div className="book-card">
                       <div className="section-title">🛠️ Complaint & Support</div>
-                      <p className="card-note">File a complaint about your PG stay. The owner and admin will be notified.</p>
+                      <p className="card-note">
+                        File a complaint about your PG stay. The owner and admin will be notified.
+                      </p>
                       <textarea
                         className="complaint-input"
                         value={complaintText}
@@ -467,22 +556,36 @@ export default function TenantPGManagement() {
                         placeholder="Describe the issue you are facing…"
                       />
                       <div className="btn-row">
-                        <button className="btn-action btn-send" disabled={actionLoading === "complaint"} onClick={handleSubmitComplaint}>
-                          <Send size={16} /> {actionLoading === "complaint" ? "Submitting…" : "Submit Complaint"}
+                        <button
+                          className="btn-action btn-send"
+                          disabled={actionLoading === "complaint"}
+                          onClick={handleSubmitComplaint}
+                        >
+                          <Send size={16} />
+                          {actionLoading === "complaint" ? "Submitting…" : "Submit Complaint"}
                         </button>
                       </div>
                     </div>
 
+                    {/* ── Complaint History ──────────────────────────────── */}
                     {complaints.length > 0 && (
                       <div className="book-card">
                         <div className="section-title">📣 Your Complaints</div>
                         <div className="tickets-list">
                           {complaints.map((ticket) => (
                             <div key={ticket._id} className="ticket-card">
-                              <div><strong>Issue:</strong> {ticket.issue}</div>
-                              <div className="ticket-meta">Status: {ticket.status} · Owner action: {ticket.ownerAction || "pending"}</div>
-                              {ticket.ownerResponse && <div className="ticket-meta">Owner message: {ticket.ownerResponse}</div>}
-                              <div className="ticket-meta">Filed: {new Date(ticket.createdAt).toLocaleDateString()}</div>
+                              <div>
+                                <strong>Issue:</strong> {ticket.issue}
+                              </div>
+                              <div className="ticket-meta">
+                                Status: {ticket.status} · Owner action: {ticket.ownerAction || "pending"}
+                              </div>
+                              {ticket.ownerResponse && (
+                                <div className="ticket-meta">Owner message: {ticket.ownerResponse}</div>
+                              )}
+                              <div className="ticket-meta">
+                                Filed: {new Date(ticket.createdAt).toLocaleDateString()}
+                              </div>
                             </div>
                           ))}
                         </div>

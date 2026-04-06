@@ -11,13 +11,12 @@ exports.applyForRoom = async (req, res) => {
     if (!pgStayId || !roomId)
       return res.status(400).json({ message: "PG Stay and Room are required" });
 
-    // Check room exists and is available
     const room = await Room.findById(roomId);
     if (!room) return res.status(404).json({ message: "Room not found" });
     if (!room.availability)
       return res.status(400).json({ message: "This room is not available" });
 
-    // Prevent duplicate active application
+    // Prevent duplicate active application for same PG
     const existing = await Application.findOne({
       tenant: req.user._id,
       pgStay: pgStayId,
@@ -36,14 +35,12 @@ exports.applyForRoom = async (req, res) => {
       rentAmount: room.rent,
     });
 
-    // Notify the PG owner
     await createNotification(
       pg.owner._id,
       `New application from ${req.user.name} for ${pg.name}`,
       "application"
     );
 
-    // Notify the tenant
     await createNotification(
       req.user._id,
       `Your application for ${pg.name} has been submitted successfully`,
@@ -64,7 +61,7 @@ exports.getMyApplications = async (req, res) => {
       status: { $in: ["Pending", "Approved"] },
     })
       .populate("pgStay", "name location rent trustScore")
-      .populate("room", "roomType rent")
+      .populate("room", "roomType rent capacity currentOccupancy")
       .sort({ createdAt: -1 });
     res.json({ data: apps });
   } catch (err) {
@@ -75,14 +72,13 @@ exports.getMyApplications = async (req, res) => {
 // GET /api/applications/owner  (owner)
 exports.getOwnerApplications = async (req, res) => {
   try {
-    // Get all PGs owned by this user
     const ownerPGs = await PGStay.find({ owner: req.user._id }).select("_id");
     const pgIds = ownerPGs.map((pg) => pg._id);
 
     const apps = await Application.find({ pgStay: { $in: pgIds } })
       .populate("tenant", "name email trustScore verificationStatus")
       .populate("pgStay", "name location")
-      .populate("room", "roomType rent")
+      .populate("room", "roomType rent capacity currentOccupancy")
       .sort({ createdAt: -1 });
 
     res.json({ data: apps });
@@ -115,7 +111,6 @@ exports.approveApplication = async (req, res) => {
 
     if (!app) return res.status(404).json({ message: "Application not found" });
 
-    // Only the PG owner can approve
     if (app.pgStay.owner.toString() !== req.user._id.toString())
       return res.status(403).json({ message: "Not authorized" });
 
@@ -125,13 +120,43 @@ exports.approveApplication = async (req, res) => {
     app.status = "Approved";
     await app.save();
 
-    // Room availability is now managed by active bookings only
-    // Room will be marked unavailable when tenant creates a booking
+    // ── For single-capacity rooms: when owner approves one tenant, auto-reject
+    // all other PENDING applications for the same room so the owner isn't
+    // bombarded with stale requests.  For multi-capacity rooms we leave pending
+    // apps open until occupancy actually fills up at booking time.
+    const room = await Room.findById(app.room._id);
+    const remainingSlots = room ? room.capacity - room.currentOccupancy : 1;
 
-    // Notify tenant
+    if (room && remainingSlots <= 1) {
+      // Only one slot left (or it's single capacity) — reject all other pending apps for this room
+      const pendingOthers = await Application.find({
+        room: app.room._id,
+        status: "Pending",
+        _id: { $ne: app._id },
+      })
+        .populate("tenant", "name")
+        .populate("pgStay", "name owner");
+
+      for (const other of pendingOthers) {
+        other.status = "Rejected";
+        other.message =
+          `Your application for ${other.pgStay?.name || app.pgStay.name} has been rejected ` +
+          `because the room's last available slot was approved for another tenant.`;
+        await other.save();
+
+        await createNotification(
+          other.tenant._id,
+          `Your application for ${other.pgStay?.name || app.pgStay.name} was rejected — ` +
+            `the room's last slot was given to another applicant. Please try another PG.`,
+          "alert"
+        );
+      }
+    }
+
+    // Notify the approved tenant
     await createNotification(
       app.tenant._id,
-      `Your application for ${app.pgStay.name} has been approved! Welcome aboard.`,
+      `Your application for ${app.pgStay.name} has been approved! Please confirm your booking from PG Management.`,
       "success"
     );
 
@@ -154,9 +179,9 @@ exports.rejectApplication = async (req, res) => {
       return res.status(403).json({ message: "Not authorized" });
 
     app.status = "Rejected";
+    app.message = req.body.message || "Your application was not approved by the owner.";
     await app.save();
 
-    // Notify tenant
     await createNotification(
       app.tenant._id,
       `Your application for ${app.pgStay.name} was not approved. Try applying to other PGs!`,
