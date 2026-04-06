@@ -156,6 +156,17 @@ export default function PGDetailsModal({ pg, rooms = [], roommatesByRoom = [], o
               <div style={{ fontSize: ".75rem", fontWeight: 700, color: "#9a9ab0", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}> Available Rooms</div>
               <div style={{ fontSize: ".95rem", fontWeight: 600, color: "#2d2d4e" }}>{pg.availableRoomCount ?? pg.availableRooms ?? 0}</div>
             </div>
+            {pg.createdAt && (
+              <div>
+                <div style={{ fontSize: ".75rem", fontWeight: 700, color: "#9a9ab0", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>📅 Listed Since</div>
+                <div style={{ fontSize: ".88rem", fontWeight: 600, color: "#2d2d4e" }}>
+                  {new Date(pg.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}
+                </div>
+                <div style={{ fontSize: ".76rem", color: "#9a9ab0", marginTop: 2 }}>
+                  {new Date(pg.createdAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Address Details */}
@@ -256,6 +267,17 @@ export default function PGDetailsModal({ pg, rooms = [], roommatesByRoom = [], o
                       <div style={{ fontSize: ".86rem", color: "#4f5f7a", marginTop: 2 }}>
                         Rent: ₹{room?.rent || 'N/A'} | Capacity: {room?.capacity || 'N/A'} | Occupancy: {roomTenants.length} | {room?.availability ? "Available" : "Full"}
                       </div>
+                      {room?.createdAt && (
+                        <div style={{
+                          display: "inline-flex", alignItems: "center", gap: 4,
+                          marginTop: 6, padding: "2px 10px",
+                          background: "rgba(245,245,250,.9)", border: "1px solid rgba(200,200,220,.4)",
+                          borderRadius: "50px", fontSize: ".72rem", fontWeight: 600, color: "#9a9ab0",
+                          userSelect: "none"
+                        }}>
+                          🗓 Room added: {new Date(room.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                        </div>
+                      )}
                       {/* Roommates subsection */}
                       {roomTenants.length > 0 ? (
                         <div style={{ marginTop: 12 }}>
